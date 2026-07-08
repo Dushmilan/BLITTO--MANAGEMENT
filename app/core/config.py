@@ -1,0 +1,29 @@
+"""Application configuration (local-first, no external services)."""
+
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="BLITTO_", env_file=".env", extra="ignore")
+
+    service_name: str = "blitto-patent-management"
+    environment: str = "local"
+    # better-auth production adapter (JWT/JWKS verification). Unused by local stub.
+    better_auth_jwks_url: str = ""
+    better_auth_issuer: str = ""
+    better_auth_audience: str = ""
+    # Secret for the local-stub auth adapter (better-auth handles secrets in prod).
+    auth_secret: str = "change-me-in-production"
+    # Optional first-admin bootstrap so the system is usable out-of-box.
+    bootstrap_admin_email: str = ""
+    bootstrap_admin_password: str = ""
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

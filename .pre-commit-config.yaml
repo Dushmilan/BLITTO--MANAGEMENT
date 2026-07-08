@@ -1,0 +1,24 @@
+repos:
+  - repo: local
+    hooks:
+      - id: graphify
+        name: graphify - update architecture graph
+        entry: python scripts/run_graphify.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        # Keep the architecture graph current on every commit.
+        files: ^(app/|scripts/|pyproject.toml)
+
+      - id: caveman-fix
+        name: caveman-review gate (opencode)
+        entry: python scripts/caveman_fix.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        # REVIEW-ONLY gate: opencode reviews the staged diff in caveman style and
+        # BLOCKS the commit on any 🔴 bug finding. 🟡 risk/nit findings are
+        # printed as warnings but do not block. To actually fix, run
+        # `make caveman-fix` (scripts/caveman_fix.py --apply), then commit.
+        # Fail-closed: blocks commit if opencode is unavailable (override with
+        # BLITTO_CAVEMAN_ALLOW_SKIP=1).
