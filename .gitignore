@@ -11,9 +11,22 @@ __pycache__/
 .venv/
 venv/
 env/
+*.egg-info/
+
+# Node
+node_modules/
+
+# Secrets / certs / encrypted data
+certs/
+encrypted_docs/
 
 # Env / secrets
 .env
+.env.local
+
+# Build
+dist/
+build/
 
 # OS
 .DS_Store
