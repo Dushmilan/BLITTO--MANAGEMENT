@@ -4,10 +4,7 @@ import { api, clearToken, getToken, setToken } from './api.js'
 import AppLayout from './components/layout/AppLayout.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
-import ApplicationsPage from './pages/ApplicationsPage.jsx'
-import DocketPage from './pages/DocketPage.jsx'
-import DocumentsPage from './pages/DocumentsPage.jsx'
-import AuditPage from './pages/AuditPage.jsx'
+import PatentsPage from './pages/PatentsPage.jsx'
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -80,10 +77,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<DashboardPage />} />
-        <Route path="/applications" element={<ApplicationsPage user={user} />} />
-        <Route path="/docket" element={<DocketPage />} />
-        <Route path="/documents" element={<DocumentsPage user={user} />} />
-        <Route path="/audit" element={<AuditPage />} />
+        <Route path="/patents" element={<PatentsPage user={user} />} />
       </Route>
 
       {/* Catch-all redirect */}

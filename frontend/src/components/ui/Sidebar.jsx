@@ -1,11 +1,8 @@
 import { NavLink } from 'react-router-dom'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: DashboardIcon },
-  { to: '/applications', label: 'Applications', icon: ApplicationsIcon },
-  { to: '/docket', label: 'Docket', icon: DocketIcon },
-  { to: '/documents', label: 'Documents', icon: DocumentsIcon },
-  { to: '/audit', label: 'Audit Log', icon: AuditIcon },
+  { to: '/', label: 'Overview', icon: DashboardIcon },
+  { to: '/patents', label: 'Patents', icon: PatentsIcon },
 ]
 
 export default function Sidebar({ collapsed = false, onToggle }) {
@@ -79,38 +76,11 @@ function DashboardIcon() {
   )
 }
 
-function ApplicationsIcon() {
+function PatentsIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 2h10a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z" />
       <path d="M6 6h6M6 9h6M6 12h3" />
-    </svg>
-  )
-}
-
-function DocketIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="14" height="13" rx="2" />
-      <path d="M2 7h14M6 1v4M12 1v4" />
-    </svg>
-  )
-}
-
-function DocumentsIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 2H4a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V8l-6-6z" />
-      <path d="M10 2v6h6" />
-    </svg>
-  )
-}
-
-function AuditIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="9" r="7" />
-      <path d="M9 5v4l3 2" />
     </svg>
   )
 }

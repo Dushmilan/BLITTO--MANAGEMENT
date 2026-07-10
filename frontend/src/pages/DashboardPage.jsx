@@ -105,7 +105,7 @@ export default function DashboardPage() {
         <Card variant="base">
           <div className="flex items-center justify-between mb-lg">
             <h2 className="font-display text-heading-4 text-ink">Upcoming Deadlines</h2>
-            <Link to="/docket" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
+            <Link to="/patents" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
           </div>
           {urgentDeadlines.length === 0 ? (
             <p className="text-body-sm text-steel font-sans py-lg">No urgent deadlines.</p>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
       <Card variant="base">
         <div className="flex items-center justify-between mb-lg">
           <h2 className="font-display text-heading-4 text-ink">Recent Applications</h2>
-          <Link to="/applications" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
+          <Link to="/patents" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
         </div>
         {recentApps.length === 0 ? (
           <p className="text-body-sm text-steel font-sans py-lg">No applications yet.</p>
