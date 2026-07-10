@@ -1,3 +1,13 @@
+## tdd
+
+All code changes must follow test-driven development (TDD):
+
+- Always load the `tdd` skill before writing code
+- Follow the red-green-refactor loop: write a failing test first, write minimal code to pass, then refactor
+- Write one test at a time (vertical slices), never batch tests
+- Tests must verify behavior through public interfaces, not implementation details
+- Never refactor while in RED state
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
