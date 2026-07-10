@@ -164,7 +164,6 @@ function PatentsTab({ apps, loading, onReload, user }) {
                 trigger={
                   <button
                     type="button"
-                    onClick={(e) => e.stopPropagation()}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
                     aria-label="Change status"
                   >
