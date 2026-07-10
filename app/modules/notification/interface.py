@@ -16,3 +16,11 @@ class NotificationModule(Protocol):
         self, recipient_email: str, application_ref: str, new_status: str
     ) -> Notification:
         ...
+
+    def send_notification(
+        self, recipient_email: str, subject: str, body: str
+    ) -> Notification:
+        ...
+
+    def get_for_recipient(self, recipient_email: str) -> list[Notification]:
+        ...

@@ -24,3 +24,6 @@ class AuthorizationModule(Protocol):
 
     def verify_token(self, token: str) -> Optional[User]:
         ...
+
+    def list_users(self) -> list[User]:
+        ...

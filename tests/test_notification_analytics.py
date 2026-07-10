@@ -14,6 +14,16 @@ def test_notification_mocked() -> None:
     assert len(note.sent_history()) == 1
 
 
+def test_send_notification_and_get_for_recipient() -> None:
+    note = LocalNotificationModule()
+    sent = note.send_notification("b@uni.edu", "Subject", "Body")
+    assert sent.recipient_email == "b@uni.edu"
+    assert sent.subject == "Subject"
+    received = note.get_for_recipient("b@uni.edu")
+    assert len(received) == 1
+    assert received[0].id == sent.id
+
+
 def test_portfolio_summary_and_deadlines() -> None:
     intake = LocalApplicationIntakeModule()
     intake.create_application_shell(

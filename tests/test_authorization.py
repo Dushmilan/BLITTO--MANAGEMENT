@@ -1,7 +1,5 @@
 """Authorization module-interface tests (local stub adapter)."""
 
-import pytest
-
 from app.modules.authorization.local import LocalAuthorizationModule
 from app.modules.authorization.models import RegisterRequest
 from app.domain.common import Role
@@ -31,3 +29,10 @@ def test_verify_invalid_token_returns_none() -> None:
 def test_issue_token_unknown_email_returns_none() -> None:
     module = _module()
     assert module.issue_token("ghost@blitto.edu") is None
+
+
+def test_list_users_returns_registered_users() -> None:
+    module = _module()
+    users = module.list_users()
+    assert len(users) == 1
+    assert users[0].email == "admin@blitto.edu"
