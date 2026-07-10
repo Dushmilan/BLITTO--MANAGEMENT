@@ -1,14 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../../api.js'
 import Badge from '../../components/ui/Badge.jsx'
 import Button from '../../components/ui/Button.jsx'
-import Card from '../../components/ui/Card.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Dropdown from '../../components/ui/Dropdown.jsx'
 import SearchInput from '../../components/ui/SearchInput.jsx'
 import Modal from '../../components/ui/Modal.jsx'
-import Input from '../../components/ui/Input.jsx'
-import { sendStatusNotification, buildNotifyItems, STATUS_OPTIONS } from '../../utils/notifyHelpers.js'
+import { buildStatusChangeItems, STATUS_OPTIONS } from '../../utils/notifyHelpers.js'
 
 export default function AdminPatentsPage() {
   const [apps, setApps] = useState([])
@@ -16,9 +14,6 @@ export default function AdminPatentsPage() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedApp, setSelectedApp] = useState(null)
-  const [showNotifyModal, setShowNotifyModal] = useState(false)
-  const [notifyForm, setNotifyForm] = useState({ subject: '', body: '' })
-  const [sending, setSending] = useState(false)
 
   useEffect(() => {
     loadApps()
@@ -36,32 +31,19 @@ export default function AdminPatentsPage() {
     }
   }
 
-  async function handleSendNotification(e) {
-    e.preventDefault()
-    if (!selectedApp) return
-    setSending(true)
+  async function handleStatusChange(app, newStatus) {
     try {
-      await api.sendNotification(selectedApp.id, notifyForm.subject, notifyForm.body)
-      setShowNotifyModal(false)
-      setNotifyForm({ subject: '', body: '' })
-      alert('Notification sent successfully!')
-    } catch (err) {
-      alert(err.message)
-    } finally {
-      setSending(false)
-    }
-  }
-
-  async function handleNotifyStatus(app, newStatus) {
-    try {
-      await sendStatusNotification(app, newStatus)
-      alert(`Notification sent: status change to "${newStatus}"`)
+      await api.changeStatus(app.id, newStatus)
+      await loadApps()
+      if (selectedApp?.id === app.id) {
+        setSelectedApp({ ...app, status: newStatus })
+      }
     } catch (err) {
       alert(err.message)
     }
   }
 
-  const getNotifyItems = (app) => buildNotifyItems(app, handleNotifyStatus)
+  const getStatusItems = (app) => buildStatusChangeItems(app, handleStatusChange)
 
   const filtered = apps.filter((app) => {
     const matchesSearch = !search ||
@@ -110,7 +92,7 @@ export default function AdminPatentsPage() {
               type="button"
               onClick={(e) => e.stopPropagation()}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
-              aria-label="Notify inventor"
+              aria-label="Change status"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <circle cx="8" cy="3" r="1.5" />
@@ -119,7 +101,7 @@ export default function AdminPatentsPage() {
               </svg>
             </button>
           }
-          items={getNotifyItems(row)}
+          items={getStatusItems(row)}
         />
       ),
     },
@@ -130,7 +112,7 @@ export default function AdminPatentsPage() {
       <div className="animate-slide-up">
         <h1 className="font-display text-heading-1 text-ink mb-xs">Patents</h1>
         <p className="text-body-md text-steel font-sans">
-          Manage patent portfolio and send notifications to inventors
+          Manage patent portfolio and update application status
         </p>
       </div>
 
@@ -211,85 +193,8 @@ export default function AdminPatentsPage() {
                 <p className="text-body-sm text-ink font-sans">{selectedApp.technology_area || '\u2014'}</p>
               </div>
             </div>
-
-            <div className="border-t border-hairline pt-lg">
-              <p className="text-micro text-muted uppercase tracking-wider font-sans mb-sm">Admin Actions</p>
-              <div className="flex flex-wrap gap-sm">
-                {STATUS_OPTIONS.filter((s) => s !== selectedApp.status).map((s) => (
-                  <Button
-                    key={s}
-                    variant="secondary"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await api.changeStatus(selectedApp.id, s)
-                        setSelectedApp({ ...selectedApp, status: s })
-                        await loadApps()
-                      } catch (err) {
-                        alert(err.message)
-                      }
-                    }}
-                  >
-                    Move to {s}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-hairline pt-lg">
-              <p className="text-micro text-muted uppercase tracking-wider font-sans mb-sm">Notifications</p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setShowNotifyModal(true)}
-              >
-                <svg className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M2 4l5 3.5L12 4" />
-                  <rect x="1" y="2" width="12" height="10" rx="1" />
-                </svg>
-                Send Notification to Inventor
-              </Button>
-            </div>
           </div>
         )}
-      </Modal>
-
-      {/* Send Notification Modal */}
-      <Modal open={showNotifyModal} onClose={() => setShowNotifyModal(false)} title="Send Notification" size="md">
-        <form onSubmit={handleSendNotification} className="flex flex-col gap-lg">
-          <p className="text-body-sm text-steel font-sans">
-            Send a notification to <span className="font-medium text-ink">{selectedApp?.inventor_email}</span> regarding patent "{selectedApp?.title}"
-          </p>
-          <Input
-            id="notify-subject"
-            label="Subject"
-            value={notifyForm.subject}
-            onChange={(e) => setNotifyForm({ ...notifyForm, subject: e.target.value })}
-            required
-            placeholder="e.g. Action Required: Response Deadline"
-          />
-          <div>
-            <label className="block text-body-sm-medium text-charcoal font-sans mb-xs">
-              Message <span className="text-copper ml-1 text-caption">*</span>
-            </label>
-            <textarea
-              value={notifyForm.body}
-              onChange={(e) => setNotifyForm({ ...notifyForm, body: e.target.value })}
-              required
-              rows={4}
-              placeholder="Enter the notification message..."
-              className="w-full px-md py-sm bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
-            />
-          </div>
-          <div className="flex justify-end gap-sm pt-sm">
-            <Button variant="secondary" type="button" onClick={() => setShowNotifyModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={sending}>
-              {sending ? 'Sending...' : 'Send Notification'}
-            </Button>
-          </div>
-        </form>
       </Modal>
     </div>
   )

@@ -8,7 +8,7 @@ import Dropdown from '../components/ui/Dropdown.jsx'
 import SearchInput from '../components/ui/SearchInput.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import Input from '../components/ui/Input.jsx'
-import { sendStatusNotification, buildNotifyItems, STATUS_OPTIONS } from '../utils/notifyHelpers.js'
+import { buildStatusChangeItems, STATUS_OPTIONS } from '../utils/notifyHelpers.js'
 
 const DEADLINE_TYPES = ['filing_deadline', 'response_deadline', 'maintenance_fee', 'appeal_deadline', 'IDS_deadline', 'continuation_deadline']
 
@@ -106,16 +106,16 @@ function PatentsTab({ apps, loading, onReload, user }) {
     }
   }
 
-  async function handleNotifyStatus(app, newStatus) {
+  async function handleStatusChange(app, newStatus) {
     try {
-      await sendStatusNotification(app, newStatus)
-      alert(`Notification sent: status change to "${newStatus}"`)
+      await api.changeStatus(app.id, newStatus)
+      await onReload()
     } catch (err) {
       alert(err.message)
     }
   }
 
-  const getNotifyItems = (app) => buildNotifyItems(app, handleNotifyStatus)
+  const getStatusItems = (app) => buildStatusChangeItems(app, handleStatusChange)
 
   const filtered = apps.filter((app) => {
     const matchesSearch = !search ||
@@ -166,7 +166,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
                     type="button"
                     onClick={(e) => e.stopPropagation()}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
-                    aria-label="Notify inventor"
+                    aria-label="Change status"
                   >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                       <circle cx="8" cy="3" r="1.5" />
@@ -175,7 +175,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
                     </svg>
                   </button>
                 }
-                items={getNotifyItems(row)}
+                items={getStatusItems(row)}
               />
             ),
           },
@@ -306,31 +306,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
               </div>
             </div>
 
-            {user?.role === 'admin' && (
-              <div className="border-t border-hairline pt-lg">
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-sm">Admin Actions</p>
-                <div className="flex flex-wrap gap-sm">
-                  {STATUS_OPTIONS.filter((s) => s !== selectedApp.status).map((s) => (
-                    <Button
-                      key={s}
-                      variant="secondary"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await api.changeStatus(selectedApp.id, s)
-                          setSelectedApp({ ...selectedApp, status: s })
-                          await onReload()
-                        } catch (err) {
-                          alert(err.message)
-                        }
-                      }}
-                    >
-                      Move to {s}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
+
           </div>
         )}
       </Modal>
