@@ -30,7 +30,7 @@ export default function Dropdown({ trigger, items, className = '' }) {
   }
 
   return (
-    <div ref={ref} className={`relative inline-block ${className}`}>
+    <div ref={ref} className={`relative inline-block ${className}`} onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
       <div
         onClick={() => setOpen((prev) => !prev)}
         className="cursor-pointer"
