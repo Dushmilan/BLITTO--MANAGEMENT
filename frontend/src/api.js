@@ -100,4 +100,17 @@ export const api = {
   // Analytics
   portfolioSummary: () => request('/analytics/portfolio'),
   deadlineReport: () => request('/analytics/deadlines'),
+
+  // Notifications (for current user)
+  notifications: () => request('/notifications'),
+
+  // User Management (admin only)
+  users: () => request('/users'),
+
+  // Send notification to patent inventor (admin only)
+  sendNotification: (appId, subject, body) =>
+    request(`/applications/${appId}/notify`, {
+      method: 'POST',
+      params: { subject, body },
+    }),
 }

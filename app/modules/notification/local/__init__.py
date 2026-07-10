@@ -26,5 +26,21 @@ class LocalNotificationModule:
         print(f"[notification:mock] -> {recipient_email}: {notification.subject}")
         return notification
 
+    def send_notification(
+        self, recipient_email: str, subject: str, body: str
+    ) -> Notification:
+        notification = Notification(
+            id=str(uuid.uuid4()),
+            recipient_email=recipient_email,
+            subject=subject,
+            body=body,
+        )
+        self._sent.append(notification)
+        print(f"[notification:mock] -> {recipient_email}: {subject}")
+        return notification
+
+    def get_for_recipient(self, recipient_email: str) -> list[Notification]:
+        return [n for n in self._sent if n.recipient_email == recipient_email]
+
     def sent_history(self) -> list[Notification]:
         return list(self._sent)

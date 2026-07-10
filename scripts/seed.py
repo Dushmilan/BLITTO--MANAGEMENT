@@ -18,6 +18,7 @@ from app.modules.docketing.local import LocalDocketingModule
 from app.modules.docketing.models import DeadlineType
 from app.modules.prosecution.local import LocalProsecutionModule
 from app.modules.prosecution.models import OfficeActionKind
+from app.modules.notification.local import LocalNotificationModule
 
 
 def seed_demo_data(
@@ -25,6 +26,7 @@ def seed_demo_data(
     intake: LocalApplicationIntakeModule,
     docketing: LocalDocketingModule,
     prosecution: LocalProsecutionModule,
+    notification: LocalNotificationModule | None = None,
 ) -> None:
     """Populate in-memory stores with demo users and patent applications."""
     now = datetime.now(timezone.utc)
@@ -141,6 +143,31 @@ def seed_demo_data(
         missed_deadline=True,
         now=now,
     )
+
+    # Seed sample notifications for demo users
+    if notification is not None:
+        if inv1_email:
+            notification.send_notification(
+                inv1_email,
+                "Welcome to BLITTO",
+                "Your account has been created. You can now view and track your patent applications.",
+            )
+            notification.send_notification(
+                inv1_email,
+                "Patent Filed: AI-Powered Crop Disease Detection",
+                "Your patent application AI-Powered Crop Disease Detection has been successfully filed with reference P/2025/0142.",
+            )
+        if inv2_email:
+            notification.send_notification(
+                inv2_email,
+                "Welcome to BLITTO",
+                "Your account has been created. You can now view and track your patent applications.",
+            )
+            notification.send_notification(
+                inv2_email,
+                "Patent Granted: Quantum Encryption Protocol",
+                "Congratulations! Your patent application Quantum Encryption Protocol has been granted under NIPO-2024-0312.",
+            )
 
 
 def _seed_app(

@@ -2,9 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { api, clearToken, getToken, setToken } from './api.js'
 import AppLayout from './components/layout/AppLayout.jsx'
+import AdminLayout from './components/layout/AdminLayout.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import PatentsPage from './pages/PatentsPage.jsx'
+import UserPanel from './pages/UserPanel.jsx'
+import AdminDashboard from './pages/admin/AdminDashboard.jsx'
+import AdminPatentsPage from './pages/admin/AdminPatentsPage.jsx'
+import UsersPage from './pages/admin/UsersPage.jsx'
+
+const ADMIN_ROLES = ['admin', 'attorney', 'paralegal']
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -33,7 +40,6 @@ export default function App() {
     setToken(token.access_token)
     const me = await api.me()
     setUser(me)
-    // Return true so LoginPage knows to navigate
     return true
   }, [])
 
@@ -56,32 +62,57 @@ export default function App() {
     )
   }
 
+  const isAdmin = user && ADMIN_ROLES.includes(user.role)
+
   return (
     <Routes>
       {/* Public routes */}
       <Route
         path="/login"
         element={
-          user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />
+          user ? (
+            <Navigate to={isAdmin ? '/admin' : '/user'} replace />
+          ) : (
+            <LoginPage onLogin={handleLogin} />
+          )
         }
       />
 
-      {/* Protected routes */}
+      {/* Admin routes */}
       <Route
+        path="/admin"
         element={
-          user ? (
-            <AppLayout user={user} onLogout={handleLogout} />
+          user && isAdmin ? (
+            <AdminLayout user={user} onLogout={handleLogout} />
           ) : (
-            <Navigate to="/login" replace />
+            <Navigate to={user ? '/user' : '/login'} replace />
           )
         }
       >
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/patents" element={<PatentsPage user={user} />} />
+        <Route index element={<AdminDashboard />} />
+        <Route path="patents" element={<AdminPatentsPage />} />
+        <Route path="users" element={<UsersPage />} />
       </Route>
 
+      {/* User routes (inventor) */}
+      <Route
+        path="/user"
+        element={
+          user && !isAdmin ? (
+            <UserPanel user={user} onLogout={handleLogout} />
+          ) : (
+            <Navigate to={user ? '/admin' : '/login'} replace />
+          )
+        }
+      />
+
       {/* Catch-all redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route
+        path="*"
+        element={
+          <Navigate to={user ? (isAdmin ? '/admin' : '/user') : '/login'} replace />
+        }
+      />
     </Routes>
   )
 }

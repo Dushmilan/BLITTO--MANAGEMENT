@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 // Mock the API module so App never hits the network.
 vi.mock('../api.js', () => ({
-  api: { login: vi.fn(), me: vi.fn(), applications: vi.fn() },
+  api: { login: vi.fn(), me: vi.fn(), applications: vi.fn(), notifications: vi.fn(), users: vi.fn() },
   getToken: vi.fn(),
   setToken: vi.fn(),
   clearToken: vi.fn(),
@@ -21,25 +21,33 @@ vi.mock('../pages/LoginPage.jsx', () => ({
     </div>
   ),
 }))
-vi.mock('../components/layout/AppLayout.jsx', () => ({
+vi.mock('../components/layout/AdminLayout.jsx', () => ({
   default: ({ user, onLogout }) => (
     <div>
-      <span>APP_LAYOUT</span>
+      <span>ADMIN_LAYOUT</span>
       <span>{user.email}</span>
       <button onClick={onLogout}>do-logout</button>
     </div>
   ),
 }))
-vi.mock('../pages/DashboardPage.jsx', () => ({ default: () => <div>DASH</div> }))
-vi.mock('../pages/ApplicationsPage.jsx', () => ({ default: () => <div>APPS</div> }))
-vi.mock('../pages/DocketPage.jsx', () => ({ default: () => <div>DOCKET</div> }))
-vi.mock('../pages/DocumentsPage.jsx', () => ({ default: () => <div>DOCS</div> }))
-vi.mock('../pages/AuditPage.jsx', () => ({ default: () => <div>AUDIT</div> }))
+vi.mock('../pages/UserPanel.jsx', () => ({
+  default: ({ user, onLogout }) => (
+    <div>
+      <span>USER_PANEL</span>
+      <span>{user.email}</span>
+      <button onClick={onLogout}>do-logout</button>
+    </div>
+  ),
+}))
+vi.mock('../pages/admin/AdminDashboard.jsx', () => ({ default: () => <div>ADMIN_DASH</div> }))
+vi.mock('../pages/admin/AdminPatentsPage.jsx', () => ({ default: () => <div>ADMIN_PATENTS</div> }))
+vi.mock('../pages/admin/UsersPage.jsx', () => ({ default: () => <div>ADMIN_USERS</div> }))
 
 import App from '../App.jsx'
 import { api, getToken, setToken, clearToken } from '../api.js'
 
 const ADMIN = { email: 'admin@peradeniya.lk', role: 'admin' }
+const INVENTOR = { email: 'inventor@peradeniya.lk', role: 'inventor' }
 
 function renderApp(initialEntries = ['/']) {
   return render(
@@ -58,15 +66,24 @@ describe('App routing & auth gating', () => {
     getToken.mockReturnValue(null)
     renderApp()
     await waitFor(() => expect(screen.getByText('LOGIN_PAGE')).toBeInTheDocument())
-    expect(screen.queryByText('APP_LAYOUT')).not.toBeInTheDocument()
+    expect(screen.queryByText('ADMIN_LAYOUT')).not.toBeInTheDocument()
+    expect(screen.queryByText('USER_PANEL')).not.toBeInTheDocument()
   })
 
-  it('restores the session on mount when a token exists', async () => {
+  it('restores the session on mount when a token exists (admin)', async () => {
     getToken.mockReturnValue('tok')
     api.me.mockResolvedValue(ADMIN)
     renderApp()
-    await waitFor(() => expect(screen.getByText('APP_LAYOUT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('ADMIN_LAYOUT')).toBeInTheDocument())
     expect(screen.getByText('admin@peradeniya.lk')).toBeInTheDocument()
+  })
+
+  it('restores the session on mount when a token exists (inventor)', async () => {
+    getToken.mockReturnValue('tok')
+    api.me.mockResolvedValue(INVENTOR)
+    renderApp()
+    await waitFor(() => expect(screen.getByText('USER_PANEL')).toBeInTheDocument())
+    expect(screen.getByText('inventor@peradeniya.lk')).toBeInTheDocument()
   })
 
   it('clears the session and shows login if the stored token is invalid', async () => {
@@ -77,7 +94,7 @@ describe('App routing & auth gating', () => {
     expect(clearToken).toHaveBeenCalled()
   })
 
-  it('logs in: stores token, loads the user, and shows the app', async () => {
+  it('logs in: stores token, loads the user, and shows admin layout', async () => {
     getToken.mockReturnValue(null)
     api.login.mockResolvedValue({ access_token: 'tok' })
     api.me.mockResolvedValue(ADMIN)
@@ -86,7 +103,7 @@ describe('App routing & auth gating', () => {
     await waitFor(() => expect(screen.getByText('LOGIN_PAGE')).toBeInTheDocument())
     await userEvent.click(screen.getByText('do-login'))
 
-    await waitFor(() => expect(screen.getByText('APP_LAYOUT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('ADMIN_LAYOUT')).toBeInTheDocument())
     expect(api.login).toHaveBeenCalledWith('admin@peradeniya.lk', 'pw')
     expect(setToken).toHaveBeenCalledWith('tok')
   })
@@ -96,7 +113,7 @@ describe('App routing & auth gating', () => {
     api.me.mockResolvedValue(ADMIN)
     renderApp()
 
-    await waitFor(() => expect(screen.getByText('APP_LAYOUT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('ADMIN_LAYOUT')).toBeInTheDocument())
     await userEvent.click(screen.getByText('do-logout'))
 
     expect(clearToken).toHaveBeenCalled()

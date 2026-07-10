@@ -73,6 +73,7 @@ def _seed_demo_data(state) -> None:
         state.application_intake,
         state.docketing,
         state.prosecution,
+        state.notification,
     )
 
 

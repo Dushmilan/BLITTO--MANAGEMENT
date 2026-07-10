@@ -72,6 +72,9 @@ class LocalAuthorizationModule:
             return None
         return self._users.get(sub)
 
+    def list_users(self) -> list[User]:
+        return list(self._users.values())
+
     def _issue(self, user: User) -> Token:
         payload = {
             "sub": user.id,

@@ -13,6 +13,7 @@ from app.modules.application_intake.models import Disclosure
 from app.modules.authorization.models import LoginRequest, RegisterRequest
 from app.modules.docketing.models import DeadlineType
 from app.modules.prosecution.models import OfficeActionKind
+from app.modules.notification.models import Notification
 
 router = APIRouter()
 
@@ -198,4 +199,39 @@ async def portfolio_summary(request: Request, user: User = Depends(StaffUser)):
 @router.get("/analytics/deadlines", tags=["portfolioAnalytics"])
 async def deadline_report(request: Request, user: User = Depends(StaffUser)):
     return request.app.state.portfolio_analytics.deadline_report()
+
+
+# --- Notifications (for current user) ---
+@router.get("/notifications", tags=["notification"])
+async def list_notifications(request: Request, user: User = Depends(CurrentUser)):
+    return request.app.state.notification.get_for_recipient(user.email)
+
+
+# --- User Management (admin only) ---
+@router.get("/users", tags=["authorization"])
+async def list_users(request: Request, admin: User = Depends(AdminUser)):
+    return request.app.state.authorization.list_users()
+
+
+# --- Send notification to patent inventor (admin only) ---
+@router.post("/applications/{application_id}/notify", tags=["notification"])
+async def notify_inventor(
+    request: Request,
+    application_id: str,
+    subject: str = Query(...),
+    body: str = Query(...),
+    admin: User = Depends(AdminUser),
+):
+    application = request.app.state.application_intake.get_application(application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Unknown application")
+    notification = request.app.state.notification.send_notification(
+        application.inventor_email, subject, body
+    )
+    request.app.state.audit.record(
+        "send_notification",
+        user_id=getattr(admin, "id", None),
+        application_id=application_id,
+    )
+    return notification
 
