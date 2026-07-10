@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { api } from '../../api.js'
 import Badge from '../../components/ui/Badge.jsx'
 import Button from '../../components/ui/Button.jsx'
 import Card from '../../components/ui/Card.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
+import Dropdown from '../../components/ui/Dropdown.jsx'
 import SearchInput from '../../components/ui/SearchInput.jsx'
 import Modal from '../../components/ui/Modal.jsx'
 import Input from '../../components/ui/Input.jsx'
-
-const STATUS_OPTIONS = ['draft', 'filed', 'published', 'examination', 'granted', 'rejected', 'maintenance']
+import { sendStatusNotification, buildNotifyItems, STATUS_OPTIONS } from '../../utils/notifyHelpers.js'
 
 export default function AdminPatentsPage() {
   const [apps, setApps] = useState([])
@@ -52,6 +52,17 @@ export default function AdminPatentsPage() {
     }
   }
 
+  async function handleNotifyStatus(app, newStatus) {
+    try {
+      await sendStatusNotification(app, newStatus)
+      alert(`Notification sent: status change to "${newStatus}"`)
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const getNotifyItems = (app) => buildNotifyItems(app, handleNotifyStatus)
+
   const filtered = apps.filter((app) => {
     const matchesSearch = !search ||
       app.title?.toLowerCase().includes(search.toLowerCase()) ||
@@ -88,6 +99,29 @@ export default function AdminPatentsPage() {
       key: 'technology_area',
       label: 'Tech Area',
       render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
+    },
+    {
+      key: 'actions',
+      label: '',
+      render: (_, row) => (
+        <Dropdown
+          trigger={
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+              aria-label="Notify inventor"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <circle cx="8" cy="3" r="1.5" />
+                <circle cx="8" cy="8" r="1.5" />
+                <circle cx="8" cy="13" r="1.5" />
+              </svg>
+            </button>
+          }
+          items={getNotifyItems(row)}
+        />
+      ),
     },
   ]
 

@@ -113,4 +113,11 @@ export const api = {
       method: 'POST',
       params: { subject, body },
     }),
+
+  // Send status change notification to inventor
+  notifyStatusChange: (recipientEmail, applicationRef, newStatus) =>
+    request('/notify/status-change', {
+      method: 'POST',
+      params: { recipient_email: recipientEmail, application_ref: applicationRef, new_status: newStatus },
+    }),
 }
