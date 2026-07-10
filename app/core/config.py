@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     # Optional first-admin bootstrap so the system is usable out-of-box.
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
+    # Demo inventor accounts for local development.
+    demo_inventor1_email: str = ""
+    demo_inventor1_password: str = ""
+    demo_inventor1_name: str = ""
+    demo_inventor2_email: str = ""
+    demo_inventor2_password: str = ""
+    demo_inventor2_name: str = ""
 
 
 @lru_cache

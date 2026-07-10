@@ -17,6 +17,7 @@ from app.modules.notification.local import LocalNotificationModule
 from app.modules.portfolio_analytics.local import LocalPortfolioAnalyticsModule
 from app.modules.prosecution.local import LocalProsecutionModule
 from app.api import router as api_router
+from scripts.seed import seed_demo_data
 
 
 @asynccontextmanager
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
         docketing=app.state.docketing,
     )
     _bootstrap_admin(app.state.authorization)
+    _seed_demo_data(app.state)
     yield
 
 
@@ -56,6 +58,21 @@ def _bootstrap_admin(auth) -> None:
     # register() stores the password when provided, so the admin can log in.
     auth.register(
         RegisterRequest(email=email, role=Role.ADMIN, password=password)
+    )
+
+
+def _seed_demo_data(state) -> None:
+    """Seed demo inventors and patent applications on first startup.
+
+    Only runs if fewer than 2 users exist (i.e. just the bootstrap admin or none).
+    """
+    if len(state.authorization._users) > 1:
+        return
+    seed_demo_data(
+        state.authorization,
+        state.application_intake,
+        state.docketing,
+        state.prosecution,
     )
 
 
