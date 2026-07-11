@@ -528,9 +528,73 @@ function DocumentsTab({ apps, user }) {
   const [docsLoading, setDocsLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState(null)
+  const [deleting, setDeleting] = useState(null)
   const fileInputRef = useRef(null)
 
-  const canUpload = user?.role === 'admin' || user?.role === 'paralegal'
+  const [vaultLocked, setVaultLocked] = useState(true)
+  const [vaultRemaining, setVaultRemaining] = useState(0)
+  const [vaultUnlocking, setVaultUnlocking] = useState(false)
+  const [vaultError, setVaultError] = useState('')
+  const [unlockKey, setUnlockKey] = useState('')
+
+  const isStaff = user?.role === 'admin' || user?.role === 'paralegal'
+  const canUpload = isStaff
+  const canDelete = canUpload
+
+  async function checkVaultStatus() {
+    try {
+      const status = await api.vaultStatus()
+      setVaultLocked(status.locked)
+      setVaultRemaining(status.remaining_seconds || 0)
+    } catch {
+      setVaultLocked(true)
+    }
+  }
+
+  useEffect(() => {
+    checkVaultStatus()
+  }, [])
+
+  useEffect(() => {
+    if (vaultLocked || vaultRemaining <= 0) return
+    const interval = setInterval(() => {
+      setVaultRemaining((prev) => {
+        if (prev <= 1) {
+          checkVaultStatus()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [vaultLocked, vaultRemaining])
+
+  async function handleUnlock() {
+    if (!unlockKey.trim()) return
+    setVaultUnlocking(true)
+    setVaultError('')
+    try {
+      await api.vaultUnlock(unlockKey.trim())
+      setVaultLocked(false)
+      setUnlockKey('')
+      await checkVaultStatus()
+    } catch (err) {
+      setVaultError(err.message)
+    } finally {
+      setVaultUnlocking(false)
+    }
+  }
+
+  async function handleLock() {
+    try {
+      await api.vaultLock()
+      setVaultLocked(true)
+      setVaultRemaining(0)
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     if (apps.length > 0 && !selectedAppId) {
@@ -539,38 +603,69 @@ function DocumentsTab({ apps, user }) {
   }, [apps])
 
   useEffect(() => {
+    loadDocs()
+  }, [selectedAppId])
+
+  async function loadDocs() {
     if (!selectedAppId) {
       setDocuments([])
       return
     }
-    async function loadDocs() {
-      setDocsLoading(true)
-      try {
-        const data = await api.documents(selectedAppId)
-        setDocuments(data || [])
-      } catch {
-        setDocuments([])
-      } finally {
-        setDocsLoading(false)
-      }
+    setDocsLoading(true)
+    try {
+      const data = await api.documents(selectedAppId)
+      setDocuments(data || [])
+    } catch {
+      setDocuments([])
+    } finally {
+      setDocsLoading(false)
     }
-    loadDocs()
-  }, [selectedAppId])
+  }
 
   async function handleUpload(e) {
     const file = e.target.files?.[0]
     if (!file || !selectedAppId) return
     setUploading(true)
+    setUploadStatus(null)
     try {
       await api.uploadDocument(selectedAppId, file.name, file)
-      const data = await api.documents(selectedAppId)
-      setDocuments(data || [])
+      await loadDocs()
+      setUploadStatus({ type: 'success', message: `Uploaded "${file.name}"` })
     } catch (err) {
-      alert(err.message)
+      setUploadStatus({ type: 'error', message: err.message })
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
+  }
+
+  async function handleDownload(doc) {
+    try {
+      await api.downloadDocument(selectedAppId, doc.id)
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  async function handleDelete(doc) {
+    if (!confirm(`Delete "${doc.filename}"? This cannot be undone.`)) return
+    setDeleting(doc.id)
+    try {
+      await api.deleteDocument(selectedAppId, doc.id)
+      await loadDocs()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  function formatSize(bytes) {
+    if (bytes === 0 || !bytes) return '\u2014'
+    const units = ['B', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    const size = (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)
+    return `${size} ${units[i]}`
   }
 
   const selectedApp = apps.find((a) => a.id === selectedAppId)
@@ -592,12 +687,19 @@ function DocumentsTab({ apps, user }) {
       ),
     },
     {
+      key: 'file_size',
+      label: 'Size',
+      render: (val) => (
+        <span className="font-mono text-body-sm text-steel">{formatSize(val)}</span>
+      ),
+    },
+    {
       key: 'uploaded_by',
       label: 'Uploaded By',
       render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
     },
     {
-      key: 'created_at',
+      key: 'uploaded_at',
       label: 'Date',
       render: (val) => (
         <span className="font-mono text-body-sm text-steel">
@@ -605,7 +707,58 @@ function DocumentsTab({ apps, user }) {
         </span>
       ),
     },
+    {
+      key: 'actions',
+      label: '',
+      render: (_, row) => (
+        <div className="flex items-center justify-end gap-xs">
+          <button
+            type="button"
+            onClick={() => handleDownload(row)}
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+            aria-label={`Download ${row.filename}`}
+            title="Download"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M7 10V3M4 7l3 3 3-3" />
+              <path d="M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" />
+            </svg>
+          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => handleDelete(row)}
+              disabled={deleting === row.id}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-status-rejected/10 text-slate hover:text-status-rejected transition-colors duration-150 disabled:opacity-40"
+              aria-label={`Delete ${row.filename}`}
+              title="Delete"
+            >
+              {deleting === row.id ? (
+                <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+                  <path d="M7 2a5 5 0 013.54 1.46" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M2 4h10M5 4V2.5A.5.5 0 015.5 2h3a.5.5 0 01.5.5V4M11 4v7.5a1 1 0 01-1 1H4a1 1 0 01-1-1V4" />
+                  <path d="M5.5 6.5v4M8.5 6.5v4" />
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
+      ),
+    },
   ]
+
+  function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+    if (h > 0) return `${h}h ${m}m ${s}s`
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
+  }
 
   return (
     <div className="space-y-xxl">
@@ -628,7 +781,7 @@ function DocumentsTab({ apps, user }) {
               ))}
             </select>
           </div>
-          {canUpload && selectedAppId && (
+          {canUpload && selectedAppId && !vaultLocked && (
             <div className="flex items-end gap-sm">
               <input
                 ref={fileInputRef}
@@ -660,43 +813,127 @@ function DocumentsTab({ apps, user }) {
                   </>
                 )}
               </Button>
+              {isStaff && !vaultLocked && (
+                <Button variant="secondary" onClick={handleLock}>
+                  Lock Vault
+                </Button>
+              )}
+            </div>
+          )}
+          {isStaff && !vaultLocked && vaultRemaining > 0 && (
+            <div className="flex items-center gap-sm text-body-sm text-steel font-sans">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="7" cy="7" r="5" />
+                <path d="M7 3.5v4l3 1.5" />
+              </svg>
+              Session: {formatTime(vaultRemaining)}
             </div>
           )}
         </div>
+        {uploadStatus && (
+          <div className={`mt-md px-md py-sm rounded-md text-body-sm font-sans flex items-center gap-sm ${
+            uploadStatus.type === 'success'
+              ? 'bg-status-granted/10 text-status-granted'
+              : 'bg-status-rejected/10 text-status-rejected'
+          }`}>
+            {uploadStatus.type === 'success' ? (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 7l3 3 5-5" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="7" cy="7" r="5" />
+                <path d="M7 4.5v3M7 9.5v.01" />
+              </svg>
+            )}
+            <span>{uploadStatus.message}</span>
+            <button
+              type="button"
+              onClick={() => setUploadStatus(null)}
+              className="ml-auto text-current opacity-60 hover:opacity-100"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 3l6 6M9 3l-6 6" />
+              </svg>
+            </button>
+          </div>
+        )}
       </Card>
 
-      {selectedAppId && (
-        <div className="animate-slide-up stagger-3">
-          <div className="flex items-center justify-between mb-lg">
-            <h2 className="font-display text-heading-4 text-ink">
-              {selectedApp?.title || 'Documents'}
-            </h2>
-            <SearchInput
-              value={search}
-              onChange={setSearch}
-              placeholder="Search documents..."
-              className="max-w-[300px]"
-            />
-          </div>
-          {docsLoading ? (
-            <div className="flex items-center justify-center py-xl">
-              <div className="flex items-center gap-sm text-steel">
-                <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-                  <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                <span className="font-sans text-body-sm">Loading documents...</span>
-              </div>
+      <div className="relative">
+        {selectedAppId && (
+          <div className="animate-slide-up stagger-3">
+            <div className="flex items-center justify-between mb-lg">
+              <h2 className="font-display text-heading-4 text-ink">
+                {selectedApp?.title || 'Documents'}
+              </h2>
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search documents..."
+                className="max-w-[300px]"
+              />
             </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={filteredDocs}
-              emptyMessage="No documents uploaded yet."
-            />
-          )}
-        </div>
-      )}
+            {docsLoading ? (
+              <div className="flex items-center justify-center py-xl">
+                <div className="flex items-center gap-sm text-steel">
+                  <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+                    <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <span className="font-sans text-body-sm">Loading documents...</span>
+                </div>
+              </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={filteredDocs}
+                emptyMessage="No documents uploaded yet."
+              />
+            )}
+          </div>
+        )}
+
+        {vaultLocked && selectedAppId && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-navy/30 backdrop-blur-sm">
+            <Card variant="base" className="w-full max-w-md p-xl text-center shadow-xl">
+              <div className="flex justify-center mb-lg">
+                <div className="w-14 h-14 rounded-full bg-copper-100 flex items-center justify-center">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-copper">
+                    <rect x="4" y="9" width="16" height="12" rx="2" />
+                    <path d="M8 9V6a4 4 0 118 0v3" />
+                    <path d="M12 14v3" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="font-display text-heading-4 text-ink mb-xs">Vault Locked</h3>
+              <p className="font-sans text-body-sm text-steel mb-lg">
+                Enter the master key to unlock the document vault. The session stays unlocked for 12 hours.
+              </p>
+              <input
+                type="password"
+                value={unlockKey}
+                onChange={(e) => setUnlockKey(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                placeholder="Master key"
+                className="w-full h-10 px-md mb-sm bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+                autoFocus
+              />
+              {vaultError && (
+                <p className="text-body-sm text-status-rejected font-sans mb-sm">{vaultError}</p>
+              )}
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={handleUnlock}
+                disabled={vaultUnlocking || !unlockKey.trim()}
+              >
+                {vaultUnlocking ? 'Unlocking...' : 'Unlock Vault'}
+              </Button>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

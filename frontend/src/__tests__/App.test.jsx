@@ -40,7 +40,7 @@ vi.mock('../pages/UserPanel.jsx', () => ({
   ),
 }))
 vi.mock('../pages/admin/AdminDashboard.jsx', () => ({ default: () => <div>ADMIN_DASH</div> }))
-vi.mock('../pages/admin/AdminPatentsPage.jsx', () => ({ default: () => <div>ADMIN_PATENTS</div> }))
+vi.mock('../pages/PatentsPage.jsx', () => ({ default: () => <div>PATENTS_PAGE</div> }))
 vi.mock('../pages/admin/UsersPage.jsx', () => ({ default: () => <div>ADMIN_USERS</div> }))
 
 import App from '../App.jsx'

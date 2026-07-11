@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     demo_inventor2_email: str = ""
     demo_inventor2_password: str = ""
     demo_inventor2_name: str = ""
+    # Vault master key (auto-saved to .env on first run).
+    vault_master_key: str = ""
 
 
 @lru_cache

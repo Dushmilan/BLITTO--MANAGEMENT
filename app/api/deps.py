@@ -67,3 +67,13 @@ async def require_staff(request: Request) -> User:
 
 StaffUser = require_staff
 
+
+async def require_unlocked_vault(request: Request) -> None:
+    """Vault lock gate: raises 423 if the vault is locked."""
+    vault = request.app.state.document_vault
+    if not vault.is_unlocked():
+        raise HTTPException(status_code=423, detail="Vault is locked")
+
+
+UnlockedVault = require_unlocked_vault
+

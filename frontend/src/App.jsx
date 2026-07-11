@@ -8,7 +8,7 @@ import DashboardPage from './pages/DashboardPage.jsx'
 import PatentsPage from './pages/PatentsPage.jsx'
 import UserPanel from './pages/UserPanel.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
-import AdminPatentsPage from './pages/admin/AdminPatentsPage.jsx'
+
 import UsersPage from './pages/admin/UsersPage.jsx'
 
 const ADMIN_ROLES = ['admin', 'attorney', 'paralegal']
@@ -90,7 +90,7 @@ export default function App() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="patents" element={<AdminPatentsPage />} />
+        <Route path="patents" element={<PatentsPage user={user} />} />
         <Route path="users" element={<UsersPage />} />
       </Route>
 

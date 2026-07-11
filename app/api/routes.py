@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import mimetypes
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import StreamingResponse
 
-from app.api.deps import AdminUser, AttorneyUser, CurrentUser, StaffUser, User
+from app.api.deps import AdminUser, AttorneyUser, CurrentUser, StaffUser, UnlockedVault, User
 from app.domain.common import ApplicationStatus, Role
 from app.modules.application_intake.models import Disclosure
 from app.modules.authorization.models import LoginRequest, RegisterRequest
@@ -107,17 +109,72 @@ async def list_deadlines(
     return request.app.state.docketing.list_deadlines(application_id)
 
 
+# --- Vault unlock/lock/status ---
+
+
+@router.get("/vault/status", tags=["documentVault"])
+async def vault_status(request: Request, user: User = Depends(StaffUser)):
+    vault = request.app.state.document_vault
+    return {
+        "locked": not vault.is_unlocked(),
+        "remaining_seconds": vault.unlock_remaining(),
+    }
+
+
+@router.post("/vault/unlock", tags=["documentVault"])
+async def vault_unlock(
+    request: Request,
+    body: dict,
+    user: User = Depends(StaffUser),
+):
+    ok = request.app.state.document_vault.unlock(body.get("master_key", ""))
+    if not ok:
+        raise HTTPException(status_code=401, detail="Invalid master key")
+    return {"status": "unlocked"}
+
+
+@router.post("/vault/lock", tags=["documentVault"])
+async def vault_lock(request: Request, user: User = Depends(StaffUser)):
+    request.app.state.document_vault.lock()
+    return {"status": "locked"}
+
+
 # --- Document Vault ---
 # Inventors have no upload capability (Readme): gate to admin/paralegal.
+
+_ALLOWED_EXTENSIONS = frozenset({
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx",
+    ".txt", ".csv", ".jpg", ".jpeg", ".png",
+})
+
+
+def _validate_extension(filename: str) -> str:
+    ext = (mimetypes.guess_type(filename)[0] or "").lower()
+    _, raw_ext = (filename.rsplit(".", 1) if "." in filename else ("", ""))
+    dot_ext = f".{raw_ext.lower()}" if raw_ext else ""
+    if dot_ext not in _ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"File type '{dot_ext}' not allowed. Accepted: {', '.join(sorted(_ALLOWED_EXTENSIONS))}",
+        )
+    return dot_ext
+
+
 @router.post("/applications/{application_id}/documents", tags=["documentVault"])
 async def store_document(
     request: Request,
     application_id: str,
     filename: str = Query(...),
     user: User = Depends(CurrentUser),
+    _: None = Depends(UnlockedVault),
 ):
     if user.role not in (Role.ADMIN, Role.PARALEGAL):
         raise HTTPException(status_code=403, detail="Upload not permitted for this role")
+    # Verify the application exists.
+    app = request.app.state.application_intake.get_application(application_id)
+    if app is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    _validate_extension(filename)
     # Cap upload size to avoid memory exhaustion (local skeleton: 10 MB).
     body = await request.body()
     if len(body) > 10 * 1024 * 1024:
@@ -137,6 +194,49 @@ async def list_documents(
     request: Request, application_id: str, user: User = Depends(StaffUser)
 ):
     return request.app.state.document_vault.list_for_application(application_id)
+
+
+@router.get("/applications/{application_id}/documents/{document_id}/download", tags=["documentVault"])
+async def download_document(
+    request: Request,
+    application_id: str,
+    document_id: str,
+    user: User = Depends(StaffUser),
+    _: None = Depends(UnlockedVault),
+):
+    content = request.app.state.document_vault.retrieve(document_id)
+    if content is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+    # Find document metadata for the filename.
+    docs = request.app.state.document_vault.list_for_application(application_id)
+    doc_meta = next((d for d in docs if d.id == document_id), None)
+    filename = doc_meta.filename if doc_meta else "document.bin"
+    media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return StreamingResponse(
+        iter([content]),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.delete("/applications/{application_id}/documents/{document_id}", tags=["documentVault"])
+async def delete_document(
+    request: Request,
+    application_id: str,
+    document_id: str,
+    user: User = Depends(CurrentUser),
+    _: None = Depends(UnlockedVault),
+):
+    if user.role not in (Role.ADMIN, Role.PARALEGAL):
+        raise HTTPException(status_code=403, detail="Delete not permitted for this role")
+    deleted = request.app.state.document_vault.delete(document_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Document not found")
+    request.app.state.audit.record(
+        "delete_document", user_id=getattr(user, "id", None),
+        application_id=application_id,
+    )
+    return Response(status_code=204)
 
 
 # --- Prosecution ---

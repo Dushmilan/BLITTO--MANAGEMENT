@@ -108,4 +108,45 @@ describe('api requests', () => {
 
     expect(await api.applications()).toBeNull()
   })
+
+  it('deleteDocument sends DELETE request', async () => {
+    setToken('my-token')
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await api.deleteDocument('app-1', 'doc-1')
+    expect(result).toBeNull()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/applications/app-1/documents/doc-1',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('uploadDocument sends raw file body with filename query param', async () => {
+    setToken('my-token')
+    const file = new File(['hello'], 'test.pdf', { type: 'application/pdf' })
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'd1', filename: 'test.pdf' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await api.uploadDocument('app-1', file.name, file)
+
+    expect(result.id).toBe('d1')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/applications/app-1/documents?filename=test.pdf',
+      expect.objectContaining({
+        method: 'POST',
+        body: file,
+      }),
+    )
+    const [, opts] = fetchMock.mock.calls[0]
+    expect(opts.headers.Authorization).toBe('Bearer my-token')
+  })
 })

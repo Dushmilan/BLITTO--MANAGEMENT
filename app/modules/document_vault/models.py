@@ -16,6 +16,7 @@ class Document(BaseModel):
     id: str
     application_id: str
     filename: str
+    file_size: int = 0
     # Local storage: reference to bytes held in memory or a file path.
     content_ref: str
     uploaded_by: str

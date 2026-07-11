@@ -87,6 +87,27 @@ export const api = {
       return res.json()
     })
   },
+  downloadDocument: async (appId, docId) => {
+    const token = getToken()
+    const res = await fetch(`/api/applications/${appId}/documents/${docId}/download`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    })
+    if (!res.ok) throw new Error('Download failed')
+    const blob = await res.blob()
+    const disposition = res.headers.get('Content-Disposition') || ''
+    const match = disposition.match(/filename="?(.+?)"?$/)
+    const filename = match ? match[1] : 'document.bin'
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+  deleteDocument: (appId, docId) =>
+    request(`/applications/${appId}/documents/${docId}`, { method: 'DELETE' }),
 
   // Prosecution / Office Actions
   officeActions: (appId) =>
@@ -120,4 +141,10 @@ export const api = {
       method: 'POST',
       params: { recipient_email: recipientEmail, application_ref: applicationRef, new_status: newStatus },
     }),
+
+  // Vault
+  vaultStatus: () => request('/vault/status'),
+  vaultUnlock: (masterKey) =>
+    request('/vault/unlock', { method: 'POST', body: { master_key: masterKey } }),
+  vaultLock: () => request('/vault/lock', { method: 'POST' }),
 }

@@ -30,10 +30,12 @@ def test_retrieve_unknown_returns_none() -> None:
 
 @pytest.fixture()
 def pki_store(tmp_path) -> PKIEncryptedStore:
-    return PKIEncryptedStore(
+    store = PKIEncryptedStore(
         cert_dir=str(tmp_path / "certs"),
         storage_dir=str(tmp_path / "docs"),
     )
+    store.unlock(store.generated_master_key)
+    return store
 
 
 def test_pki_encrypt_decrypt_roundtrip(pki_store: PKIEncryptedStore) -> None:
@@ -77,8 +79,10 @@ def test_pki_key_pair_persists(tmp_path) -> None:
     cert_dir = str(tmp_path / "certs")
     d1 = str(tmp_path / "d1")
     store1 = PKIEncryptedStore(cert_dir=cert_dir, storage_dir=d1)
+    store1.unlock(store1.generated_master_key)
     ref = store1.put(b"before restart")
     store2 = PKIEncryptedStore(cert_dir=cert_dir, storage_dir=d1)
+    store2.unlock(store1.generated_master_key)
     assert store2.get(ref) == b"before restart"
 
 
@@ -88,3 +92,140 @@ def test_pki_module_roundtrip(pki_store: PKIEncryptedStore) -> None:
     assert doc.filename == "claim.pdf"
     assert module.retrieve(doc.id) == b"claim content"
     assert len(module.list_for_application("app-2")) == 1
+
+
+# ---- Document storage adapter delete tests ----
+
+
+def test_local_store_delete_removes_content() -> None:
+    store = LocalDocumentStore()
+    ref = store.put(b"delete me")
+    assert store.get(ref) == b"delete me"
+    assert store.delete(ref) is True
+    assert store.get(ref) is None
+
+
+def test_local_store_delete_missing_returns_false() -> None:
+    store = LocalDocumentStore()
+    assert store.delete("mem:nonexistent") is False
+
+
+def test_pki_store_delete_removes_content(pki_store: PKIEncryptedStore) -> None:
+    ref = pki_store.put(b"delete me")
+    assert pki_store.get(ref) == b"delete me"
+    assert pki_store.delete(ref) is True
+    assert pki_store.get(ref) is None
+
+
+def test_pki_store_delete_missing_returns_false(pki_store: PKIEncryptedStore) -> None:
+    assert pki_store.delete("nonexistent.enc") is False
+
+
+# ---- Document Vault module delete tests ----
+
+
+def test_vault_delete_removes_document() -> None:
+    module = LocalDocumentVaultModule(store=LocalDocumentStore())
+    doc = module.store("app-1", "delete.pdf", b"content", "admin@blitto.edu")
+    assert len(module.list_for_application("app-1")) == 1
+    assert module.delete(doc.id) is True
+    assert module.retrieve(doc.id) is None
+    assert len(module.list_for_application("app-1")) == 0
+
+
+def test_vault_delete_unknown_returns_false() -> None:
+    module = LocalDocumentVaultModule(store=LocalDocumentStore())
+    assert module.delete("missing") is False
+
+
+# ---- File size tracking tests ----
+
+
+def test_store_records_file_size() -> None:
+    module = LocalDocumentVaultModule(store=LocalDocumentStore())
+    content = b"hello world"
+    doc = module.store("app-1", "hello.txt", content, "admin@blitto.edu")
+    assert doc.file_size == len(content)
+
+
+def test_store_records_file_size_empty() -> None:
+    module = LocalDocumentVaultModule(store=LocalDocumentStore())
+    doc = module.store("app-1", "empty.txt", b"", "admin@blitto.edu")
+    assert doc.file_size == 0
+
+
+# ---- PKI vault unlock/lock tests ----
+
+
+def test_pki_first_run_generates_master_key(tmp_path) -> None:
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    assert isinstance(store.generated_master_key, str)
+    assert len(store.generated_master_key) > 20
+    assert store.is_unlocked() is False
+
+
+def test_pki_unlock_with_correct_key(tmp_path) -> None:
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    key = store.generated_master_key
+    assert store.unlock(key) is True
+    assert store.is_unlocked() is True
+    assert store.unlock_remaining() > 0
+
+
+def test_pki_unlock_with_wrong_key_returns_false(tmp_path) -> None:
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    assert store.unlock("AAAA" + "=" * 40) is False
+    assert store.is_unlocked() is False
+
+
+def test_pki_lock_clears_unlocked_state(tmp_path) -> None:
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    store.unlock(store.generated_master_key)
+    assert store.is_unlocked() is True
+    store.lock()
+    assert store.is_unlocked() is False
+    assert store.unlock_remaining() == 0.0
+
+
+def test_pki_unlock_persists_across_store_recreation(tmp_path) -> None:
+    """Same RSA key used across server restarts with same master key."""
+    cert_dir = str(tmp_path / "certs2")
+    d1 = str(tmp_path / "d1")
+    store1 = PKIEncryptedStore(cert_dir=cert_dir, storage_dir=d1)
+    master_key = store1.generated_master_key
+    store1.unlock(master_key)
+    ref = store1.put(b"persistent content")
+    store1.lock()
+
+    store2 = PKIEncryptedStore(cert_dir=cert_dir, storage_dir=d1)
+    assert store2.generated_master_key is None  # not first run
+    assert store2.unlock(master_key) is True
+    assert store2.get(ref) == b"persistent content"
+
+
+def test_pki_put_get_while_locked_raises(tmp_path) -> None:
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    with pytest.raises(PermissionError, match="locked"):
+        store.put(b"test")
+    with pytest.raises(PermissionError, match="locked"):
+        store.get("some-ref")
+    with pytest.raises(PermissionError, match="locked"):
+        store.delete("some-ref")
+    store.unlock(store.generated_master_key)
+    ref = store.put(b"now it works")
+    assert store.get(ref) == b"now it works"
