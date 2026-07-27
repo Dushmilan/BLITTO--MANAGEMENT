@@ -4,7 +4,7 @@ import pytest
 
 from app.domain.common import ApplicationStatus
 from app.modules.application_intake.local import LocalApplicationIntakeModule
-from app.modules.application_intake.models import Disclosure
+from app.modules.application_intake.models import Disclosure, Inventor
 from app.modules.audit.local import LocalAuditModule
 from app.modules.filing_workflow.local import LocalFilingWorkflowModule
 from app.modules.notification.local import LocalNotificationModule
@@ -13,9 +13,8 @@ from app.modules.notification.local import LocalNotificationModule
 def _fixtures():
     intake = LocalApplicationIntakeModule()
     disclosure = Disclosure(
-        inventor_name="Dr. Ada Perera",
-        inventor_email="ada@uni.edu",
         title="Solar Desalination Membrane",
+        inventors=[Inventor(inventor_name="Dr. Ada Perera", inventor_email="ada@uni.edu")],
         summary="A low-cost membrane for solar-powered desalination.",
     )
     app = intake.create_application_shell(disclosure)
@@ -83,14 +82,21 @@ def test_defect_sheet_records_and_notifies() -> None:
 
 
 def test_defect_sheet_max_three() -> None:
-    app, workflow, _, _, _ = _fixtures()
+    app, workflow, intake, _, _ = _fixtures()
     workflow.mark_filed(app.id, "admin@blitto.edu")
+
     workflow.record_defect_sheet(app.id, 1, "First defect", "admin@blitto.edu")
+    assert intake.get_application(app.id).status == ApplicationStatus.DEFECT_SHEET_1
+
     workflow.record_defect_sheet(app.id, 2, "Second defect", "admin@blitto.edu")
+    assert intake.get_application(app.id).status == ApplicationStatus.DEFECT_SHEET_2
+
     workflow.record_defect_sheet(app.id, 3, "Third defect", "admin@blitto.edu")
+    assert intake.get_application(app.id).status == ApplicationStatus.DEFECT_SHEET_3
 
     with pytest.raises(ValueError, match="Maximum 3 defect sheets"):
         workflow.record_defect_sheet(app.id, 4, "Fourth defect", "admin@blitto.edu")
+    assert intake.get_application(app.id).status == ApplicationStatus.DEFECT_SHEET_3
 
 
 def test_mark_granted_updates_status_and_notifies() -> None:

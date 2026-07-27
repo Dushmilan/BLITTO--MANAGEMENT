@@ -5,6 +5,7 @@ import Button from '../components/ui/Button.jsx'
 import Card from '../components/ui/Card.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
 
+import Dropdown from '../components/ui/Dropdown.jsx'
 import SearchInput from '../components/ui/SearchInput.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import Input from '../components/ui/Input.jsx'
@@ -84,22 +85,116 @@ function PatentsTab({ apps, loading, onReload, user }) {
   const [filterStatus, setFilterStatus] = useState('')
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedApp, setSelectedApp] = useState(null)
-  const [newForm, setNewForm] = useState({ title: '', inventor_email: '', technology_area: '' })
+  const [newForm, setNewForm] = useState({ title: '', inventors: [{ inventor_name: '', inventor_email: '' }], technology_area: '' })
   const [creating, setCreating] = useState(false)
+  const [showGrantModal, setShowGrantModal] = useState(false)
+  const [grantingApp, setGrantingApp] = useState(null)
+  const [grantPatentNumber, setGrantPatentNumber] = useState('')
+  const [granting, setGranting] = useState(false)
+
+  function addInventor() {
+    setNewForm({ ...newForm, inventors: [...newForm.inventors, { inventor_name: '', inventor_email: '' }] })
+  }
+
+  function removeInventor(i) {
+    const inv = newForm.inventors.filter((_, idx) => idx !== i)
+    setNewForm({ ...newForm, inventors: inv.length ? inv : [{ inventor_name: '', inventor_email: '' }] })
+  }
+
+  function updateInventor(i, field, value) {
+    const inv = [...newForm.inventors]
+    inv[i] = { ...inv[i], [field]: value }
+    setNewForm({ ...newForm, inventors: inv })
+  }
 
   async function handleCreate(e) {
     e.preventDefault()
     setCreating(true)
     try {
-      await api.createApplication(newForm)
+      const payload = {
+        title: newForm.title,
+        inventors: newForm.inventors.filter(inv => inv.inventor_name || inv.inventor_email),
+        technology_area: newForm.technology_area,
+      }
+      await api.createApplication(payload)
       setShowNewModal(false)
-      setNewForm({ title: '', inventor_email: '', technology_area: '' })
+      setNewForm({ title: '', inventors: [{ inventor_name: '', inventor_email: '' }], technology_area: '' })
       await onReload()
     } catch (err) {
       alert(err.message)
     } finally {
       setCreating(false)
     }
+  }
+
+  async function handleFilingAction(app, action) {
+    try {
+      if (action === 'file') {
+        await api.markFiled(app.id)
+      } else if (action === 'acknowledge') {
+        await api.acknowledgeNipo(app.id)
+      } else if (action === 'defect') {
+        for (let n = 1; n <= 3; n++) {
+          try {
+            await api.recordDefectSheet(app.id, n, '')
+            break
+          } catch (err) {
+            if (err.message?.includes('already exists')) {
+              if (n === 3) throw new Error('Maximum 3 defect sheets reached')
+              continue
+            }
+            throw err
+          }
+        }
+      } else if (action === 'grant') {
+        setGrantingApp(app)
+        setGrantPatentNumber('')
+        setShowGrantModal(true)
+        return
+      } else if (action === 'reject') {
+        if (!confirm('Reject this patent?')) return
+        await api.markRejected(app.id)
+      }
+      await onReload()
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  async function handleGrantConfirm() {
+    if (!grantingApp || !grantPatentNumber.trim()) return
+    setGranting(true)
+    try {
+      await api.markGranted(grantingApp.id, grantPatentNumber.trim())
+      setShowGrantModal(false)
+      setGrantingApp(null)
+      setGrantPatentNumber('')
+      await onReload()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setGranting(false)
+    }
+  }
+
+  function getFilingItems(app) {
+    const items = []
+    const status = app.status?.toLowerCase()
+    if (status === 'draft') {
+      items.push({ label: 'File Patent', onClick: () => handleFilingAction(app, 'file') })
+    } else if (status === 'filed') {
+      items.push({ label: 'Acknowledge', onClick: () => handleFilingAction(app, 'acknowledge') })
+      items.push({ label: 'Add Defect Sheet', onClick: () => handleFilingAction(app, 'defect') })
+      items.push({ label: 'Grant', onClick: () => handleFilingAction(app, 'grant') })
+      items.push({ type: 'separator' })
+      items.push({ label: 'Reject', onClick: () => handleFilingAction(app, 'reject') })
+    } else if (['acknowledged', 'examination', 'defect_sheet_1', 'defect_sheet_2', 'defect_sheet_3'].includes(status)) {
+      items.push({ label: 'Add Defect Sheet', onClick: () => handleFilingAction(app, 'defect') })
+      items.push({ label: 'Grant', onClick: () => handleFilingAction(app, 'grant') })
+      items.push({ type: 'separator' })
+      items.push({ label: 'Reject', onClick: () => handleFilingAction(app, 'reject') })
+    }
+    return items
   }
 
   const filtered = apps.filter((app) => {
@@ -130,15 +225,54 @@ function PatentsTab({ apps, loading, onReload, user }) {
       render: (val) => <Badge>{val || 'draft'}</Badge>,
     },
     {
-      key: 'inventor_email',
-      label: 'Inventor',
-      render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
+      key: 'inventors',
+      label: 'Inventors',
+      render: (val) => {
+        if (!val || val.length === 0) return <span className="text-body-sm text-steel font-sans">{'\u2014'}</span>
+        return (
+          <div className="flex flex-wrap gap-x-sm gap-y-0.5">
+            {val.map((inv, i) => (
+              <span key={i} className="text-body-sm text-steel font-sans">
+                {inv.inventor_name || inv.inventor_email}{i < val.length - 1 ? ',' : ''}
+              </span>
+            ))}
+          </div>
+        )
+      },
     },
     {
       key: 'technology_area',
       label: 'Tech Area',
       render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
     },
+    ...(user?.role === 'admin'
+      ? [{
+          key: 'actions',
+          label: '',
+          render: (_, row) => {
+            const items = getFilingItems(row)
+            if (items.length === 0) return null
+            return (
+              <Dropdown
+                trigger={
+                  <button
+                    type="button"
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+                    aria-label="Filing actions"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                      <circle cx="8" cy="3" r="1.5" />
+                      <circle cx="8" cy="8" r="1.5" />
+                      <circle cx="8" cy="13" r="1.5" />
+                    </svg>
+                  </button>
+                }
+                items={items}
+              />
+            )
+          },
+        }]
+      : []),
   ]
 
   return (
@@ -206,14 +340,51 @@ function PatentsTab({ apps, loading, onReload, user }) {
             required
             placeholder="e.g. Novel Semiconductor Device Architecture"
           />
-          <Input
-            id="patent-inventor"
-            label="Inventor Email"
-            type="email"
-            value={newForm.inventor_email}
-            onChange={(e) => setNewForm({ ...newForm, inventor_email: e.target.value })}
-            placeholder="inventor@university.edu"
-          />
+          <div className="space-y-sm">
+            <label className="block text-micro text-muted uppercase tracking-wider font-sans">
+              Inventors
+            </label>
+            {newForm.inventors.map((inv, i) => (
+              <div key={i} className="flex gap-sm items-start">
+                <div className="flex-1 space-y-xs">
+                  <input
+                    type="text"
+                    value={inv.inventor_name}
+                    onChange={(e) => updateInventor(i, 'inventor_name', e.target.value)}
+                    placeholder="Inventor name"
+                    className="w-full h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md outline-none font-sans placeholder:text-steel focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+                  />
+                  <input
+                    type="email"
+                    value={inv.inventor_email}
+                    onChange={(e) => updateInventor(i, 'inventor_email', e.target.value)}
+                    placeholder="inventor@university.edu"
+                    className="w-full h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md outline-none font-sans placeholder:text-steel focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeInventor(i)}
+                  className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-md hover:bg-status-rejected/10 text-slate hover:text-status-rejected transition-colors duration-150 shrink-0"
+                  aria-label="Remove inventor"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M3 3l8 8M11 3l-8 8" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addInventor}
+              className="flex items-center gap-xs text-body-sm text-copper hover:text-copper-600 font-sans transition-colors duration-150"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 2v8M2 6h8" />
+              </svg>
+              Add inventor
+            </button>
+          </div>
           <Input
             id="patent-tech"
             label="Technology Area"
@@ -230,6 +401,32 @@ function PatentsTab({ apps, loading, onReload, user }) {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Grant Modal */}
+      <Modal open={showGrantModal} onClose={() => { setShowGrantModal(false); setGrantingApp(null) }} title="Grant Patent" size="sm">
+        <div className="flex flex-col gap-lg">
+          <p className="font-sans text-body-sm text-steel">
+            Enter the patent number for <span className="font-medium text-ink">{grantingApp?.title}</span>.
+          </p>
+          <Input
+            id="grant-patent-number"
+            label="Patent Number"
+            value={grantPatentNumber}
+            onChange={(e) => setGrantPatentNumber(e.target.value)}
+            required
+            placeholder="e.g. LK/PAT/2026/00123"
+            autoFocus
+          />
+          <div className="flex justify-end gap-sm pt-sm">
+            <Button variant="secondary" type="button" onClick={() => { setShowGrantModal(false); setGrantingApp(null) }}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="button" onClick={handleGrantConfirm} disabled={granting || !grantPatentNumber.trim()}>
+              {granting ? 'Granting...' : 'Confirm Grant'}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Patent Detail Modal */}
@@ -255,8 +452,14 @@ function PatentsTab({ apps, loading, onReload, user }) {
                 <p className="text-body-sm text-ink font-mono">{selectedApp.application_number || selectedApp.id}</p>
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Inventor</p>
-                <p className="text-body-sm text-ink font-sans">{selectedApp.inventor_email || '\u2014'}</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Inventors</p>
+                <div className="space-y-xs">
+                  {selectedApp.inventors && selectedApp.inventors.length > 0 ? selectedApp.inventors.map((inv, i) => (
+                    <p key={i} className="text-body-sm text-ink font-sans">
+                      {inv.inventor_name} <span className="text-steel">({inv.inventor_email})</span>
+                    </p>
+                  )) : <p className="text-body-sm text-steel font-sans">{'\u2014'}</p>}
+                </div>
               </div>
               <div>
                 <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Technology Area</p>
@@ -687,6 +890,15 @@ function DocumentsTab({ apps, user }) {
         )}
       </div>
     </div>
+  )
+}
+
+function FileIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5l-3-3z" />
+      <path d="M10 2v3h3" />
+    </svg>
   )
 }
 

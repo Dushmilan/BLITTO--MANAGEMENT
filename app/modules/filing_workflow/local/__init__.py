@@ -68,6 +68,12 @@ class LocalFilingWorkflowModule:
         app = self._intake.get_application(application_id)
         if app is None:
             raise ValueError(f"Application {application_id} not found")
+        status_key = f"DEFECT_SHEET_{sheet_number}"
+        app = self._intake.change_status(
+            application_id, ApplicationStatus[status_key], recorded_by
+        )
+        if app is None:
+            raise ValueError(f"Application {application_id} not found")
         sheet = DefectSheet(
             id=str(uuid.uuid4()),
             application_id=application_id,

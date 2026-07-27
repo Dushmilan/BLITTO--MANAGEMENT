@@ -1,4 +1,4 @@
-export const STATUS_OPTIONS = ['draft', 'filed', 'published', 'examination', 'granted', 'rejected', 'maintenance']
+export const STATUS_OPTIONS = ['draft', 'filed', 'acknowledged', 'defect_sheet_1', 'defect_sheet_2', 'defect_sheet_3', 'granted', 'rejected']
 
 export function buildStatusChangeItems(app, onStatusChange) {
   return STATUS_OPTIONS
