@@ -268,3 +268,44 @@ def test_parallel_flow_admin_and_inventor_views(client):
     assert app_ids_a == {app_a.json()["id"]}, "A sees only their app"
     assert app_ids_b == {app_b.json()["id"]}, "B sees only their app"
     assert app_ids_a.isdisjoint(app_ids_b)
+
+
+def test_acknowledge_notifies_both_inventors_via_api(client):
+    admin_hdrs = _admin_headers(client)
+
+    inv1_email = "ack-flow-a@uni.edu"
+    inv2_email = "ack-flow-b@uni.edu"
+
+    for email in (inv1_email, inv2_email):
+        client.post("/api/auth/register", json={
+            "email": email, "password": "secret",
+            "name": f"Ack Flow {email[0]}", "role": "inventor",
+        }, headers=admin_hdrs)
+
+    app = client.post("/api/applications", json={
+        "title": "Two-Inventor Acknowledge Test",
+        "inventors": [
+            {"inventor_name": "Ack Flow A", "inventor_email": inv1_email},
+            {"inventor_name": "Ack Flow B", "inventor_email": inv2_email},
+        ],
+        "summary": "Verifying both get notified on acknowledge",
+    }, headers=admin_hdrs)
+    assert app.status_code == 200
+    app_id = app.json()["id"]
+
+    file_resp = client.post(f"/api/admin/filing/{app_id}/file", headers=admin_hdrs)
+    assert file_resp.status_code == 200
+
+    ack_resp = client.post(f"/api/admin/filing/{app_id}/acknowledge", headers=admin_hdrs)
+    assert ack_resp.status_code == 200
+    assert ack_resp.json()["status"] == "ACKNOWLEDGED"
+
+    for email in (inv1_email, inv2_email):
+        login = client.post("/api/auth/login", json={
+            "email": email, "password": "secret",
+        })
+        inv_hdrs = {"Authorization": f"Bearer {login.json()['access_token']}"}
+        notifs = client.get("/api/notifications", headers=inv_hdrs).json()
+        ack_notifs = [n for n in notifs if n["subject"] == "Acknowledged"]
+        assert len(ack_notifs) == 1, f"{email} should have 1 Acknowledged notification"
+        assert ack_notifs[0]["recipient_email"] == email

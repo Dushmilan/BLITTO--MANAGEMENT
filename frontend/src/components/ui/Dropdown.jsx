@@ -41,18 +41,22 @@ export default function Dropdown({ trigger, items, className = '' }) {
       </div>
       {open && (
         <div className="absolute right-0 z-50 mt-1 min-w-[180px] bg-canvas rounded-md border border-hairline shadow-editorial-md py-1 animate-scale-in" role="menu">
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              onClick={() => handleItemClick(item)}
-              className="w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 transition-colors duration-150 flex items-center gap-sm"
-            >
-              {item.icon && <span className="text-steel">{item.icon}</span>}
-              {item.label}
-            </button>
-          ))}
+          {items.map((item, i) =>
+            item.type === 'separator' ? (
+              <div key={`sep-${i}`} role="separator" aria-hidden="true" className="my-1 border-t border-hairline" />
+            ) : (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                onClick={() => handleItemClick(item)}
+                className="w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 transition-colors duration-150 flex items-center gap-sm"
+              >
+                {item.icon && <span className="text-steel">{item.icon}</span>}
+                {item.label}
+              </button>
+            )
+          )}
         </div>
       )}
     </div>

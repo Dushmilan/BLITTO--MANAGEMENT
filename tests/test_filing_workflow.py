@@ -133,3 +133,48 @@ def test_mark_rejected_updates_status_and_notifies() -> None:
 
     entries = audit.for_application(app.id)
     assert any(e.action == "filing:rejected" for e in entries)
+
+
+def test_acknowledge_nipo_notifies_all_inventors() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure = Disclosure(
+        title="Graphene Battery Anode",
+        inventors=[
+            Inventor(inventor_name="Dr. Ada Perera", inventor_email="ada@uni.edu"),
+            Inventor(inventor_name="Dr. Bob Chen", inventor_email="bob@uni.edu"),
+        ],
+        summary="High-capacity graphene-based battery anode.",
+    )
+    app = intake.create_application_shell(disclosure)
+    notification = LocalNotificationModule()
+    audit = LocalAuditModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=audit,
+    )
+
+    workflow.mark_filed(app.id, "admin@blitto.edu")
+    result = workflow.acknowledge_nipo(app.id, "admin@blitto.edu")
+
+    assert result.status == ApplicationStatus.ACKNOWLEDGED
+    record = workflow.get_filing_record(app.id)
+    assert record is not None
+    assert record.nipo_acknowledged_at is not None
+    assert record.nipo_acknowledged_by == "admin@blitto.edu"
+
+    ack_notifications = [n for n in notification.sent_history() if n.subject == "Acknowledged"]
+    assert len(ack_notifications) == 2
+
+    emails = {n.recipient_email for n in ack_notifications}
+    assert emails == {"ada@uni.edu", "bob@uni.edu"}
+
+    expected_body = (
+        f"NIPO has acknowledged receipt of your patent application "
+        f"{app.title} ({app.id[:8]})."
+    )
+    for n in ack_notifications:
+        assert n.body == expected_body
+
+    entries = audit.for_application(app.id)
+    assert any(e.action == "filing:acknowledge_nipo" for e in entries)
