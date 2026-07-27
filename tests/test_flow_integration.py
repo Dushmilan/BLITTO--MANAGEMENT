@@ -309,3 +309,55 @@ def test_acknowledge_notifies_both_inventors_via_api(client):
         ack_notifs = [n for n in notifs if n["subject"] == "Acknowledged"]
         assert len(ack_notifs) == 1, f"{email} should have 1 Acknowledged notification"
         assert ack_notifs[0]["recipient_email"] == email
+
+
+def test_non_admin_cannot_acknowledge(client):
+    admin_hdrs = _admin_headers(client)
+
+    inv_email = "non-admin-ack@uni.edu"
+    client.post("/api/auth/register", json={
+        "email": inv_email, "password": "secret",
+        "name": "Non-Admin Ack", "role": "inventor",
+    }, headers=admin_hdrs)
+
+    app = client.post("/api/applications", json={
+        "title": "Non-Admin Ack Test",
+        "inventors": [{"inventor_name": "Non-Admin", "inventor_email": inv_email}],
+        "summary": "",
+    }, headers=admin_hdrs)
+    app_id = app.json()["id"]
+    client.post(f"/api/admin/filing/{app_id}/file", headers=admin_hdrs)
+
+    login = client.post("/api/auth/login", json={
+        "email": inv_email, "password": "secret",
+    })
+    inv_hdrs = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    resp = client.post(f"/api/admin/filing/{app_id}/acknowledge", headers=inv_hdrs)
+    assert resp.status_code == 403
+
+
+def test_acknowledge_nonexistent_app_returns_404(client):
+    admin_hdrs = _admin_headers(client)
+    resp = client.post("/api/admin/filing/nonexistent-id/acknowledge", headers=admin_hdrs)
+    assert resp.status_code == 404
+
+
+def test_acknowledge_without_filing_returns_404(client):
+    admin_hdrs = _admin_headers(client)
+
+    inv_email = "ack-no-file@uni.edu"
+    client.post("/api/auth/register", json={
+        "email": inv_email, "password": "secret",
+        "name": "Ack No File", "role": "inventor",
+    }, headers=admin_hdrs)
+
+    app = client.post("/api/applications", json={
+        "title": "Ack Without Filing",
+        "inventors": [{"inventor_name": "Ack No File", "inventor_email": inv_email}],
+        "summary": "",
+    }, headers=admin_hdrs)
+    app_id = app.json()["id"]
+
+    resp = client.post(f"/api/admin/filing/{app_id}/acknowledge", headers=admin_hdrs)
+    assert resp.status_code == 404

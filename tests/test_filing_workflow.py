@@ -178,3 +178,198 @@ def test_acknowledge_nipo_notifies_all_inventors() -> None:
 
     entries = audit.for_application(app.id)
     assert any(e.action == "filing:acknowledge_nipo" for e in entries)
+
+
+def test_acknowledge_only_notifies_own_inventors() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure_a = Disclosure(
+        title="Graphene Battery Anode",
+        inventors=[
+            Inventor(inventor_name="Alice", inventor_email="alice@uni.edu"),
+            Inventor(inventor_name="Bob", inventor_email="bob@uni.edu"),
+        ],
+        summary="App A",
+    )
+    disclosure_b = Disclosure(
+        title="Quantum Sensor Array",
+        inventors=[
+            Inventor(inventor_name="Charlie", inventor_email="charlie@uni.edu"),
+            Inventor(inventor_name="Dave", inventor_email="dave@uni.edu"),
+        ],
+        summary="App B",
+    )
+    app_a = intake.create_application_shell(disclosure_a)
+    app_b = intake.create_application_shell(disclosure_b)
+    notification = LocalNotificationModule()
+    audit = LocalAuditModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=audit,
+    )
+
+    workflow.mark_filed(app_a.id, "admin@blitto.edu")
+    workflow.mark_filed(app_b.id, "admin@blitto.edu")
+    workflow.acknowledge_nipo(app_a.id, "admin@blitto.edu")
+
+    ack_notifications = [n for n in notification.sent_history() if n.subject == "Acknowledged"]
+    assert len(ack_notifications) == 2
+
+    emails = {n.recipient_email for n in ack_notifications}
+    assert emails == {"alice@uni.edu", "bob@uni.edu"}
+
+
+def test_acknowledge_empty_inventors_falls_back_to_single() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure = Disclosure(
+        title="Empty Inventors Test",
+        inventors=[],
+        inventor_name="Fallback Inventor",
+        inventor_email="fallback@uni.edu",
+        summary="No explicit inventors — uses fallback fields.",
+    )
+    app = intake.create_application_shell(disclosure)
+    notification = LocalNotificationModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=LocalAuditModule(),
+    )
+    workflow.mark_filed(app.id, "admin@blitto.edu")
+    workflow.acknowledge_nipo(app.id, "admin@blitto.edu")
+
+    ack_notifications = [n for n in notification.sent_history() if n.subject == "Acknowledged"]
+    assert len(ack_notifications) == 1
+    assert ack_notifications[0].recipient_email == "fallback@uni.edu"
+
+
+def test_acknowledge_duplicate_inventor_email() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure = Disclosure(
+        title="Dup Email Test",
+        inventors=[
+            Inventor(inventor_name="Alice", inventor_email="alice@uni.edu"),
+            Inventor(inventor_name="Alice Clone", inventor_email="alice@uni.edu"),
+        ],
+        summary="Same email twice in inventors list.",
+    )
+    app = intake.create_application_shell(disclosure)
+    notification = LocalNotificationModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=LocalAuditModule(),
+    )
+    workflow.mark_filed(app.id, "admin@blitto.edu")
+    workflow.acknowledge_nipo(app.id, "admin@blitto.edu")
+
+    ack_notifications = [n for n in notification.sent_history() if n.subject == "Acknowledged"]
+    assert len(ack_notifications) == 2
+    assert all(n.recipient_email == "alice@uni.edu" for n in ack_notifications)
+
+
+def test_acknowledge_without_filing() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure = Disclosure(
+        title="No Filing Test",
+        inventors=[Inventor(inventor_name="Alice", inventor_email="alice@uni.edu")],
+        summary="Acknowledge without filing first.",
+    )
+    app = intake.create_application_shell(disclosure)
+    notification = LocalNotificationModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=LocalAuditModule(),
+    )
+
+    with pytest.raises(ValueError, match="No filing record"):
+        workflow.acknowledge_nipo(app.id, "admin@blitto.edu")
+
+    assert len(notification.sent_history()) == 0
+
+
+def test_acknowledge_nonexistent_app() -> None:
+    intake = LocalApplicationIntakeModule()
+    notification = LocalNotificationModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=LocalAuditModule(),
+    )
+
+    with pytest.raises(ValueError, match="not found"):
+        workflow.acknowledge_nipo("nonexistent-id", "admin@blitto.edu")
+
+
+def test_double_acknowledge_sends_notifications_twice() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure = Disclosure(
+        title="Double Ack Test",
+        inventors=[
+            Inventor(inventor_name="Alice", inventor_email="alice@uni.edu"),
+            Inventor(inventor_name="Bob", inventor_email="bob@uni.edu"),
+        ],
+        summary="Acknowledge twice.",
+    )
+    app = intake.create_application_shell(disclosure)
+    notification = LocalNotificationModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=LocalAuditModule(),
+    )
+    workflow.mark_filed(app.id, "admin@blitto.edu")
+
+    workflow.acknowledge_nipo(app.id, "admin@blitto.edu")
+    workflow.acknowledge_nipo(app.id, "admin@blitto.edu")
+
+    ack_notifications = [n for n in notification.sent_history() if n.subject == "Acknowledged"]
+    assert len(ack_notifications) == 4
+    emails = [n.recipient_email for n in ack_notifications]
+    assert emails.count("alice@uni.edu") == 2
+    assert emails.count("bob@uni.edu") == 2
+
+
+def test_same_inventor_on_two_apps_both_acknowledged() -> None:
+    intake = LocalApplicationIntakeModule()
+    disclosure_a = Disclosure(
+        title="App A",
+        inventors=[
+            Inventor(inventor_name="Alice", inventor_email="alice@uni.edu"),
+            Inventor(inventor_name="Bob", inventor_email="bob@uni.edu"),
+        ],
+        summary="App A",
+    )
+    disclosure_b = Disclosure(
+        title="App B",
+        inventors=[
+            Inventor(inventor_name="Alice", inventor_email="alice@uni.edu"),
+            Inventor(inventor_name="Charlie", inventor_email="charlie@uni.edu"),
+        ],
+        summary="App B",
+    )
+    app_a = intake.create_application_shell(disclosure_a)
+    app_b = intake.create_application_shell(disclosure_b)
+    notification = LocalNotificationModule()
+    workflow = LocalFilingWorkflowModule(
+        application_intake=intake,
+        notification=notification,
+        audit=LocalAuditModule(),
+    )
+    workflow.mark_filed(app_a.id, "admin@blitto.edu")
+    workflow.mark_filed(app_b.id, "admin@blitto.edu")
+
+    workflow.acknowledge_nipo(app_a.id, "admin@blitto.edu")
+    workflow.acknowledge_nipo(app_b.id, "admin@blitto.edu")
+
+    ack_notifications = [n for n in notification.sent_history() if n.subject == "Acknowledged"]
+    assert len(ack_notifications) == 4
+
+    alice_notifs = [n for n in ack_notifications if n.recipient_email == "alice@uni.edu"]
+    bob_notifs = [n for n in ack_notifications if n.recipient_email == "bob@uni.edu"]
+    charlie_notifs = [n for n in ack_notifications if n.recipient_email == "charlie@uni.edu"]
+
+    assert len(alice_notifs) == 2
+    assert len(bob_notifs) == 1
+    assert len(charlie_notifs) == 1
