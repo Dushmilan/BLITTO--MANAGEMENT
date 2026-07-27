@@ -4,17 +4,14 @@ import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import Card from '../components/ui/Card.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
-import Dropdown from '../components/ui/Dropdown.jsx'
+
 import SearchInput from '../components/ui/SearchInput.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import Input from '../components/ui/Input.jsx'
-import { buildStatusChangeItems, STATUS_OPTIONS } from '../utils/notifyHelpers.js'
-
-const DEADLINE_TYPES = ['filing_deadline', 'response_deadline', 'maintenance_fee', 'appeal_deadline', 'IDS_deadline', 'continuation_deadline']
+import { STATUS_OPTIONS } from '../utils/notifyHelpers.js'
 
 const TABS = [
   { id: 'list', label: 'Patents' },
-  { id: 'deadlines', label: 'Deadlines' },
   { id: 'documents', label: 'Documents' },
 ]
 
@@ -22,6 +19,8 @@ export default function PatentsPage({ user }) {
   const [activeTab, setActiveTab] = useState('list')
   const [apps, setApps] = useState([])
   const [loading, setLoading] = useState(true)
+  const isAdmin = user?.role === 'admin'
+  const visibleTabs = TABS.filter((t) => !t.adminOnly || isAdmin)
 
   useEffect(() => {
     loadApps()
@@ -44,14 +43,14 @@ export default function PatentsPage({ user }) {
       <div className="animate-slide-up">
         <h1 className="font-display text-heading-1 text-ink mb-xs">Patents</h1>
         <p className="text-body-md text-steel font-sans">
-          Manage patent portfolio, deadlines, and documents
+          Manage patent portfolio and documents
         </p>
       </div>
 
       {/* Tabs */}
       <div className="border-b border-hairline animate-slide-up stagger-1">
         <nav className="flex gap-lg -mb-px">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -70,9 +69,6 @@ export default function PatentsPage({ user }) {
       {/* Tab Content */}
       {activeTab === 'list' && (
         <PatentsTab apps={apps} loading={loading} onReload={loadApps} user={user} />
-      )}
-      {activeTab === 'deadlines' && (
-        <DeadlinesTab apps={apps} />
       )}
       {activeTab === 'documents' && (
         <DocumentsTab apps={apps} user={user} />
@@ -105,17 +101,6 @@ function PatentsTab({ apps, loading, onReload, user }) {
       setCreating(false)
     }
   }
-
-  async function handleStatusChange(app, newStatus) {
-    try {
-      await api.changeStatus(app.id, newStatus)
-      await onReload()
-    } catch (err) {
-      alert(err.message)
-    }
-  }
-
-  const getStatusItems = (app) => buildStatusChangeItems(app, handleStatusChange)
 
   const filtered = apps.filter((app) => {
     const matchesSearch = !search ||
@@ -154,32 +139,6 @@ function PatentsTab({ apps, loading, onReload, user }) {
       label: 'Tech Area',
       render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
     },
-    ...(user?.role === 'admin'
-      ? [
-          {
-            key: 'actions',
-            label: '',
-            render: (_, row) => (
-              <Dropdown
-                trigger={
-                  <button
-                    type="button"
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
-                    aria-label="Change status"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <circle cx="8" cy="3" r="1.5" />
-                      <circle cx="8" cy="8" r="1.5" />
-                      <circle cx="8" cy="13" r="1.5" />
-                    </svg>
-                  </button>
-                }
-                items={getStatusItems(row)}
-              />
-            ),
-          },
-        ]
-      : []),
   ]
 
   return (
@@ -308,213 +267,6 @@ function PatentsTab({ apps, loading, onReload, user }) {
 
           </div>
         )}
-      </Modal>
-    </div>
-  )
-}
-
-/* ─── Deadlines Tab ─── */
-
-function DeadlinesTab({ apps }) {
-  const [deadlines, setDeadlines] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [addForm, setAddForm] = useState({ application_id: '', type: 'filing_deadline', due_date: '' })
-  const [adding, setAdding] = useState(false)
-
-  useEffect(() => {
-    loadDeadlines()
-  }, [])
-
-  async function loadDeadlines() {
-    setLoading(true)
-    try {
-      const data = await api.deadlines()
-      setDeadlines(data || [])
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleAdd(e) {
-    e.preventDefault()
-    setAdding(true)
-    try {
-      await api.addDeadline(addForm.application_id, addForm.type, addForm.due_date)
-      setShowAddModal(false)
-      setAddForm({ application_id: '', type: 'filing_deadline', due_date: '' })
-      await loadDeadlines()
-    } catch (err) {
-      alert(err.message)
-    } finally {
-      setAdding(false)
-    }
-  }
-
-  function getDaysLeft(dateStr) {
-    if (!dateStr) return null
-    const diff = new Date(dateStr) - new Date()
-    return Math.ceil(diff / (1000 * 60 * 60 * 24))
-  }
-
-  function getUrgencyClass(days) {
-    if (days === null) return ''
-    if (days < 0) return 'bg-status-rejected/10 text-status-rejected'
-    if (days <= 7) return 'bg-status-rejected/10 text-status-rejected'
-    if (days <= 14) return 'bg-status-examination/10 text-status-examination'
-    if (days <= 30) return 'bg-status-filed/10 text-status-filed'
-    return 'bg-ivory-200 text-slate'
-  }
-
-  const filtered = deadlines.filter((d) => {
-    if (!search) return true
-    const s = search.toLowerCase()
-    return (
-      d.deadline_type?.toLowerCase().includes(s) ||
-      d.application_id?.toLowerCase().includes(s) ||
-      d.type?.toLowerCase().includes(s)
-    )
-  })
-
-  const columns = [
-    {
-      key: 'deadline_type',
-      label: 'Type',
-      render: (val, row) => (
-        <span className="font-medium font-sans text-ink capitalize">
-          {(val || row.type || 'deadline').replace(/_/g, ' ')}
-        </span>
-      ),
-    },
-    {
-      key: 'application_id',
-      label: 'Application',
-      render: (val) => <span className="font-mono text-steel text-body-sm">{val?.slice(0, 8) || '\u2014'}</span>,
-    },
-    {
-      key: 'due_date',
-      label: 'Due Date',
-      render: (val) => (
-        <span className="font-mono text-body-sm text-ink">
-          {val ? new Date(val).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '\u2014'}
-        </span>
-      ),
-    },
-    {
-      key: 'due_date',
-      label: 'Time Left',
-      render: (val) => {
-        const days = getDaysLeft(val)
-        return (
-          <span className={`text-caption-bold font-mono px-xs py-xxs rounded ${getUrgencyClass(days)}`}>
-            {days === null ? '\u2014' : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
-          </span>
-        )
-      },
-    },
-  ]
-
-  return (
-    <div className="space-y-xxl">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-lg animate-slide-up stagger-2">
-        <p className="text-body-md text-steel font-sans">
-          {deadlines.length} deadline{deadlines.length !== 1 ? 's' : ''} tracked
-        </p>
-        <Button variant="primary" onClick={() => setShowAddModal(true)}>
-          <svg className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M7 2v10M2 7h10" />
-          </svg>
-          Add Deadline
-        </Button>
-      </div>
-
-      <div className="animate-slide-up stagger-2">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search deadlines..."
-          className="max-w-[400px]"
-        />
-      </div>
-
-      <div className="animate-slide-up stagger-3">
-        {loading ? (
-          <div className="flex items-center justify-center py-section">
-            <div className="flex items-center gap-sm text-steel">
-              <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-                <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <span className="font-sans text-body-sm">Loading deadlines...</span>
-            </div>
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={filtered}
-            emptyMessage="No deadlines found. Add a deadline to start tracking."
-          />
-        )}
-      </div>
-
-      {/* Add Deadline Modal */}
-      <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Add Deadline" size="md">
-        <form onSubmit={handleAdd} className="flex flex-col gap-lg">
-          <div>
-            <label className="block text-body-sm-medium text-charcoal font-sans mb-xs">
-              Application <span className="text-copper ml-1 text-caption">*</span>
-            </label>
-            <select
-              value={addForm.application_id}
-              onChange={(e) => setAddForm({ ...addForm, application_id: e.target.value })}
-              required
-              className="w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans cursor-pointer focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
-            >
-              <option value="">Select an application</option>
-              {apps.map((app) => (
-                <option key={app.id} value={app.id}>
-                  {app.title} ({(app.application_number || app.id)?.slice(0, 8)})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-body-sm-medium text-charcoal font-sans mb-xs">
-              Deadline Type <span className="text-copper ml-1 text-caption">*</span>
-            </label>
-            <select
-              value={addForm.type}
-              onChange={(e) => setAddForm({ ...addForm, type: e.target.value })}
-              required
-              className="w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans cursor-pointer focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
-            >
-              {DEADLINE_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Input
-            id="due-date"
-            label="Due Date"
-            type="date"
-            value={addForm.due_date}
-            onChange={(e) => setAddForm({ ...addForm, due_date: e.target.value })}
-            required
-          />
-          <div className="flex justify-end gap-sm pt-sm">
-            <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={adding}>
-              {adding ? 'Adding...' : 'Add Deadline'}
-            </Button>
-          </div>
-        </form>
       </Modal>
     </div>
   )
@@ -938,11 +690,6 @@ function DocumentsTab({ apps, user }) {
   )
 }
 
-function FileIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-copper flex-shrink-0">
-      <path d="M10 2H4a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V8l-6-6z" />
-      <path d="M10 2v6h6" />
-    </svg>
-  )
-}
+/* ─── Filing Workflow Tab (admin only) ─── */
+
+

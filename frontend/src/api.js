@@ -64,15 +64,6 @@ export const api = {
       params: { new_status: newStatus },
     }),
 
-  // Docketing / Deadlines
-  deadlines: (applicationId) =>
-    request('/deadlines', { params: applicationId ? { application_id: applicationId } : {} }),
-  addDeadline: (appId, deadlineType, dueDate) =>
-    request(`/applications/${appId}/deadlines`, {
-      method: 'POST',
-      params: { type: deadlineType, due_date: dueDate },
-    }),
-
   // Documents
   documents: (appId) =>
     request(`/applications/${appId}/documents`),
@@ -120,7 +111,6 @@ export const api = {
 
   // Analytics
   portfolioSummary: () => request('/analytics/portfolio'),
-  deadlineReport: () => request('/analytics/deadlines'),
 
   // Notifications (for current user)
   notifications: () => request('/notifications'),
@@ -141,6 +131,28 @@ export const api = {
       method: 'POST',
       params: { recipient_email: recipientEmail, application_ref: applicationRef, new_status: newStatus },
     }),
+
+  // Filing Workflow
+  markFiled: (appId) =>
+    request(`/admin/filing/${appId}/file`, { method: 'POST' }),
+  acknowledgeNipo: (appId) =>
+    request(`/admin/filing/${appId}/acknowledge`, { method: 'POST' }),
+  recordDefectSheet: (appId, sheetNumber, description) =>
+    request(`/admin/filing/${appId}/defect-sheets`, {
+      method: 'POST',
+      params: { sheet_number: sheetNumber, description },
+    }),
+  listDefectSheets: (appId) =>
+    request(`/admin/filing/${appId}/defect-sheets`),
+  markGranted: (appId, patentNumber) =>
+    request(`/admin/filing/${appId}/grant`, {
+      method: 'POST',
+      params: { patent_number: patentNumber },
+    }),
+  markRejected: (appId) =>
+    request(`/admin/filing/${appId}/reject`, { method: 'POST' }),
+  filingStatus: (appId) =>
+    request(`/admin/filing/${appId}/status`),
 
   // Vault
   vaultStatus: () => request('/vault/status'),

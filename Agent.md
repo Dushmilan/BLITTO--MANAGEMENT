@@ -19,11 +19,6 @@ modules:
     seam_category: "in-process"
     priority: 3
     
-  - name: "docketing"
-    interface: "com.blitto.patent.modules.docketing.DocketingModule"
-    seam_category: "local-substitutable"
-    priority: 2
-    
   - name: "documentVault"
     interface: "com.blitto.patent.modules.documentVault.DocumentVaultModule"
     seam_category: "ports-and-adapters"
@@ -33,7 +28,7 @@ modules:
     interface: "com.blitto.patent.modules.prosecution.ProsecutionModule"
     seam_category: "in-process"
     priority: 5
-    depends_on: ["docketing", "documentVault"]
+    depends_on: ["documentVault"]
     
   - name: "authorization"
     interface: "com.blitto.patent.modules.authorization.AuthorizationModule"
@@ -91,7 +86,6 @@ review_checklist:
 
 priority_order:
   - "documentVault"
-  - "docketing"
   - "applicationIntake"
   - "authorization"
   - "prosecution"

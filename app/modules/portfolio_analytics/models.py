@@ -10,6 +10,4 @@ class PortfolioSummary(BaseModel):
     by_status: dict[str, int]
 
 
-class DeadlineReport(BaseModel):
-    open_deadlines: int
-    by_type: dict[str, int]
+

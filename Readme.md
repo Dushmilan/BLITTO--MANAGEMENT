@@ -117,7 +117,6 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 - AI/automated features
 - Integration with NIPO APIs (manual status updates)
 - Document versioning
-- Statutory deadline reminders
 - Inventor document upload capability
 - Public status check page without login
 

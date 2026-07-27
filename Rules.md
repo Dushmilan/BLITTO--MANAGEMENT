@@ -8,7 +8,7 @@
 > and test tooling are now Python (pytest, not JUnit/ArchUnit).
 
 ## Architecture Enforcement
-- Only 7 deep modules allowed: applicationIntake, docketing, documentVault, prosecution, authorization, notification, portfolioAnalytics
+- Only 6 deep modules allowed: applicationIntake, documentVault, prosecution, authorization, notification, portfolioAnalytics
 - No shallow wrappers — deletion test must pass for any new module
 - Every seam has exactly 2 adapters (production + test) — enforce via ArchUnit test
 

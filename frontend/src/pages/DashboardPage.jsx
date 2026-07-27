@@ -8,7 +8,6 @@ import Timeline from '../components/ui/Timeline.jsx'
 
 export default function DashboardPage() {
   const [apps, setApps] = useState([])
-  const [deadlines, setDeadlines] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -19,12 +18,6 @@ export default function DashboardPage() {
         setApps(appData || [])
       } catch (err) {
         setError(err.message)
-      }
-      try {
-        const deadlineData = await api.deadlines()
-        setDeadlines(deadlineData || [])
-      } catch {
-        // deadlines endpoint may require staff role
       }
       setLoading(false)
     }
@@ -51,14 +44,6 @@ export default function DashboardPage() {
     acc[s] = (acc[s] || 0) + 1
     return acc
   }, {})
-
-  const urgentDeadlines = deadlines
-    .filter((d) => {
-      if (!d.due_date) return false
-      const diff = new Date(d.due_date) - new Date()
-      return diff >= 0 && diff < 30 * 24 * 60 * 60 * 1000
-    })
-    .slice(0, 5)
 
   const recentApps = apps.slice(-5).reverse()
 
@@ -102,34 +87,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-xl">
-        <Card variant="base">
-          <div className="flex items-center justify-between mb-lg">
-            <h2 className="font-display text-heading-4 text-ink">Upcoming Deadlines</h2>
-            <Link to="/patents" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
-          </div>
-          {urgentDeadlines.length === 0 ? (
-            <p className="text-body-sm text-steel font-sans py-lg">No urgent deadlines.</p>
-          ) : (
-            <ul className="space-y-sm">
-              {urgentDeadlines.map((d, i) => {
-                const daysLeft = Math.ceil((new Date(d.due_date) - new Date()) / (1000 * 60 * 60 * 24))
-                return (
-                  <li key={d.id || i} className="flex items-center justify-between py-sm border-b last:border-0" style={{ borderColor: '#f0ede8' }}>
-                    <div>
-                      <p className="text-body-sm-medium text-ink font-sans">{d.deadline_type || d.type || 'Deadline'}</p>
-                      <p className="text-caption text-muted font-sans">{d.application_id}</p>
-                    </div>
-                    <span className="text-caption-bold font-mono px-xs py-xxs rounded" style={{ backgroundColor: daysLeft <= 7 ? 'rgba(220,38,38,0.1)' : daysLeft <= 14 ? 'rgba(217,119,6,0.1)' : '#f3f0ec', color: daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#d97706' : '#64748b' }}>
-                      {daysLeft}d
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </Card>
-
-        <Card variant="base" className="lg:col-span-2">
+        <Card variant="base" className="lg:col-span-3">
           <h2 className="font-display text-heading-4 text-ink mb-lg">Recent Activity</h2>
           <Timeline items={timelineItems} />
         </Card>

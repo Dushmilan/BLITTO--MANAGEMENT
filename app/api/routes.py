@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 import mimetypes
-from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from app.api.deps import AdminUser, AttorneyUser, CurrentUser, StaffUser, UnlockedVault, User
+from app.api.deps import AdminUser, CurrentUser, StaffUser, UnlockedVault, User
 from app.domain.common import ApplicationStatus, Role
 from app.modules.application_intake.models import Disclosure
 from app.modules.authorization.models import LoginRequest, RegisterRequest
-from app.modules.docketing.models import DeadlineType
 from app.modules.prosecution.models import OfficeActionKind
 from app.modules.notification.models import Notification
 
@@ -74,39 +72,9 @@ async def create_application(
 @router.get("/applications", tags=["applicationIntake"])
 async def list_applications(request: Request, user: User = Depends(CurrentUser)):
     # Confidentiality invariant #6: inventors see only their own.
-    applications = request.app.state.application_intake.list_applications()
     if user.role == Role.INVENTOR:
-        applications = [a for a in applications if a.inventor_email == user.email]
-    return applications
-
-
-# --- Docketing ---
-@router.post("/applications/{application_id}/deadlines", tags=["docketing"])
-async def add_deadline(
-    request: Request,
-    application_id: str,
-    deadline_type: DeadlineType = Query(..., alias="type"),
-    due_date: datetime = Query(...),
-    user: User = Depends(StaffUser),
-):
-    deadline = request.app.state.docketing.add_deadline(
-        application_id, deadline_type, due_date
-    )
-    request.app.state.audit.record(
-        f"add_deadline:{deadline_type.value}",
-        user_id=getattr(user, "id", None),
-        application_id=application_id,
-    )
-    return deadline
-
-
-@router.get("/deadlines", tags=["docketing"])
-async def list_deadlines(
-    request: Request,
-    application_id: Optional[str] = Query(None),
-    user: User = Depends(StaffUser),
-):
-    return request.app.state.docketing.list_deadlines(application_id)
+        return request.app.state.application_intake.get_applications_for_inventor(user.email)
+    return request.app.state.application_intake.list_applications()
 
 
 # --- Vault unlock/lock/status ---
@@ -246,7 +214,7 @@ async def receive_office_action(
     application_id: str,
     kind: OfficeActionKind = Query(...),
     body: str = Query(...),
-    user: User = Depends(AttorneyUser),
+    user: User = Depends(AdminUser),
 ):
     return request.app.state.prosecution.receive_office_action(application_id, kind, body)
 
@@ -264,10 +232,6 @@ async def change_status(
     )
     if application is None:
         raise HTTPException(status_code=404, detail="Unknown application")
-    # Notify the inventor on every status change (domain invariant).
-    request.app.state.notification.send_status_change(
-        application.inventor_email, application.id, new_status.value
-    )
     request.app.state.audit.record(
         f"status_change:{new_status.value}",
         user_id=getattr(admin, "id", None),
@@ -276,29 +240,10 @@ async def change_status(
     return application
 
 
-# --- Notification ---
-@router.post("/notify/status-change", tags=["notification"])
-async def notify_status_change(
-    request: Request,
-    recipient_email: str = Query(...),
-    application_ref: str = Query(...),
-    new_status: ApplicationStatus = Query(...),
-    user: User = Depends(CurrentUser),
-):
-    return request.app.state.notification.send_status_change(
-        recipient_email, application_ref, new_status.value
-    )
-
-
 # --- Portfolio Analytics ---
 @router.get("/analytics/portfolio", tags=["portfolioAnalytics"])
 async def portfolio_summary(request: Request, user: User = Depends(StaffUser)):
     return request.app.state.portfolio_analytics.portfolio_summary()
-
-
-@router.get("/analytics/deadlines", tags=["portfolioAnalytics"])
-async def deadline_report(request: Request, user: User = Depends(StaffUser)):
-    return request.app.state.portfolio_analytics.deadline_report()
 
 
 # --- Notifications (for current user) ---
@@ -325,13 +270,112 @@ async def notify_inventor(
     application = request.app.state.application_intake.get_application(application_id)
     if application is None:
         raise HTTPException(status_code=404, detail="Unknown application")
-    notification = request.app.state.notification.send_notification(
-        application.inventor_email, subject, body
-    )
+    inventors = request.app.state.application_intake.get_inventors_for_application(application_id)
+    sent = []
+    for inv in inventors:
+        notification = request.app.state.notification.send_notification(
+            inv.inventor_email, subject, body
+        )
+        sent.append(notification)
     request.app.state.audit.record(
         "send_notification",
         user_id=getattr(admin, "id", None),
         application_id=application_id,
     )
-    return notification
+    return sent
+
+
+# --- Filing Workflow (admin only) ---
+@router.post("/admin/filing/{application_id}/file", tags=["filingWorkflow"])
+async def filing_mark_filed(
+    request: Request,
+    application_id: str,
+    admin: User = Depends(AdminUser),
+):
+    workflow = request.app.state.filing_workflow
+    try:
+        return workflow.mark_filed(application_id, getattr(admin, "email", "admin"))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/admin/filing/{application_id}/acknowledge", tags=["filingWorkflow"])
+async def filing_acknowledge_nipo(
+    request: Request,
+    application_id: str,
+    admin: User = Depends(AdminUser),
+):
+    workflow = request.app.state.filing_workflow
+    try:
+        return workflow.acknowledge_nipo(application_id, getattr(admin, "email", "admin"))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/admin/filing/{application_id}/defect-sheets", tags=["filingWorkflow"])
+async def filing_record_defect_sheet(
+    request: Request,
+    application_id: str,
+    sheet_number: int = Query(...),
+    description: str = Query(...),
+    admin: User = Depends(AdminUser),
+):
+    workflow = request.app.state.filing_workflow
+    try:
+        return workflow.record_defect_sheet(
+            application_id, sheet_number, description,
+            getattr(admin, "email", "admin"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.get("/admin/filing/{application_id}/defect-sheets", tags=["filingWorkflow"])
+async def filing_list_defect_sheets(
+    request: Request,
+    application_id: str,
+    admin: User = Depends(AdminUser),
+):
+    return request.app.state.filing_workflow.get_defect_sheets(application_id)
+
+
+@router.post("/admin/filing/{application_id}/grant", tags=["filingWorkflow"])
+async def filing_mark_granted(
+    request: Request,
+    application_id: str,
+    patent_number: str = Query(...),
+    admin: User = Depends(AdminUser),
+):
+    workflow = request.app.state.filing_workflow
+    try:
+        return workflow.mark_granted(
+            application_id, patent_number, getattr(admin, "email", "admin"),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/admin/filing/{application_id}/reject", tags=["filingWorkflow"])
+async def filing_mark_rejected(
+    request: Request,
+    application_id: str,
+    admin: User = Depends(AdminUser),
+):
+    workflow = request.app.state.filing_workflow
+    try:
+        return workflow.mark_rejected(application_id, getattr(admin, "email", "admin"))
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/admin/filing/{application_id}/status", tags=["filingWorkflow"])
+async def filing_status(
+    request: Request,
+    application_id: str,
+    admin: User = Depends(AdminUser),
+):
+    record = request.app.state.filing_workflow.get_filing_record(application_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="No filing record found")
+    return record
 

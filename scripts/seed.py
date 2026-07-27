@@ -6,7 +6,8 @@ Creates 2 inventor accounts and 6 patent applications at various lifecycle stage
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import uuid
+from datetime import datetime, timezone
 
 from app.core.config import settings
 from app.domain.common import ApplicationStatus, Role
@@ -14,8 +15,8 @@ from app.modules.authorization.local import LocalAuthorizationModule
 from app.modules.authorization.models import RegisterRequest
 from app.modules.application_intake.local import LocalApplicationIntakeModule
 from app.modules.application_intake.models import Disclosure
-from app.modules.docketing.local import LocalDocketingModule
-from app.modules.docketing.models import DeadlineType
+from app.modules.filing_workflow.local import LocalFilingWorkflowModule
+from app.modules.filing_workflow.models import FilingRecord
 from app.modules.prosecution.local import LocalProsecutionModule
 from app.modules.prosecution.models import OfficeActionKind
 from app.modules.notification.local import LocalNotificationModule
@@ -24,9 +25,9 @@ from app.modules.notification.local import LocalNotificationModule
 def seed_demo_data(
     auth: LocalAuthorizationModule,
     intake: LocalApplicationIntakeModule,
-    docketing: LocalDocketingModule,
     prosecution: LocalProsecutionModule,
     notification: LocalNotificationModule | None = None,
+    filing_workflow: LocalFilingWorkflowModule | None = None,
 ) -> None:
     """Populate in-memory stores with demo users and patent applications."""
     now = datetime.now(timezone.utc)
@@ -56,7 +57,7 @@ def seed_demo_data(
         )
 
     _seed_app(
-        intake, docketing, prosecution,
+        intake, prosecution, filing_workflow,
         title="Solar Desalination Membrane",
         inventor_name=inv1_name,
         inventor_email=inv1_email,
@@ -65,26 +66,24 @@ def seed_demo_data(
     )
 
     _seed_app(
-        intake, docketing, prosecution,
+        intake, prosecution, filing_workflow,
         title="AI-Powered Crop Disease Detection",
         inventor_name=inv1_name,
         inventor_email=inv1_email,
         status=ApplicationStatus.FILED,
         application_number="P/2025/0142",
         nipo_reference="NIPO-2025-0142",
-        filing_deadline=now + timedelta(days=60),
         now=now,
     )
 
     _seed_app(
-        intake, docketing, prosecution,
+        intake, prosecution, filing_workflow,
         title="Biodegradable Medical Stents",
         inventor_name=inv2_name,
         inventor_email=inv2_email,
         status=ApplicationStatus.EXAMINATION,
         application_number="P/2024/0891",
         nipo_reference="NIPO-2024-0891",
-        filing_deadline=now - timedelta(days=30),
         office_action=(
             OfficeActionKind.OBJECTION,
             "Objection: claims 3-5 lack inventive step over prior art US2023/0145671. "
@@ -94,31 +93,28 @@ def seed_demo_data(
     )
 
     _seed_app(
-        intake, docketing, prosecution,
+        intake, prosecution, filing_workflow,
         title="Quantum Encryption Protocol",
         inventor_name=inv2_name,
         inventor_email=inv2_email,
         status=ApplicationStatus.GRANTED,
         application_number="P/2024/0312",
         nipo_reference="NIPO-2024-0312",
-        filing_deadline=now - timedelta(days=120),
         office_action=(
             OfficeActionKind.ALLOWANCE,
             "All claims allowed. Patent granted under NIPO Act No. 15 of 2024.",
         ),
-        deadlines_met=True,
         now=now,
     )
 
     _seed_app(
-        intake, docketing, prosecution,
+        intake, prosecution, filing_workflow,
         title="Low-Cost Water Purification System",
         inventor_name=inv1_name,
         inventor_email=inv1_email,
-        status=ApplicationStatus.PUBLISHED,
+        status=ApplicationStatus.ACKNOWLEDGED,
         application_number="P/2024/1205",
         nipo_reference="NIPO-2024-1205",
-        filing_deadline=now - timedelta(days=60),
         office_action=(
             OfficeActionKind.REJECTION,
             "Rejection: claims 1-2 anticipated by prior art. Claims 6-8 allowed. "
@@ -128,19 +124,17 @@ def seed_demo_data(
     )
 
     _seed_app(
-        intake, docketing, prosecution,
+        intake, prosecution, filing_workflow,
         title="Smart Agriculture IoT Sensor Network",
         inventor_name=inv2_name,
         inventor_email=inv2_email,
         status=ApplicationStatus.REJECTED,
         application_number="P/2024/0567",
         nipo_reference="NIPO-2024-0567",
-        filing_deadline=now - timedelta(days=90),
         office_action=(
             OfficeActionKind.REJECTION,
             "Final rejection: all claims rejected under Section 35. No response filed within deadline.",
         ),
-        missed_deadline=True,
         now=now,
     )
 
@@ -154,7 +148,7 @@ def seed_demo_data(
             )
             notification.send_notification(
                 inv1_email,
-                "Patent Filed: AI-Powered Crop Disease Detection",
+                "Patent Filed",
                 "Your patent application AI-Powered Crop Disease Detection has been successfully filed with reference P/2025/0142.",
             )
         if inv2_email:
@@ -165,15 +159,15 @@ def seed_demo_data(
             )
             notification.send_notification(
                 inv2_email,
-                "Patent Granted: Quantum Encryption Protocol",
+                "Patent Received",
                 "Congratulations! Your patent application Quantum Encryption Protocol has been granted under NIPO-2024-0312.",
             )
 
 
 def _seed_app(
     intake: LocalApplicationIntakeModule,
-    docketing: LocalDocketingModule,
     prosecution: LocalProsecutionModule,
+    filing_workflow: LocalFilingWorkflowModule | None = None,
     *,
     title: str,
     inventor_name: str,
@@ -181,10 +175,7 @@ def _seed_app(
     status: ApplicationStatus,
     application_number: str | None = None,
     nipo_reference: str | None = None,
-    filing_deadline: datetime | None = None,
     office_action: tuple[OfficeActionKind, str] | None = None,
-    deadlines_met: bool = False,
-    missed_deadline: bool = False,
     now: datetime,
 ) -> None:
     disclosure = Disclosure(
@@ -200,14 +191,14 @@ def _seed_app(
     status_order = [
         ApplicationStatus.DRAFT,
         ApplicationStatus.FILED,
-        ApplicationStatus.PUBLISHED,
+        ApplicationStatus.ACKNOWLEDGED,
         ApplicationStatus.EXAMINATION,
         ApplicationStatus.GRANTED,
     ]
     if status == ApplicationStatus.REJECTED:
         target_path = [
             ApplicationStatus.FILED,
-            ApplicationStatus.PUBLISHED,
+            ApplicationStatus.ACKNOWLEDGED,
             ApplicationStatus.EXAMINATION,
             ApplicationStatus.REJECTED,
         ]
@@ -218,30 +209,34 @@ def _seed_app(
     for s in target_path:
         intake.change_status(app.id, s, changed_by="admin@blitto.local")
 
-    if filing_deadline is not None:
-        deadline = docketing.add_deadline(
-            app.id, DeadlineType.FILING, filing_deadline
-        )
-        if deadlines_met:
-            docketing.mark_met(deadline.id)
-        elif missed_deadline:
-            docketing.mark_missed(deadline.id)
-
     if office_action is not None:
         kind, body = office_action
         action = prosecution.receive_office_action(app.id, kind, body)
 
-        if kind != OfficeActionKind.ALLOWANCE and not missed_deadline:
+        if kind != OfficeActionKind.ALLOWANCE:
             prosecution.file_response(
                 app.id,
                 action.id,
                 f"Response to {kind.value}: Applicant respectfully submits arguments "
                 f"and amendments addressing the examiner's concerns.",
             )
-            response_deadlines = [
-                d
-                for d in docketing.list_deadlines(app.id)
-                if d.type == DeadlineType.RESPONSE
-            ]
-            if response_deadlines:
-                docketing.mark_met(response_deadlines[-1].id)
+
+    if filing_workflow is not None and status != ApplicationStatus.DRAFT:
+        now_utc = datetime.now(timezone.utc)
+        record = FilingRecord(
+            id=str(uuid.uuid4()),
+            application_id=app.id,
+            filed_by="admin@blitto.local",
+            filed_date=now_utc,
+        )
+        if status in (ApplicationStatus.ACKNOWLEDGED, ApplicationStatus.EXAMINATION, ApplicationStatus.GRANTED, ApplicationStatus.REJECTED):
+            record.nipo_acknowledged_at = now_utc
+            record.nipo_acknowledged_by = "admin@blitto.local"
+        if status == ApplicationStatus.GRANTED:
+            record.granted_at = now_utc
+            record.granted_by = "admin@blitto.local"
+            record.patent_number = application_number
+        if status == ApplicationStatus.REJECTED:
+            record.rejected_at = now_utc
+            record.rejected_by = "admin@blitto.local"
+        filing_workflow._records[app.id] = record
