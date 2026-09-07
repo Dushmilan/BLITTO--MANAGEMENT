@@ -17,6 +17,7 @@ from typing import Optional
 import jwt
 
 from app.core.config import settings
+from app.core.email_policy import institution_error, is_institution_email, normalize_email
 from app.domain.common import Role
 from app.modules.authorization.interface import AuthorizationModule
 from app.modules.authorization.models import LoginRequest, RegisterRequest, Token, User
@@ -33,11 +34,14 @@ class LocalAuthorizationModule:
         self._passwords: dict[str, str] = {}
 
     def register(self, request: RegisterRequest) -> User:
-        if any(u.email == request.email for u in self._users.values()):
-            raise ValueError(f"email already registered: {request.email}")
+        email = normalize_email(request.email)
+        if not is_institution_email(email):
+            raise ValueError(institution_error())
+        if any(u.email == email for u in self._users.values()):
+            raise ValueError(f"email already registered: {email}")
         user = User(
             id=str(uuid.uuid4()),
-            email=request.email,
+            email=email,
             role=request.role,
             user_code=request.user_code,
         )
@@ -47,7 +51,10 @@ class LocalAuthorizationModule:
         return user
 
     def login(self, request: LoginRequest) -> Optional[Token]:
-        user = next((u for u in self._users.values() if u.email == request.email), None)
+        email = normalize_email(request.email)
+        if not is_institution_email(email):
+            return None
+        user = next((u for u in self._users.values() if u.email == email), None)
         if user is None:
             return None
         if self._passwords.get(user.id) != request.password:
@@ -70,7 +77,11 @@ class LocalAuthorizationModule:
         sub = payload.get("sub")
         if not sub:
             return None
-        return self._users.get(sub)
+        user = self._users.get(sub)
+        # Lock out any legacy non-institution accounts.
+        if user is not None and not is_institution_email(user.email):
+            return None
+        return user
 
     def _issue(self, user: User) -> Token:
         payload = {

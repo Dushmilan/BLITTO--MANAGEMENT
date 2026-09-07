@@ -27,10 +27,9 @@ class ApplicationStatus(str, Enum):
 
 
 class Role(str, Enum):
-    ADMIN = "admin"
-    ATTORNEY = "attorney"
-    PARALEGAL = "paralegal"
-    INVENTOR = "inventor"
+    USER = "user"
+    DIRECTOR = "director"
+    MD = "md"
 
 
 class AuditLog(BaseModel):

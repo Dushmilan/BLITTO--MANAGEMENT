@@ -31,27 +31,26 @@
 ## Domain Invariants
 
 1. **Deadline integrity** -- A deadline missed = application abandoned (with rare exceptions). No soft deadlines.
-2. **Role separation** -- Attorneys prosecute; Paralegals docket; Inventors disclose; Admins manage users. No role can act for another.
+2. **Role separation** -- Directors and MDs prosecute and docket; Users disclose; MD manages users. No role can act for another.
 3. **Document immutability** -- Once filed with the patent office, a document cannot be modified. Only new documents can be added.
 4. **Single source of truth for deadlines** -- The docketing module is the sole authority on deadlines. No duplicate tracking elsewhere.
 5. **Audit trail** -- Every state change on an application, deadline, or document is logged with actor, timestamp, and reason.
-6. **Confidentiality** -- Inventors see only their own applications. Paralegals see assigned dockets. Attorneys see their prosecutions. Admins see all.
+6. **Confidentiality** -- Users see only their own applications. Directors and MDs share the full docket and portfolio.
 
 ## User Roles (RBAC)
 
 | Role | Permissions |
 |------|-------------|
-| **Admin** | User management, role assignment, system config, full portfolio view, audit logs |
-| **Attorney** | Prosecute assigned applications, file responses, manage office actions, view assigned dockets |
-| **Paralegal** | Docket management, deadline tracking, document upload, form preparation, IDS management |
-| **Inventor** | View own applications, upload invention disclosures, review drafts, receive notifications |
+| **MD** | User management, role assignment, system config, full portfolio view, audit logs |
+| **Director** | Same use case as MD except user management: intake, docketing, uploads, office actions, status changes, portfolio view |
+| **User** | View own applications, review status, download granted patents, receive notifications |
 
 ## Key Workflows
 
-1. **Intake** -- Inventor submits disclosure > Paralegal creates application shell > Attorney reviews > File provisional/non-provisional
-2. **Prosecution** -- Office action received > Paralegal dockets deadline > Attorney prepares response > File response > Repeat
+1. **Intake** -- User submits disclosure > Director creates application shell > Director/MD reviews > File provisional/non-provisional
+2. **Prosecution** -- Office action received > Director dockets deadline > Director prepares response > File response > Repeat
 3. **Grant & Maintenance** -- Patent grants > Maintenance fee deadlines docketed > Fees paid > Patent maintained
-4. **Reporting** -- Portfolio dashboards, deadline reports, attorney workload, maintenance fee forecasts
+4. **Reporting** -- Portfolio dashboards, deadline reports, director workload, maintenance fee forecasts
 
 ## External Dependencies (Dependency Categories)
 

@@ -9,15 +9,15 @@ from app.modules.portfolio_analytics.local import LocalPortfolioAnalyticsModule
 
 def test_notification_mocked() -> None:
     note = LocalNotificationModule()
-    sent = note.send_status_change("a@uni.edu", "app-1", "EXAMINATION")
-    assert sent.recipient_email == "a@uni.edu"
+    sent = note.send_status_change("a@pdn.ac.lk", "app-1", "EXAMINATION")
+    assert sent.recipient_email == "a@pdn.ac.lk"
     assert len(note.sent_history()) == 1
 
 
 def test_portfolio_summary_and_deadlines() -> None:
     intake = LocalApplicationIntakeModule()
     intake.create_application_shell(
-        Disclosure(inventor_name="A", inventor_email="a@uni.edu", title="X", summary="s")
+        Disclosure(inventor_name="A", inventor_email="a@pdn.ac.lk", title="X", summary="s")
     )
     docketing = LocalDocketingModule()
     analytics = LocalPortfolioAnalyticsModule(application_intake=intake, docketing=docketing)

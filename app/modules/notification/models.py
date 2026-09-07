@@ -16,4 +16,5 @@ class Notification(BaseModel):
     recipient_email: str
     subject: str
     body: str
+    kind: str = "status_change"
     sent_at: datetime = Field(default_factory=_now)

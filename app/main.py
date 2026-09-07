@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 
 
 def _bootstrap_admin(auth) -> None:
-    """Create a default admin so the system is usable out-of-box (Readme flow).
+    """Create a default MD so the system is usable out-of-box (Readme flow).
 
     Creds come from env: BLITTO_BOOTSTRAP_ADMIN_EMAIL / _PASSWORD.
     Skipped if already set or env not provided.
@@ -51,11 +51,17 @@ def _bootstrap_admin(auth) -> None:
     password = settings.bootstrap_admin_password
     if not email or not password:
         return
+    from app.core.email_policy import is_institution_email
+
+    if not is_institution_email(email):
+        raise ValueError(
+            f"Bootstrap admin email must be an institution address: {email}"
+        )
     if any(u.email == email for u in auth._users.values()):
         return
-    # register() stores the password when provided, so the admin can log in.
+    # register() stores the password when provided, so the MD can log in.
     auth.register(
-        RegisterRequest(email=email, role=Role.ADMIN, password=password)
+        RegisterRequest(email=email, role=Role.MD, password=password)
     )
 
 

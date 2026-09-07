@@ -19,6 +19,7 @@ import httpx
 import jwt
 
 from app.core.config import settings
+from app.core.email_policy import is_institution_email
 from app.modules.authorization.interface import AuthorizationModule
 from app.modules.authorization.models import RegisterRequest, Token, User
 
@@ -67,6 +68,9 @@ class BetterAuthAuthorizationModule:
             )
         except jwt.PyJWTError:
             return None
+        email = payload.get("email", "")
+        if not is_institution_email(email):
+            return None
         return User(
             id=payload.get("sub", ""),
             email=payload.get("email", ""),
@@ -91,8 +95,8 @@ class BetterAuthAuthorizationModule:
 def _coerce_role(payload: dict) -> Role:
     from app.domain.common import Role
 
-    raw = payload.get("role", "inventor")
+    raw = payload.get("role", "user")
     try:
         return Role(raw)
     except ValueError:
-        return Role.INVENTOR
+        return Role.USER

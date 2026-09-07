@@ -23,15 +23,15 @@ async def get_current_user(request: Request) -> User:
 CurrentUser = get_current_user
 
 
-async def require_admin(request: Request) -> User:
-    """Role-separation (CONTEXT.md RBAC): only admins manage users/auth."""
+async def require_md(request: Request) -> User:
+    """Only the MD manages users and mints tokens for others."""
     user = await get_current_user(request)
-    if user.role != Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Admin role required")
+    if user.role != Role.MD:
+        raise HTTPException(status_code=403, detail="MD role required")
     return user
 
 
-AdminUser = require_admin
+MDUser = require_md
 
 
 def require_role(*roles: Role):
@@ -49,21 +49,20 @@ def require_role(*roles: Role):
     return _gate
 
 
-# Office actions are prosecuted by attorneys only (CONTEXT.md RBAC).
-AttorneyUser = require_role(Role.ATTORNEY)
-
-
 async def require_staff(request: Request) -> User:
-    """Internal staff (admin / attorney / paralegal) for docketing & analytics.
+    """Director / MD shared powers (docketing, vault, analytics, prosecution).
 
-    Inventors (confidentiality invariant #6) see only their own application
+    Users (confidentiality invariant #6) see only their own application
     status, never the internal docket/portfolio.
     """
     user = await get_current_user(request)
-    if user.role not in (Role.ADMIN, Role.ATTORNEY, Role.PARALEGAL):
-        raise HTTPException(status_code=403, detail="Staff role required")
+    if user.role not in (Role.DIRECTOR, Role.MD):
+        raise HTTPException(status_code=403, detail="Director or MD role required")
     return user
 
 
 StaffUser = require_staff
 
+# Backwards-compatible aliases (prefer MDUser / StaffUser in new code).
+AdminUser = require_md
+AttorneyUser = require_role(Role.DIRECTOR, Role.MD)

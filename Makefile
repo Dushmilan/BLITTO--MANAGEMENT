@@ -16,6 +16,12 @@ caveman-fix: ## Apply caveman-review fixes to staged changes (opencode)
 test:
 	pytest
 
+test-cov: ## Run suite with coverage gate (fail under 80%)
+	pytest --cov=app --cov-report=term-missing -q
+
+test-e2e: ## Playwright journeys vs live server (no browsers needed)
+	pytest tests/journeys -q
+
 check: test graph
 
 format:  ## Byte-compile all modules (cross-platform)

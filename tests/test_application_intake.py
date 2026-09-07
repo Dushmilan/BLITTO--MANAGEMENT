@@ -8,7 +8,7 @@ def test_submit_disclosure_creates_application_shell() -> None:
     module = LocalApplicationIntakeModule()
     disclosure = Disclosure(
         inventor_name="A. Inventor",
-        inventor_email="a@uni.edu",
+        inventor_email="a@pdn.ac.lk",
         title="Solar Widget",
         summary="A widget.",
     )

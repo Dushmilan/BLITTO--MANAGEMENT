@@ -26,36 +26,46 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 
 ---
 
-## User Roles
+## User Roles (3 types)
 
-### Admin
-- Full system access
+### MD
+- Full system access (owns user management: creates Director/MD accounts)
 - Create and manage patent records
-- Generate and assign User Codes to inventors
+- Generate and assign User Codes to users
 - Upload, encrypt, and manage PDF documents
 - Change patent application status
-- View audit logs
+- View audit logs and the missing-documents worklist
 - Search all patent metadata
 
-### Inventor
+### Director
+- Same use case as MD, except user management (cannot create Director/MD accounts)
+- Create and manage patent records
+- Upload and manage PDF documents, docket deadlines, handle office actions
+- Change patent application status
+- View the missing-documents worklist
+
+### User
 - Register using a User Code provided by BLITTO
 - Log in with email and password
 - View only their own patents (reference code + status)
 - Receive email notifications on status changes
-- **No document access, no uploads, no metadata beyond status**
+- Download own GRANTED patent documents (timestamped, audited); if granted but
+  no document is uploaded yet, request it from BLITTO via the portal
+- Register / log in with institution mail only (`pdn.ac.lk`)
+- **No uploads, no metadata beyond status**
 
 ---
 
 ## Authentication Flow
 
 1. **Physical Submission**: Inventor submits patent application physically to BLITTO
-2. **Record Creation**: Admin creates patent record in the system
-3. **User Code Generation**: Admin generates a unique User Code (e.g., `INV-2026-0042`) and provides it to the inventor
-4. **Registration**: Inventor registers on the platform using:
+2. **Record Creation**: Director/MD creates patent record in the system
+3. **User Code Generation**: Director/MD generates a unique User Code (e.g., `INV-2026-0042`) and provides it to the user
+4. **Registration**: User registers on the platform using:
    - User Code (provided by BLITTO)
-   - Email address
+   - Institution email address
    - Self-chosen password
-5. **Access**: Inventor logs in to view patent status and receive notifications
+5. **Access**: User logs in to view patent status and receive notifications
 
 ---
 
@@ -67,7 +77,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
                       ↘ [Rejected]
 ```
 
-> **Status transitions are Admin-only.** Inventors receive email notifications on any status change.
+> **Status transitions are Director/MD-only.** Users receive email notifications on any status change.
 
 ---
 
@@ -85,7 +95,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 
 | Entity | Key Fields |
 |--------|-----------|
-| **Users** | `id`, `email`, `role` (admin/inventor), `user_code`, `supabase_uid`, `created_at` |
+| **Users** | `id`, `email`, `role` (user/director/md), `user_code`, `supabase_uid`, `created_at` |
 | **Patents** | `id`, `title`, `application_number`, `user_code`, `status`, `nipo_reference`, `inventor_name`, `inventor_email`, `created_at`, `updated_at` |
 | **Documents** | `id`, `patent_id`, `filename`, `google_drive_file_id`, `encryption_key_id`, `uploaded_by`, `uploaded_at` |
 | **StatusHistory** | `id`, `patent_id`, `old_status`, `new_status`, `changed_by`, `changed_at` |
@@ -97,7 +107,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 
 - **Monolith architecture** — single Spring Boot deployable
 - **Authentication**: JWT tokens via Supabase Auth
-- **Authorization**: Role checks on every endpoint; inventors filtered by `user_code`
+- **Authorization**: Role checks on every endpoint; users filtered by `user_code`
 - **File handling**: Stream to memory → encrypt → upload to Google Drive; reverse for download
 
 ---

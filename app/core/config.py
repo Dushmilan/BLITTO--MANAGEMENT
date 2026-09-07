@@ -16,6 +16,17 @@ class Settings(BaseSettings):
     better_auth_audience: str = ""
     # Secret for the local-stub auth adapter (better-auth handles secrets in prod).
     auth_secret: str = "change-me-in-production"
+    # Institution-mail gate: only these domains may register/log in.
+    # Env: BLITTO_ALLOWED_EMAIL_DOMAINS="pdn.ac.lk,sci.pdn.ac.lk" (comma-separated).
+    allowed_email_domains: str = "pdn.ac.lk"
+
+    @property
+    def allowed_email_domain_list(self) -> list[str]:
+        return [
+            d.strip().lower().lstrip("@")
+            for d in self.allowed_email_domains.split(",")
+            if d.strip()
+        ]
     # Optional first-admin bootstrap so the system is usable out-of-box.
     bootstrap_admin_email: str = ""
     bootstrap_admin_password: str = ""
