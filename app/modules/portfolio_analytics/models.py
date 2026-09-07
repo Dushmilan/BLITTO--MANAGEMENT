@@ -13,3 +13,6 @@ class PortfolioSummary(BaseModel):
 class DeadlineReport(BaseModel):
     open_deadlines: int
     by_type: dict[str, int]
+
+
+

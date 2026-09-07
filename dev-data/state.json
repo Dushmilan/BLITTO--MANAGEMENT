@@ -1,0 +1,386 @@
+{
+  "version": 1,
+  "authorization": {
+    "users": {
+      "bb0574d1-8818-4faf-a5b9-0bc94bb8fb87": {
+        "id": "bb0574d1-8818-4faf-a5b9-0bc94bb8fb87",
+        "email": "admin@blitto.local",
+        "role": "admin",
+        "user_code": null,
+        "created_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "e80c69f3-0610-4f87-be07-d6a43ecd4560": {
+        "id": "e80c69f3-0610-4f87-be07-d6a43ecd4560",
+        "email": "inventor1@peradeniya.lk",
+        "role": "inventor",
+        "user_code": null,
+        "created_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "dd64f74b-0352-4616-a2bc-ae8b0a546efe": {
+        "id": "dd64f74b-0352-4616-a2bc-ae8b0a546efe",
+        "email": "inventor2@peradeniya.lk",
+        "role": "inventor",
+        "user_code": null,
+        "created_at": "2026-07-27T14:56:45.727229Z"
+      }
+    },
+    "passwords": {
+      "bb0574d1-8818-4faf-a5b9-0bc94bb8fb87": "admin1234",
+      "e80c69f3-0610-4f87-be07-d6a43ecd4560": "password",
+      "dd64f74b-0352-4616-a2bc-ae8b0a546efe": "password"
+    }
+  },
+  "application_intake": {
+    "store": {
+      "fe0a5e37-1c25-4991-97d1-e686ecf796da": {
+        "id": "fe0a5e37-1c25-4991-97d1-e686ecf796da",
+        "title": "Solar Desalination Membrane",
+        "inventors": [],
+        "status": "DRAFT",
+        "application_number": null,
+        "nipo_reference": null,
+        "created_at": "2026-07-27T14:56:45.727229Z",
+        "updated_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "788e66c0-ea77-46eb-ba20-2c693bef2611": {
+        "id": "788e66c0-ea77-46eb-ba20-2c693bef2611",
+        "title": "AI-Powered Crop Disease Detection",
+        "inventors": [],
+        "status": "FILED",
+        "application_number": "P/2025/0142",
+        "nipo_reference": "NIPO-2025-0142",
+        "created_at": "2026-07-27T14:56:45.727229Z",
+        "updated_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4": {
+        "id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+        "title": "Biodegradable Medical Stents",
+        "inventors": [],
+        "status": "EXAMINATION",
+        "application_number": "P/2024/0891",
+        "nipo_reference": "NIPO-2024-0891",
+        "created_at": "2026-07-27T14:56:45.727229Z",
+        "updated_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "73da4f48-5606-4f40-ae0a-39df7dfffa42": {
+        "id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+        "title": "Quantum Encryption Protocol",
+        "inventors": [],
+        "status": "GRANTED",
+        "application_number": "P/2024/0312",
+        "nipo_reference": "NIPO-2024-0312",
+        "created_at": "2026-07-27T14:56:45.727229Z",
+        "updated_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "05ba72a3-e182-463b-a051-b5aac182d6f7": {
+        "id": "05ba72a3-e182-463b-a051-b5aac182d6f7",
+        "title": "Low-Cost Water Purification System",
+        "inventors": [],
+        "status": "ACKNOWLEDGED",
+        "application_number": "P/2024/1205",
+        "nipo_reference": "NIPO-2024-1205",
+        "created_at": "2026-07-27T14:56:45.727229Z",
+        "updated_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d": {
+        "id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+        "title": "Smart Agriculture IoT Sensor Network",
+        "inventors": [],
+        "status": "REJECTED",
+        "application_number": "P/2024/0567",
+        "nipo_reference": "NIPO-2024-0567",
+        "created_at": "2026-07-27T14:56:45.727229Z",
+        "updated_at": "2026-07-27T14:56:45.727229Z"
+      }
+    },
+    "history": {
+      "788e66c0-ea77-46eb-ba20-2c693bef2611": [
+        {
+          "id": "92c0b98c-0e48-4708-af72-fd7a9deb7e41",
+          "application_id": "788e66c0-ea77-46eb-ba20-2c693bef2611",
+          "old_status": "DRAFT",
+          "new_status": "FILED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        }
+      ],
+      "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4": [
+        {
+          "id": "614a20cf-68b3-4652-a73f-4820f945f67a",
+          "application_id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+          "old_status": "DRAFT",
+          "new_status": "FILED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "69f4a248-9448-4f1c-9803-a5ce4fc642fd",
+          "application_id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+          "old_status": "FILED",
+          "new_status": "ACKNOWLEDGED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "2ae09782-271b-457c-a8e9-f16491e171c3",
+          "application_id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+          "old_status": "ACKNOWLEDGED",
+          "new_status": "EXAMINATION",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        }
+      ],
+      "73da4f48-5606-4f40-ae0a-39df7dfffa42": [
+        {
+          "id": "ae24aaff-93e5-4659-b557-744642e6123d",
+          "application_id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+          "old_status": "DRAFT",
+          "new_status": "FILED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "f534275c-d810-46d5-b9cb-befd34b02603",
+          "application_id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+          "old_status": "FILED",
+          "new_status": "ACKNOWLEDGED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "dffe4689-66aa-4d99-be0a-f84fdae25a41",
+          "application_id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+          "old_status": "ACKNOWLEDGED",
+          "new_status": "EXAMINATION",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "0d448114-45fa-43eb-b83b-73ecbf18f78a",
+          "application_id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+          "old_status": "EXAMINATION",
+          "new_status": "GRANTED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        }
+      ],
+      "05ba72a3-e182-463b-a051-b5aac182d6f7": [
+        {
+          "id": "88678d52-b46a-4187-8c0d-5fd525a8548a",
+          "application_id": "05ba72a3-e182-463b-a051-b5aac182d6f7",
+          "old_status": "DRAFT",
+          "new_status": "FILED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "beaafad1-66f1-4f5a-8784-2123497def34",
+          "application_id": "05ba72a3-e182-463b-a051-b5aac182d6f7",
+          "old_status": "FILED",
+          "new_status": "ACKNOWLEDGED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        }
+      ],
+      "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d": [
+        {
+          "id": "94632f00-04b9-4842-9614-d8a6660ac6e9",
+          "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+          "old_status": "DRAFT",
+          "new_status": "FILED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "71273f9b-9150-4724-b7d1-0a7268c1046e",
+          "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+          "old_status": "FILED",
+          "new_status": "ACKNOWLEDGED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "d9cb1e9b-234b-4ece-80f4-cd8da1973ac5",
+          "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+          "old_status": "ACKNOWLEDGED",
+          "new_status": "EXAMINATION",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        },
+        {
+          "id": "a1280685-a079-4526-bdba-48718e6a3722",
+          "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+          "old_status": "EXAMINATION",
+          "new_status": "REJECTED",
+          "changed_by": "admin@blitto.local",
+          "changed_at": "2026-07-27T14:56:45.727229Z"
+        }
+      ]
+    }
+  },
+  "prosecution": {
+    "actions": {
+      "e5c5665d-9732-4699-9afe-5ddf164a0743": {
+        "id": "e5c5665d-9732-4699-9afe-5ddf164a0743",
+        "application_id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+        "kind": "OBJECTION",
+        "body": "Objection: claims 3-5 lack inventive step over prior art US2023/0145671. Applicant has 90 days to respond.",
+        "received_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "0d17ecf4-6ad9-43eb-bbf1-3785a964ad52": {
+        "id": "0d17ecf4-6ad9-43eb-bbf1-3785a964ad52",
+        "application_id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+        "kind": "ALLOWANCE",
+        "body": "All claims allowed. Patent granted under NIPO Act No. 15 of 2024.",
+        "received_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "e3264121-38c2-4e4d-ac94-d991b1f496eb": {
+        "id": "e3264121-38c2-4e4d-ac94-d991b1f496eb",
+        "application_id": "05ba72a3-e182-463b-a051-b5aac182d6f7",
+        "kind": "REJECTION",
+        "body": "Rejection: claims 1-2 anticipated by prior art. Claims 6-8 allowed. Applicant may file divisional application.",
+        "received_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "8a54ed9f-cba7-4721-b69f-1fb9c97d5e83": {
+        "id": "8a54ed9f-cba7-4721-b69f-1fb9c97d5e83",
+        "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+        "kind": "REJECTION",
+        "body": "Final rejection: all claims rejected under Section 35. No response filed within deadline.",
+        "received_at": "2026-07-27T14:56:45.727229Z"
+      }
+    },
+    "responses": {
+      "d6ae83cb-c950-45e1-b631-139f006b97dd": {
+        "id": "d6ae83cb-c950-45e1-b631-139f006b97dd",
+        "application_id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+        "office_action_id": "e5c5665d-9732-4699-9afe-5ddf164a0743",
+        "body": "Response to OBJECTION: Applicant respectfully submits arguments and amendments addressing the examiner's concerns.",
+        "filed_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "ac89e101-b8f0-41cc-a982-509dda7952a9": {
+        "id": "ac89e101-b8f0-41cc-a982-509dda7952a9",
+        "application_id": "05ba72a3-e182-463b-a051-b5aac182d6f7",
+        "office_action_id": "e3264121-38c2-4e4d-ac94-d991b1f496eb",
+        "body": "Response to REJECTION: Applicant respectfully submits arguments and amendments addressing the examiner's concerns.",
+        "filed_at": "2026-07-27T14:56:45.727229Z"
+      },
+      "0f1965a5-7996-4621-8ed4-6d30a7c38127": {
+        "id": "0f1965a5-7996-4621-8ed4-6d30a7c38127",
+        "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+        "office_action_id": "8a54ed9f-cba7-4721-b69f-1fb9c97d5e83",
+        "body": "Response to REJECTION: Applicant respectfully submits arguments and amendments addressing the examiner's concerns.",
+        "filed_at": "2026-07-27T14:56:45.727229Z"
+      }
+    }
+  },
+  "notification": {
+    "sent": [
+      {
+        "id": "583b782d-ced6-49e8-a8ef-6cae3616d0b1",
+        "recipient_email": "inventor1@peradeniya.lk",
+        "subject": "Welcome to BLITTO",
+        "body": "Your account has been created. You can now view and track your patent applications.",
+        "sent_at": "2026-07-27T14:56:45.727229Z"
+      },
+      {
+        "id": "5d08c410-f6c3-4bf4-830f-fdc76932a2c2",
+        "recipient_email": "inventor1@peradeniya.lk",
+        "subject": "Patent Filed",
+        "body": "Your patent application AI-Powered Crop Disease Detection has been successfully filed with reference P/2025/0142.",
+        "sent_at": "2026-07-27T14:56:45.727229Z"
+      },
+      {
+        "id": "520c5b45-643b-4f93-8d07-4c7ac05004b7",
+        "recipient_email": "inventor2@peradeniya.lk",
+        "subject": "Welcome to BLITTO",
+        "body": "Your account has been created. You can now view and track your patent applications.",
+        "sent_at": "2026-07-27T14:56:45.727229Z"
+      },
+      {
+        "id": "08ca6486-f035-4545-b785-411f9c8be7f5",
+        "recipient_email": "inventor2@peradeniya.lk",
+        "subject": "Patent Received",
+        "body": "Congratulations! Your patent application Quantum Encryption Protocol has been granted under NIPO-2024-0312.",
+        "sent_at": "2026-07-27T14:56:45.727229Z"
+      }
+    ]
+  },
+  "audit": {
+    "log": {}
+  },
+  "filing_workflow": {
+    "records": {
+      "788e66c0-ea77-46eb-ba20-2c693bef2611": {
+        "id": "222711f2-c468-4c01-afa1-8e4c027fbb9c",
+        "application_id": "788e66c0-ea77-46eb-ba20-2c693bef2611",
+        "filed_date": "2026-07-27T14:56:45.727229Z",
+        "filed_by": "admin@blitto.local",
+        "nipo_acknowledged_at": null,
+        "nipo_acknowledged_by": null,
+        "defect_sheet_count": 0,
+        "granted_at": null,
+        "granted_by": null,
+        "patent_number": null,
+        "rejected_at": null,
+        "rejected_by": null
+      },
+      "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4": {
+        "id": "07f82d88-e893-4609-9da4-7a7e581c7e42",
+        "application_id": "c55d84fe-ab1f-456d-a2d1-aa2ea32faab4",
+        "filed_date": "2026-07-27T14:56:45.727229Z",
+        "filed_by": "admin@blitto.local",
+        "nipo_acknowledged_at": "2026-07-27T14:56:45.727229Z",
+        "nipo_acknowledged_by": "admin@blitto.local",
+        "defect_sheet_count": 0,
+        "granted_at": null,
+        "granted_by": null,
+        "patent_number": null,
+        "rejected_at": null,
+        "rejected_by": null
+      },
+      "73da4f48-5606-4f40-ae0a-39df7dfffa42": {
+        "id": "5c2edaaa-5a66-4842-ad6e-6c64557b2878",
+        "application_id": "73da4f48-5606-4f40-ae0a-39df7dfffa42",
+        "filed_date": "2026-07-27T14:56:45.727229Z",
+        "filed_by": "admin@blitto.local",
+        "nipo_acknowledged_at": "2026-07-27T14:56:45.727229Z",
+        "nipo_acknowledged_by": "admin@blitto.local",
+        "defect_sheet_count": 0,
+        "granted_at": "2026-07-27T14:56:45.727229Z",
+        "granted_by": "admin@blitto.local",
+        "patent_number": "P/2024/0312",
+        "rejected_at": null,
+        "rejected_by": null
+      },
+      "05ba72a3-e182-463b-a051-b5aac182d6f7": {
+        "id": "403c4d82-80b5-4cdc-bd1f-33748d478226",
+        "application_id": "05ba72a3-e182-463b-a051-b5aac182d6f7",
+        "filed_date": "2026-07-27T14:56:45.727229Z",
+        "filed_by": "admin@blitto.local",
+        "nipo_acknowledged_at": "2026-07-27T14:56:45.727229Z",
+        "nipo_acknowledged_by": "admin@blitto.local",
+        "defect_sheet_count": 0,
+        "granted_at": null,
+        "granted_by": null,
+        "patent_number": null,
+        "rejected_at": null,
+        "rejected_by": null
+      },
+      "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d": {
+        "id": "651acf8b-8cf6-4632-845e-2bf7b5a5a3c5",
+        "application_id": "ebd462e8-d36b-47fb-bbb8-2f4abaf1c45d",
+        "filed_date": "2026-07-27T14:56:45.727229Z",
+        "filed_by": "admin@blitto.local",
+        "nipo_acknowledged_at": "2026-07-27T14:56:45.727229Z",
+        "nipo_acknowledged_by": "admin@blitto.local",
+        "defect_sheet_count": 0,
+        "granted_at": null,
+        "granted_by": null,
+        "patent_number": null,
+        "rejected_at": "2026-07-27T14:56:45.727229Z",
+        "rejected_by": "admin@blitto.local"
+      }
+    },
+    "defect_sheets": {}
+  }
+}

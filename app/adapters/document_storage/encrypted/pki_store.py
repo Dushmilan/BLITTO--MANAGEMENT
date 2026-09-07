@@ -1,0 +1,312 @@
+"""Document storage adapter - PKI envelope encryption with RSA-4096 + AES-256-GCM.
+
+Vault lifecycle:
+  First run → generates RSA key pair + random 256-bit master key.
+  Admin enters master key → decrypts RSA private key → 12-hour unlock window.
+  Lock / expiry → RSA key zeroed from memory.
+"""
+
+from __future__ import annotations
+
+import base64
+import logging
+import os
+import uuid
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Optional
+
+from app.core.config import settings
+
+from cryptography.exceptions import InvalidTag
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+from app.adapters.document_storage.interface import DocumentStoreAdapter
+
+logger = logging.getLogger(__name__)
+
+_AES_KEY_SIZE_BITS = 256
+_AES_NONCE_SIZE = 12        # 96 bits (GCM standard)
+_RSA_KEY_SIZE = 4096
+_PBKDF2_ITERATIONS = 600_000
+_SALT_SIZE = 16
+_ENCRYPTED_KEY_FILE = "private_key.enc"
+_PUBLIC_KEY_FILE = "public_key.pem"
+
+
+def _generate_rsa_key_pair() -> rsa.RSAPrivateKey:
+    return rsa.generate_private_key(public_exponent=65537, key_size=_RSA_KEY_SIZE)
+
+
+def _derive_aes_key(master_key_bytes: bytes, salt: bytes) -> bytes:
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=_PBKDF2_ITERATIONS,
+    )
+    return kdf.derive(master_key_bytes)
+
+
+class VaultLockedError(PermissionError):
+    """Raised when a store operation is attempted while the vault is locked."""
+
+
+class PKIEncryptedStore:
+    """Implements ``DocumentStoreAdapter`` with RSA/AES hybrid envelope encryption.
+
+    On first construction, generates RSA key pair + random master key.
+    The RSA private key is encrypted with the master key and persisted.
+    The vault starts locked; call ``unlock(master_key)`` to open it.
+    """
+
+    def __init__(
+        self,
+        cert_dir: str,
+        storage_dir: str,
+        ttl_hours: int = 12,
+    ) -> None:
+        self._cert_dir = Path(cert_dir)
+        self._storage_dir = Path(storage_dir)
+        self._cert_dir.mkdir(parents=True, exist_ok=True)
+        self._storage_dir.mkdir(parents=True, exist_ok=True)
+        self._ttl_hours = ttl_hours
+
+        self._private_key: Optional[rsa.RSAPrivateKey] = None
+        self._unlocked_until: Optional[datetime] = None
+        self.generated_master_key: Optional[str] = None
+        self._public_key: Optional[rsa.RSAPublicKey] = None
+
+        self._init_key_pair()
+
+    # ------------------------------------------------------------------
+    # Initialization
+    # ------------------------------------------------------------------
+
+    def _init_key_pair(self) -> None:
+        """Load existing encrypted key or generate first-time keys."""
+        enc_path = self._cert_dir / _ENCRYPTED_KEY_FILE
+        pub_path = self._cert_dir / _PUBLIC_KEY_FILE
+
+        if not enc_path.exists():
+            self._first_time_init(enc_path, pub_path)
+            return
+
+        # Load public key for put() — private key stays encrypted until unlock.
+        pub_pem = pub_path.read_bytes()
+        self._public_key = serialization.load_pem_public_key(pub_pem)
+
+        # Re-expose master key from env if available.
+        if settings.vault_master_key and not self.generated_master_key:
+            self.generated_master_key = settings.vault_master_key
+
+    @staticmethod
+    def _save_master_key_to_env(master_key_b64: str) -> None:
+        """Write BLITTO_VAULT_MASTER_KEY to .env so the key persists across restarts."""
+        env_path = Path(".env")
+        key_line = f"BLITTO_VAULT_MASTER_KEY={master_key_b64}\n"
+        if env_path.exists():
+            content = env_path.read_text(encoding="utf-8")
+            if "BLITTO_VAULT_MASTER_KEY" in content:
+                return  # already persisted, don't overwrite
+            env_path.write_text(content.rstrip() + "\n" + key_line, encoding="utf-8")
+        else:
+            env_path.write_text(key_line, encoding="utf-8")
+        logger.info("Master key saved to .env")
+
+    def _first_time_init(
+        self, enc_path: Path, pub_path: Path
+    ) -> None:
+        """Generate RSA key pair + random master key. Private key encrypted on disk."""
+        private_key = _generate_rsa_key_pair()
+        self._public_key = private_key.public_key()
+
+        # Generate random 256-bit master key.
+        master_key_bytes = os.urandom(32)
+        self.generated_master_key = base64.b64encode(master_key_bytes).decode()
+
+        # Persist master key to .env so admin can recover it.
+        self._save_master_key_to_env(self.generated_master_key)
+
+        # Write public key (plain).
+        pub_pem = self._public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        pub_path.write_bytes(pub_pem)
+
+        # Write encrypted private key.
+        self._write_encrypted_private_key(private_key, master_key_bytes, enc_path)
+
+        # Vault stays locked — admin must call unlock().
+        self._private_key = None
+        self._unlocked_until = None
+
+    # ------------------------------------------------------------------
+    # Encrypted private key persistence
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _write_encrypted_private_key(
+        private_key: rsa.RSAPrivateKey,
+        master_key_bytes: bytes,
+        enc_path: Path,
+    ) -> None:
+        """Encrypt the RSA private key with *master_key_bytes* and write to disk."""
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
+        salt = os.urandom(_SALT_SIZE)
+        aes_key = _derive_aes_key(master_key_bytes, salt)
+        nonce = os.urandom(_AES_NONCE_SIZE)
+        aesgcm = AESGCM(aes_key)
+        ciphertext = aesgcm.encrypt(nonce, private_pem, None)
+
+        # Blob: [salt][nonce][ciphertext-with-tag]
+        enc_path.write_bytes(salt + nonce + ciphertext)
+
+    def _decrypt_private_key(self, master_key_bytes: bytes) -> Optional[rsa.RSAPrivateKey]:
+        """Read encrypted private key from disk, decrypt with *master_key_bytes*."""
+        enc_path = self._cert_dir / _ENCRYPTED_KEY_FILE
+        if not enc_path.exists():
+            return None
+
+        try:
+            blob = enc_path.read_bytes()
+            if len(blob) < _SALT_SIZE + _AES_NONCE_SIZE:
+                return None
+
+            salt = blob[:_SALT_SIZE]
+            nonce = blob[_SALT_SIZE : _SALT_SIZE + _AES_NONCE_SIZE]
+            ciphertext = blob[_SALT_SIZE + _AES_NONCE_SIZE :]
+
+            aes_key = _derive_aes_key(master_key_bytes, salt)
+            aesgcm = AESGCM(aes_key)
+            private_pem = aesgcm.decrypt(nonce, ciphertext, None)
+
+            private_key = serialization.load_pem_private_key(private_pem, password=None)
+            return private_key
+        except InvalidTag:
+            return None
+        except (ValueError, OSError) as exc:
+            logger.debug("Private key decryption failed: %s", exc)
+            return None
+
+    # ------------------------------------------------------------------
+    # Vault unlock / lock
+    # ------------------------------------------------------------------
+
+    def unlock(self, master_key_b64: str) -> bool:
+        """Unlock vault with base64-encoded *master_key*. Returns True on success."""
+        try:
+            master_key_bytes = base64.b64decode(master_key_b64)
+        except (ValueError, TypeError):
+            return False
+
+        private_key = self._decrypt_private_key(master_key_bytes)
+        if private_key is None:
+            return False
+
+        self._private_key = private_key
+        self._public_key = private_key.public_key()
+        self._unlocked_until = datetime.now(timezone.utc) + timedelta(
+            hours=self._ttl_hours,
+        )
+        return True
+
+    def lock(self) -> None:
+        self._private_key = None
+        self._unlocked_until = None
+
+    def is_unlocked(self) -> bool:
+        if self._private_key is None or self._unlocked_until is None:
+            return False
+        return datetime.now(timezone.utc) < self._unlocked_until
+
+    def unlock_remaining(self) -> float:
+        if not self.is_unlocked():
+            return 0.0
+        remaining = (self._unlocked_until - datetime.now(timezone.utc)).total_seconds()
+        return max(0.0, remaining)
+
+    def _require_unlocked(self) -> None:
+        if not self.is_unlocked():
+            raise VaultLockedError("Vault is locked")
+
+    # ------------------------------------------------------------------
+    # DocumentStoreAdapter protocol
+    # ------------------------------------------------------------------
+
+    def put(self, content: bytes) -> str:
+        self._require_unlocked()
+
+        file_id = str(uuid.uuid4())
+        ref = f"{file_id}.enc"
+
+        aes_key = AESGCM.generate_key(bit_length=_AES_KEY_SIZE_BITS)
+        nonce = os.urandom(_AES_NONCE_SIZE)
+        aesgcm = AESGCM(aes_key)
+        ciphertext = aesgcm.encrypt(nonce, content, None)
+
+        wrapped_key = self._private_key.public_key().encrypt(
+            aes_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+
+        blob_path = self._storage_dir / ref
+        blob_path.write_bytes(wrapped_key + nonce + ciphertext)
+        return ref
+
+    def get(self, ref: str) -> Optional[bytes]:
+        self._require_unlocked()
+
+        blob_path = self._storage_dir / ref
+        if not blob_path.exists():
+            return None
+
+        try:
+            blob = blob_path.read_bytes()
+            wrapped_key_size = self._private_key.key_size // 8
+            if len(blob) < wrapped_key_size + _AES_NONCE_SIZE:
+                return None
+
+            wrapped_key = blob[:wrapped_key_size]
+            nonce = blob[wrapped_key_size : wrapped_key_size + _AES_NONCE_SIZE]
+            ciphertext = blob[wrapped_key_size + _AES_NONCE_SIZE :]
+
+            aes_key = self._private_key.decrypt(
+                wrapped_key,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None,
+                ),
+            )
+
+            aesgcm = AESGCM(aes_key)
+            return aesgcm.decrypt(nonce, ciphertext, None)
+
+        except InvalidTag:
+            return None
+        except (ValueError, OSError) as exc:
+            logger.debug("Decryption failed for %s: %s", ref, exc)
+            return None
+
+    def delete(self, ref: str) -> bool:
+        self._require_unlocked()
+
+        blob_path = self._storage_dir / ref
+        if not blob_path.exists():
+            return False
+        blob_path.unlink()
+        return True

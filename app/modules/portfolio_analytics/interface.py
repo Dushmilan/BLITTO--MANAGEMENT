@@ -8,12 +8,9 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from app.modules.portfolio_analytics.models import DeadlineReport, PortfolioSummary
+from app.modules.portfolio_analytics.models import PortfolioSummary
 
 
 class PortfolioAnalyticsModule(Protocol):
     def portfolio_summary(self) -> PortfolioSummary:
-        ...
-
-    def deadline_report(self) -> DeadlineReport:
         ...

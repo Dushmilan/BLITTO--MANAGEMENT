@@ -8,7 +8,7 @@ from typing import Optional
 
 from app.domain.common import ApplicationStatus, StatusHistory
 from app.modules.application_intake.interface import ApplicationIntakeModule
-from app.modules.application_intake.models import Application, Disclosure
+from app.modules.application_intake.models import Application, Disclosure, Inventor
 
 
 class LocalApplicationIntakeModule:
@@ -20,11 +20,19 @@ class LocalApplicationIntakeModule:
         return self.create_application_shell(disclosure)
 
     def create_application_shell(self, disclosure: Disclosure) -> Application:
+        inventors = disclosure.inventors
+        if not inventors:
+            inventors = [Inventor(
+                inventor_name=disclosure.inventor_name,
+                inventor_email=disclosure.inventor_email,
+            )]
         application = Application(
             id=str(uuid.uuid4()),
             title=disclosure.title,
-            inventor_name=disclosure.inventor_name,
-            inventor_email=disclosure.inventor_email,
+            inventors=inventors,
+            inventor_name=inventors[0].inventor_name,
+            inventor_email=inventors[0].inventor_email,
+            technology_area=disclosure.technology_area,
         )
         self._store[application.id] = application
         return application
@@ -54,3 +62,13 @@ class LocalApplicationIntakeModule:
 
     def list_applications(self) -> list[Application]:
         return list(self._store.values())
+
+    def get_inventors_for_application(self, application_id: str) -> list[Inventor]:
+        app = self._store.get(application_id)
+        if app is None:
+            return []
+        return app.inventors
+
+    def get_applications_for_inventor(self, email: str) -> list[Application]:
+        return [a for a in self._store.values()
+                if any(inv.inventor_email == email for inv in a.inventors)]

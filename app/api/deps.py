@@ -66,3 +66,13 @@ StaffUser = require_staff
 # Backwards-compatible aliases (prefer MDUser / StaffUser in new code).
 AdminUser = require_md
 AttorneyUser = require_role(Role.DIRECTOR, Role.MD)
+
+
+async def require_unlocked_vault(request: Request) -> None:
+    """Vault lock gate: raises 423 if the vault is locked."""
+    vault = request.app.state.document_vault
+    if not vault.is_unlocked():
+        raise HTTPException(status_code=423, detail="Vault is locked")
+
+
+UnlockedVault = require_unlocked_vault

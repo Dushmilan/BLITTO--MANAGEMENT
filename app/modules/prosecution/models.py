@@ -12,6 +12,13 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class DefectSheet(BaseModel):
+    id: str
+    application_id: str
+    sheet_number: int
+    description: str
+
+
 class OfficeActionKind(str, Enum):
     REJECTION = "REJECTION"
     OBJECTION = "OBJECTION"

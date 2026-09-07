@@ -126,12 +126,14 @@ def test_lost_backend_content_is_404(seeded) -> None:
 
 def test_extensionless_and_uppercase_filenames(seeded) -> None:
     c, tokens, app_id = seeded["client"], seeded["tokens"], seeded["app_id"]
-    assert _upload(c, tokens["md"], app_id, "GRANTFILE", PDF).status_code == 200
+    # Extensionless filenames are rejected by extension validation.
+    assert _upload(c, tokens["md"], app_id, "GRANTFILE", PDF).status_code == 422
+    assert _upload(c, tokens["md"], app_id, "GRANTFILE.PDF", PDF).status_code == 200
     _grant(c, tokens["md"], app_id)
     dl = c.get(f"/applications/{app_id}/download",
                headers=auth_headers(tokens["user_a"]))
     assert dl.status_code == 200
-    assert dl.headers["content-type"] == "application/octet-stream"
+    assert dl.headers["content-type"] == "application/pdf"
     assert "granted_" in dl.headers["content-disposition"]
 
 

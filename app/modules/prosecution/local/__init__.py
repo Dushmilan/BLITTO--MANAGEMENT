@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import uuid
 
-from app.modules.docketing.models import DeadlineType
-from app.modules.docketing.local import LocalDocketingModule
 from app.modules.document_vault.local import LocalDocumentVaultModule
+from app.modules.docketing.local import LocalDocketingModule
+from app.modules.docketing.models import DeadlineType
 from app.modules.prosecution.interface import ProsecutionModule
 from app.modules.prosecution.models import OfficeAction, OfficeActionKind, Response
 
@@ -59,3 +59,5 @@ def _default_due() -> "datetime":
     from datetime import datetime, timedelta, timezone
 
     return datetime.now(timezone.utc) + timedelta(days=90)
+
+

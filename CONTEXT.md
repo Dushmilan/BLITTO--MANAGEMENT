@@ -2,13 +2,11 @@
 
 ## Domain Glossary
 
-**Patent Application** -- A legal filing seeking patent protection. Has a lifecycle: DRAFT > FILED > PUBLISHED > EXAMINATION > GRANTED/REJECTED > MAINTENANCE. Each stage has deadlines and required documents.
+**Patent Application** -- A legal filing seeking patent protection. Has a lifecycle: DRAFT > FILED > ACKNOWLEDGED > EXAMINATION > GRANTED/REJECTED > MAINTENANCE.
 
 **Prior Art** -- Any evidence that an invention is already known (prior patents, publications, public use). Must be cited during filing (IDS -- Information Disclosure Statement).
 
-**Office Action** -- Official communication from the patent office (USPTO/EPO) requiring response by a deadline. Contains rejections, objections, or allowances.
-
-**Deadline / Docket** -- A date-critical event tied to a patent application (filing deadline, response deadline, maintenance fee deadline). Missing a deadline can abandon the application.
+**Office Action** -- Official communication from the patent office (USPTO/EPO) containing rejections, objections, or allowances.
 
 **Inventor** -- Natural person who conceived the invention. Has moral rights but typically assigns rights to an assignee (company).
 
@@ -16,7 +14,7 @@
 
 **Attorney / Agent** -- Registered practitioner who prosecutes the application before the patent office. Has power of attorney.
 
-**Paralegal / Docketing Specialist** -- Manages deadlines, prepares forms, tracks office actions, maintains docketing system.
+**Paralegal** -- Prepares forms, tracks office actions.
 
 **Portfolio** -- Collection of patent applications/patents owned by an assignee. Viewed at the portfolio level for reporting and maintenance fee tracking.
 
@@ -59,13 +57,12 @@
 | PostgreSQL (via Prisma) | Local-substitutable (PGlite for tests) | Primary data store |
 | S3-compatible storage (AWS S3 / MinIO) | Ports & adapters | Document storage -- production uses S3, tests use in-memory adapter |
 | Email provider (SendGrid / Resend / SMTP) | True external (mock adapter) | Notifications -- tests use mock adapter |
-| Patent Office APIs (USPTO PAIR, EPO OPS) | True external (mock adapter) | Future: automatic docketing from office actions -- mock for now |
+| Patent Office APIs (USPTO PAIR, EPO OPS) | True external (mock adapter) | Future integration |
 | NextAuth.js providers (OAuth, credentials) | Local-substitutable (test adapter) | Authentication -- tests use test adapter |
 
 ## Non-Functional Requirements
 
 - **Auditability** -- Every mutation is traceable to an actor and timestamp
-- **Latency** -- Dashboard loads < 2s; deadline lists < 500ms
-- **Reliability** -- Deadline calculations must be deterministic and testable
+- **Latency** -- Dashboard loads < 2s
 - **Testability** -- Business logic tested through module interfaces, not through HTTP
 - **Deployability** -- Single Next.js deployment (Vercel); DB migrations via Prisma Migrate

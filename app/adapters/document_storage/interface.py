@@ -15,3 +15,23 @@ class DocumentStoreAdapter(Protocol):
 
     def get(self, ref: str) -> Optional[bytes]:
         ...
+
+    def delete(self, ref: str) -> bool:
+        """Remove content for *ref*. Returns True if removed, False if not found."""
+        ...
+
+    def unlock(self, master_key: str) -> bool:
+        """Unlock vault with *master_key*. Returns True if successful."""
+        ...
+
+    def lock(self) -> None:
+        """Lock vault immediately."""
+        ...
+
+    def is_unlocked(self) -> bool:
+        """Return True if vault is unlocked and within TTL."""
+        ...
+
+    def unlock_remaining(self) -> float:
+        """Seconds until auto-lock. 0 if locked or expired."""
+        ...

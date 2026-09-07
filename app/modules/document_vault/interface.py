@@ -22,3 +22,21 @@ class DocumentVaultModule(Protocol):
 
     def list_for_application(self, application_id: str) -> list[Document]:
         ...
+
+    def delete(self, document_id: str) -> bool:
+        """Remove document by *document_id*. Returns True if removed, False if not found."""
+        ...
+
+    # --- Vault lifecycle ---
+
+    def unlock(self, master_key: str) -> bool:
+        ...
+
+    def lock(self) -> None:
+        ...
+
+    def is_unlocked(self) -> bool:
+        ...
+
+    def unlock_remaining(self) -> float:
+        ...
