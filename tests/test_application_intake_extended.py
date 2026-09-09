@@ -56,6 +56,7 @@ def test_get_applications_for_inventor_empty_when_no_match() -> None:
 def test_change_status_to_valid_state() -> None:
     module = _module()
     app = module.create_application_shell(_disclosure())
+    module.change_status(app.id, ApplicationStatus.FILED, "md@pdn.ac.lk")
     updated = module.change_status(app.id, ApplicationStatus.EXAMINATION, "md@pdn.ac.lk")
     assert updated is not None
     assert updated.status == ApplicationStatus.EXAMINATION

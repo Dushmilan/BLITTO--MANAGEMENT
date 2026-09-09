@@ -6,7 +6,7 @@
 
 **Prior Art** -- Any evidence that an invention is already known (prior patents, publications, public use). Must be cited during filing (IDS -- Information Disclosure Statement).
 
-**Office Action** -- Official communication from the patent office (USPTO/EPO) containing rejections, objections, or allowances.
+**Office Action** -- Official communication from the patent office (NIPO) containing rejections, objections, or allowances. Receiving one (except ALLOWANCE) auto-dockets a RESPONSE deadline.
 
 **Inventor** -- Natural person who conceived the invention. Has moral rights but typically assigns rights to an assignee (company).
 
@@ -54,15 +54,15 @@
 
 | Dependency | Category | Notes |
 |------------|----------|-------|
-| PostgreSQL (via Prisma) | Local-substitutable (PGlite for tests) | Primary data store |
-| S3-compatible storage (AWS S3 / MinIO) | Ports & adapters | Document storage -- production uses S3, tests use in-memory adapter |
-| Email provider (SendGrid / Resend / SMTP) | True external (mock adapter) | Notifications -- tests use mock adapter |
-| Patent Office APIs (USPTO PAIR, EPO OPS) | True external (mock adapter) | Future integration |
-| NextAuth.js providers (OAuth, credentials) | Local-substitutable (test adapter) | Authentication -- tests use test adapter |
+| In-memory stores (+ optional `dev-data/state.json` snapshot) | Local (no external DB) | Primary data store; snapshot is local-dev only |
+| Document storage seam (`app/adapters/document_storage/`) | Ports & adapters | Default is the local plaintext adapter; `PKIEncryptedStore` (RSA/AES) exists but is not the default (issue #49) |
+| Email provider seam (`app/adapters/email/`) | True external (mock adapter) | Notifications -- tests use mock adapter |
+| NIPO (manual updates) | True external (no API) | Status updates are entered manually; no office API integration |
+| Local auth stub (email + password, Bearer tokens) | Local-substitutable (better-auth JWT/JWKS for prod) | Authentication -- institution mail (`pdn.ac.lk`) enforced |
 
 ## Non-Functional Requirements
 
 - **Auditability** -- Every mutation is traceable to an actor and timestamp
 - **Latency** -- Dashboard loads < 2s
 - **Testability** -- Business logic tested through module interfaces, not through HTTP
-- **Deployability** -- Single Next.js deployment (Vercel); DB migrations via Prisma Migrate
+- **Deployability** -- Single `uvicorn` deployment (on-premise); no DB migrations (no database)

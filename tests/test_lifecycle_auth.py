@@ -16,6 +16,7 @@ def _disclosure() -> Disclosure:
 def test_change_status_records_history() -> None:
     intake = LocalApplicationIntakeModule()
     app = intake.create_application_shell(_disclosure())
+    intake.change_status(app.id, ApplicationStatus.FILED, "md@pdn.ac.lk")
     updated = intake.change_status(app.id, ApplicationStatus.EXAMINATION, "md@pdn.ac.lk")
     assert updated is not None
     assert updated.status == ApplicationStatus.EXAMINATION

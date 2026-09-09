@@ -50,12 +50,13 @@ def _setup_bunch(api, admin_token: str):
     for tag in ("pend1", "pend2"):
         g = journey_grant(api, admin_token, bunch[tag]["app_id"])
         assert g.status == 200 and g.json()["warning"], tag
-    # rej: rejected.
-    r = api.post(
-        f"/applications/{bunch['rej']['app_id']}/status?new_status=REJECTED",
-        headers=_auth(admin_token),
-    )
-    assert r.status == 200, r.text()
+    # rej: filed, then rejected.
+    for _status in ("FILED", "REJECTED"):
+        r = api.post(
+            f"/applications/{bunch['rej']['app_id']}/status?new_status={_status}",
+            headers=_auth(admin_token),
+        )
+        assert r.status == 200, r.text()
     return bunch
 
 
@@ -160,11 +161,12 @@ def test_bunch_staff_interplay(api, journey_users) -> None:
         headers=_auth(dir_token),
     )
     assert oa.status == 200, oa.text()
-    tr = api.post(
-        f"/applications/{draft_id}/status?new_status=EXAMINATION",
-        headers=_auth(dir2_token),
-    )
-    assert tr.status == 200
+    for _status in ("FILED", "EXAMINATION"):
+        tr = api.post(
+            f"/applications/{draft_id}/status?new_status={_status}",
+            headers=_auth(dir2_token),
+        )
+        assert tr.status == 200, tr.text()
     listed = api.get(
         "/applications", headers=_auth(bunch["draft"]["token"])
     ).json()

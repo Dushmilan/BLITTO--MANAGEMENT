@@ -341,13 +341,16 @@ async def download_document(
     user: User = Depends(StaffUser),
     _: None = Depends(UnlockedVault),
 ):
+    # Scope check first: the document must belong to the URL application,
+    # otherwise a staff caller could pull another application's file by id.
+    docs = request.app.state.document_vault.list_for_application(application_id)
+    doc_meta = next((d for d in docs if d.id == document_id), None)
+    if doc_meta is None:
+        raise HTTPException(status_code=404, detail="Document not found")
     content = request.app.state.document_vault.retrieve(document_id)
     if content is None:
         raise HTTPException(status_code=404, detail="Document not found")
-    # Find document metadata for the filename.
-    docs = request.app.state.document_vault.list_for_application(application_id)
-    doc_meta = next((d for d in docs if d.id == document_id), None)
-    filename = doc_meta.filename if doc_meta else "document.bin"
+    filename = _safe_filename(doc_meta.filename)
     media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
     return StreamingResponse(
         iter([content]),
@@ -366,6 +369,9 @@ async def delete_document(
 ):
     if user.role not in (Role.DIRECTOR, Role.MD):
         raise HTTPException(status_code=403, detail="Delete not permitted for this role")
+    docs = request.app.state.document_vault.list_for_application(application_id)
+    if not any(d.id == document_id for d in docs):
+        raise HTTPException(status_code=404, detail="Document not found")
     deleted = request.app.state.document_vault.delete(document_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -396,9 +402,14 @@ async def change_status(
     new_status: ApplicationStatus = Query(...),
     staff: User = Depends(StaffUser),
 ):
-    application = request.app.state.application_intake.change_status(
-        application_id, new_status, changed_by=getattr(staff, "email", "staff")
-    )
+    from app.modules.application_intake.local import InvalidTransitionError
+
+    try:
+        application = request.app.state.application_intake.change_status(
+            application_id, new_status, changed_by=getattr(staff, "email", "staff")
+        )
+    except InvalidTransitionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     if application is None:
         raise HTTPException(status_code=404, detail="Unknown application")
     warning: Optional[str] = None
@@ -500,6 +511,17 @@ async def notify_inventor(
 
 
 # --- Filing Workflow (admin only) ---
+from app.modules.application_intake.local import (
+    InvalidTransitionError as _InvalidTransition,
+)
+
+
+def _filing_error(exc: ValueError) -> HTTPException:
+    if isinstance(exc, _InvalidTransition):
+        return HTTPException(status_code=422, detail=str(exc))
+    return HTTPException(status_code=404, detail=str(exc))
+
+
 @router.post("/admin/filing/{application_id}/file", tags=["filingWorkflow"])
 async def filing_mark_filed(
     request: Request,
@@ -510,7 +532,7 @@ async def filing_mark_filed(
     try:
         return workflow.mark_filed(application_id, getattr(admin, "email", "admin"))
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise _filing_error(exc)
 
 
 @router.post("/admin/filing/{application_id}/acknowledge", tags=["filingWorkflow"])
@@ -523,7 +545,7 @@ async def filing_acknowledge_nipo(
     try:
         return workflow.acknowledge_nipo(application_id, getattr(admin, "email", "admin"))
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise _filing_error(exc)
 
 
 @router.post("/admin/filing/{application_id}/defect-sheets", tags=["filingWorkflow"])
@@ -566,7 +588,7 @@ async def filing_mark_granted(
             application_id, patent_number, getattr(admin, "email", "admin"),
         )
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise _filing_error(exc)
 
 
 @router.post("/admin/filing/{application_id}/reject", tags=["filingWorkflow"])
@@ -579,7 +601,7 @@ async def filing_mark_rejected(
     try:
         return workflow.mark_rejected(application_id, getattr(admin, "email", "admin"))
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise _filing_error(exc)
 
 
 @router.get("/admin/filing/{application_id}/status", tags=["filingWorkflow"])

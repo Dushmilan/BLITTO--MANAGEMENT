@@ -22,11 +22,16 @@ def _upload(c, token: str, app_id: str, filename: str, content: bytes = PDF):
 
 
 def _grant(c, token: str, app_id: str):
-    return c.post(
-        f"/applications/{app_id}/status",
-        params={"new_status": "GRANTED"},
-        headers=auth_headers(token),
-    )
+    last = None
+    for status in ("FILED", "ACKNOWLEDGED", "EXAMINATION", "GRANTED"):
+        last = c.post(
+            f"/applications/{app_id}/status",
+            params={"new_status": status},
+            headers=auth_headers(token),
+        )
+        if status == "GRANTED":
+            assert last.status_code == 200, last.text[:300]
+    return last
 
 
 # --- Lifecycle edges ---
@@ -181,8 +186,7 @@ def test_missing_documents_excludes_healthy_apps(seeded) -> None:
                     headers=auth_headers(tokens["md"])).json()
     assert {a["id"] for a in missing} == set()
     # Now grant the doc-less app -> it appears.
-    c.post(f"/applications/{other}/status", params={"new_status": "GRANTED"},
-           headers=auth_headers(tokens["md"]))
+    _grant(c, tokens["md"], other)
     missing = c.get("/applications/missing-documents",
                     headers=auth_headers(tokens["md"])).json()
     assert {a["id"] for a in missing} == {other}
@@ -221,8 +225,7 @@ def test_request_doc_other_inventor_is_403(seeded) -> None:
         Disclosure(inventor_name="B", inventor_email="user-b@pdn.ac.lk",
                    title="B", summary="s")
     ).id
-    c.post(f"/applications/{other}/status", params={"new_status": "GRANTED"},
-           headers=auth_headers(tokens["md"]))
+    _grant(c, tokens["md"], other)
     r = c.post(f"/applications/{other}/request-document",
                headers=auth_headers(tokens["user_a"]))
     assert r.status_code == 403

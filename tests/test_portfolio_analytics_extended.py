@@ -7,6 +7,33 @@ from app.modules.docketing.local import LocalDocketingModule
 from app.modules.portfolio_analytics.local import LocalPortfolioAnalyticsModule
 
 
+def _legal_path(status: ApplicationStatus) -> list[ApplicationStatus]:
+    return {
+        ApplicationStatus.DRAFT: [],
+        ApplicationStatus.FILED: [ApplicationStatus.FILED],
+        ApplicationStatus.PUBLISHED: [ApplicationStatus.FILED, ApplicationStatus.PUBLISHED],
+        ApplicationStatus.ACKNOWLEDGED: [ApplicationStatus.FILED, ApplicationStatus.ACKNOWLEDGED],
+        ApplicationStatus.EXAMINATION: [ApplicationStatus.FILED, ApplicationStatus.EXAMINATION],
+        ApplicationStatus.DEFECT_SHEET_1: [ApplicationStatus.FILED, ApplicationStatus.DEFECT_SHEET_1],
+        ApplicationStatus.DEFECT_SHEET_2: [
+            ApplicationStatus.FILED, ApplicationStatus.DEFECT_SHEET_1, ApplicationStatus.DEFECT_SHEET_2,
+        ],
+        ApplicationStatus.DEFECT_SHEET_3: [
+            ApplicationStatus.FILED, ApplicationStatus.DEFECT_SHEET_1,
+            ApplicationStatus.DEFECT_SHEET_2, ApplicationStatus.DEFECT_SHEET_3,
+        ],
+        ApplicationStatus.GRANTED: [
+            ApplicationStatus.FILED, ApplicationStatus.ACKNOWLEDGED,
+            ApplicationStatus.EXAMINATION, ApplicationStatus.GRANTED,
+        ],
+        ApplicationStatus.REJECTED: [ApplicationStatus.FILED, ApplicationStatus.REJECTED],
+        ApplicationStatus.MAINTENANCE: [
+            ApplicationStatus.FILED, ApplicationStatus.ACKNOWLEDGED,
+            ApplicationStatus.EXAMINATION, ApplicationStatus.GRANTED, ApplicationStatus.MAINTENANCE,
+        ],
+    }[status]
+
+
 def _module_with_apps(statuses: list[ApplicationStatus]):
     intake = LocalApplicationIntakeModule()
     for i, status in enumerate(statuses):
@@ -17,8 +44,8 @@ def _module_with_apps(statuses: list[ApplicationStatus]):
                 summary="",
             )
         )
-        if status != ApplicationStatus.DRAFT:
-            intake.change_status(app.id, status, "md@pdn.ac.lk")
+        for step in _legal_path(status):
+            intake.change_status(app.id, step, "md@pdn.ac.lk")
     return LocalPortfolioAnalyticsModule(docketing=LocalDocketingModule(), application_intake=intake)
 
 

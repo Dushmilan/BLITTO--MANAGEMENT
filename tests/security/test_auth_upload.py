@@ -14,12 +14,13 @@ def test_user_cannot_see_or_download_other_user_patent(seeded) -> None:
     # Listing is filtered.
     mine = c.get("/applications", headers=auth_headers(tokens["user_a"])).json()
     assert other not in {a["id"] for a in mine}
-    # Grant B's app, then A must still be refused.
-    c.post(
-        f"/applications/{other}/status",
-        params={"new_status": "GRANTED"},
-        headers=auth_headers(tokens["md"]),
-    )
+    # Grant B's app through the legal lifecycle, then A must still be refused.
+    for _status in ("FILED", "ACKNOWLEDGED", "EXAMINATION", "GRANTED"):
+        c.post(
+            f"/applications/{other}/status",
+            params={"new_status": _status},
+            headers=auth_headers(tokens["md"]),
+        )
     r = c.get(f"/applications/{other}/download", headers=auth_headers(tokens["user_a"]))
     assert r.status_code == 403
 
@@ -84,11 +85,12 @@ def test_path_traversal_filename_sanitized(seeded) -> None:
         content=b"%PDF-1.4 evil",
         headers={**auth_headers(tokens["md"]), "Content-Type": "application/pdf"},
     )
-    c.post(
-        f"/applications/{app_id}/status",
-        params={"new_status": "GRANTED"},
-        headers=auth_headers(tokens["md"]),
-    )
+    for _status in ("FILED", "ACKNOWLEDGED", "EXAMINATION", "GRANTED"):
+        c.post(
+            f"/applications/{app_id}/status",
+            params={"new_status": _status},
+            headers=auth_headers(tokens["md"]),
+        )
     r = c.get(f"/applications/{app_id}/download", headers=auth_headers(tokens["md"]))
     assert r.status_code == 200
     disposition = r.headers.get("content-disposition", "")

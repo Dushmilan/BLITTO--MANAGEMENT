@@ -11,6 +11,62 @@ from app.modules.application_intake.interface import ApplicationIntakeModule
 from app.modules.application_intake.models import Application, Disclosure, Inventor
 
 
+class InvalidTransitionError(ValueError):
+    """Raised when a status change violates the lifecycle (e.g. DRAFT->GRANTED)."""
+
+
+# Canonical prosecution lifecycle. Same-status re-entry is always allowed
+# (idempotent); everything else must follow the table.
+_ALLOWED_TRANSITIONS: dict[ApplicationStatus, frozenset[ApplicationStatus]] = {
+    ApplicationStatus.DRAFT: frozenset({ApplicationStatus.FILED}),
+    ApplicationStatus.FILED: frozenset({
+        ApplicationStatus.PUBLISHED,
+        ApplicationStatus.ACKNOWLEDGED,
+        ApplicationStatus.EXAMINATION,
+        ApplicationStatus.DEFECT_SHEET_1,
+        ApplicationStatus.REJECTED,
+    }),
+    ApplicationStatus.PUBLISHED: frozenset({
+        ApplicationStatus.EXAMINATION,
+        ApplicationStatus.ACKNOWLEDGED,
+        ApplicationStatus.REJECTED,
+    }),
+    ApplicationStatus.ACKNOWLEDGED: frozenset({
+        ApplicationStatus.EXAMINATION,
+        ApplicationStatus.DEFECT_SHEET_1,
+        ApplicationStatus.DEFECT_SHEET_2,
+        ApplicationStatus.DEFECT_SHEET_3,
+        ApplicationStatus.GRANTED,
+        ApplicationStatus.REJECTED,
+    }),
+    ApplicationStatus.DEFECT_SHEET_1: frozenset({
+        ApplicationStatus.DEFECT_SHEET_2,
+        ApplicationStatus.ACKNOWLEDGED,
+        ApplicationStatus.EXAMINATION,
+        ApplicationStatus.REJECTED,
+    }),
+    ApplicationStatus.DEFECT_SHEET_2: frozenset({
+        ApplicationStatus.DEFECT_SHEET_3,
+        ApplicationStatus.ACKNOWLEDGED,
+        ApplicationStatus.EXAMINATION,
+        ApplicationStatus.REJECTED,
+    }),
+    ApplicationStatus.DEFECT_SHEET_3: frozenset({
+        ApplicationStatus.ACKNOWLEDGED,
+        ApplicationStatus.EXAMINATION,
+        ApplicationStatus.REJECTED,
+    }),
+    ApplicationStatus.EXAMINATION: frozenset({
+        ApplicationStatus.GRANTED,
+        ApplicationStatus.REJECTED,
+        ApplicationStatus.ACKNOWLEDGED,
+    }),
+    ApplicationStatus.GRANTED: frozenset({ApplicationStatus.MAINTENANCE}),
+    ApplicationStatus.REJECTED: frozenset(),
+    ApplicationStatus.MAINTENANCE: frozenset(),
+}
+
+
 class LocalApplicationIntakeModule:
     def __init__(self) -> None:
         self._store: dict[str, Application] = {}
@@ -44,6 +100,10 @@ class LocalApplicationIntakeModule:
         if application is None:
             return None
         old = application.status
+        if new_status != old and new_status not in _ALLOWED_TRANSITIONS[old]:
+            raise InvalidTransitionError(
+                f"Illegal transition {old.value}->{new_status.value}"
+            )
         application.status = new_status
         application.updated_at = datetime.now(timezone.utc)
         self._history.setdefault(application_id, []).append(

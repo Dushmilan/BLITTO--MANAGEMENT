@@ -30,7 +30,8 @@ def modules():
     doc_vault = LocalDocumentVaultModule()
     auth = LocalAuthorizationModule()
     intake = LocalApplicationIntakeModule()
-    prosecution = LocalProsecutionModule(docketing=LocalDocketingModule(), document_vault=doc_vault)
+    docketing = LocalDocketingModule()
+    prosecution = LocalProsecutionModule(docketing=docketing, document_vault=doc_vault)
     notification = LocalNotificationModule()
     audit = LocalAuditModule()
     filing = LocalFilingWorkflowModule(
@@ -41,6 +42,7 @@ def modules():
     return {
         "authorization": auth,
         "application_intake": intake,
+        "docketing": docketing,
         "prosecution": prosecution,
         "notification": notification,
         "audit": audit,

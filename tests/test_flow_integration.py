@@ -70,6 +70,17 @@ def test_happy_path_full_grant(client):
                       headers=md_hdrs)
     assert oa.status_code == 200, oa.text
 
+    # 4b. Move to EXAMINATION through the legal lifecycle before grant.
+    exam = client.post(f"/api/applications/{app_id}/status",
+                       params={"new_status": "FILED"},
+                       headers=md_hdrs)
+    # Already FILED via filing; FILED->FILED is an idempotent no-op.
+    assert exam.status_code == 200, exam.text
+    exam = client.post(f"/api/applications/{app_id}/status",
+                       params={"new_status": "EXAMINATION"},
+                       headers=md_hdrs)
+    assert exam.status_code == 200, exam.text
+
     # 5. MD grants patent
     grant = client.post(f"/api/admin/filing/{app_id}/grant",
                          params={"patent_number": "LK/PAT/2026/999"},

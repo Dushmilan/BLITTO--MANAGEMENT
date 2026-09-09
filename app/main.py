@@ -63,7 +63,7 @@ async def _nipo_follow_up_scheduler(app: FastAPI) -> None:
                 continue
             admins = [
                 u for u in app.state.authorization.list_users()
-                if u.role == Role.ADMIN
+                if u.role in (Role.MD, Role.DIRECTOR)
             ]
             if not admins:
                 continue

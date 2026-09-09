@@ -44,12 +44,12 @@ class LocalFilingWorkflowModule:
         return app
 
     def acknowledge_nipo(self, application_id: str, acknowledged_by: str) -> Application:
+        record = self._records.get(application_id)
+        if record is None:
+            raise ValueError(f"No filing record found for {application_id} - mark filed first")
         app = self._intake.change_status(application_id, ApplicationStatus.ACKNOWLEDGED, acknowledged_by)
         if app is None:
             raise ValueError(f"Application {application_id} not found")
-        record = self._records.get(application_id)
-        if record is None:
-            raise ValueError(f"No filing record for {application_id} - mark filed first")
         record.nipo_acknowledged_at = datetime.now(timezone.utc)
         record.nipo_acknowledged_by = acknowledged_by
         self._notify_inventors(application_id, "Acknowledged",

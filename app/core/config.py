@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     better_auth_issuer: str = ""
     better_auth_audience: str = ""
     # Secret for the local-stub auth adapter (better-auth handles secrets in prod).
-    auth_secret: str = "change-me-in-production"
+    auth_secret: str = "change-me-in-production-32byte-minimum!"
     # Institution-mail gate: only these domains may register/log in.
     # Env: BLITTO_ALLOWED_EMAIL_DOMAINS="pdn.ac.lk,sci.pdn.ac.lk" (comma-separated).
     allowed_email_domains: str = "pdn.ac.lk"
