@@ -12,6 +12,7 @@ import base64
 import binascii
 import logging
 import os
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -34,6 +35,8 @@ _PBKDF2_ITERATIONS = 600_000
 _SALT_SIZE = 16
 _ENCRYPTED_KEY_FILE = "private_key.enc"
 _PUBLIC_KEY_FILE = "public_key.pem"
+
+_REF_RE = re.compile(r"[0-9a-fA-F-]+\.enc")
 
 
 def _generate_rsa_key_pair() -> rsa.RSAPrivateKey:
@@ -237,6 +240,17 @@ class PKIEncryptedStore:
     # DocumentStoreAdapter protocol
     # ------------------------------------------------------------------
 
+    def _checked_blob_path(self, ref: str):
+        if not _REF_RE.fullmatch(ref) or "/" in ref or "\\" in ref or ".." in ref:
+            return None
+        p = self._storage_dir / ref
+        try:
+            if p.resolve().parent != self._storage_dir.resolve():
+                return None
+        except OSError:
+            return None
+        return p
+
     def put(self, content: bytes) -> str:
         self._require_unlocked()
 
@@ -246,7 +260,7 @@ class PKIEncryptedStore:
         aes_key = AESGCM.generate_key(bit_length=_AES_KEY_SIZE_BITS)
         nonce = os.urandom(_AES_NONCE_SIZE)
         aesgcm = AESGCM(aes_key)
-        ciphertext = aesgcm.encrypt(nonce, content, None)
+        ciphertext = aesgcm.encrypt(nonce, content, file_id.encode())
 
         wrapped_key = self._private_key.public_key().encrypt(
             aes_key,
@@ -258,25 +272,35 @@ class PKIEncryptedStore:
         )
 
         blob_path = self._storage_dir / ref
-        blob_path.write_bytes(wrapped_key + nonce + ciphertext)
+        blob_path.write_bytes(
+            b"V1" + len(wrapped_key).to_bytes(2, "big") + wrapped_key + nonce + ciphertext
+        )
         return ref
 
     def get(self, ref: str) -> Optional[bytes]:
         self._require_unlocked()
 
-        blob_path = self._storage_dir / ref
-        if not blob_path.exists():
+        blob_path = self._checked_blob_path(ref)
+        if blob_path is None or not blob_path.exists():
             return None
 
         try:
             blob = blob_path.read_bytes()
-            wrapped_key_size = self._private_key.key_size // 8
-            if len(blob) < wrapped_key_size + _AES_NONCE_SIZE:
-                return None
-
-            wrapped_key = blob[:wrapped_key_size]
-            nonce = blob[wrapped_key_size : wrapped_key_size + _AES_NONCE_SIZE]
-            ciphertext = blob[wrapped_key_size + _AES_NONCE_SIZE :]
+            if blob[:2] == b"V1":
+                wlen = int.from_bytes(blob[2:4], "big")
+                wrapped_key = blob[4 : 4 + wlen]
+                nonce = blob[4 + wlen : 4 + wlen + _AES_NONCE_SIZE]
+                ciphertext = blob[4 + wlen + _AES_NONCE_SIZE :]
+                aad = ref[:-4].encode()  # strip ".enc" -> file_id
+            else:
+                # legacy blob: infer wrapped size from current key (backward compat only)
+                wlen = self._private_key.key_size // 8
+                if len(blob) < wlen + _AES_NONCE_SIZE:
+                    return None
+                wrapped_key = blob[:wlen]
+                nonce = blob[wlen : wlen + _AES_NONCE_SIZE]
+                ciphertext = blob[wlen + _AES_NONCE_SIZE :]
+                aad = None
 
             aes_key = self._private_key.decrypt(
                 wrapped_key,
@@ -288,7 +312,7 @@ class PKIEncryptedStore:
             )
 
             aesgcm = AESGCM(aes_key)
-            return aesgcm.decrypt(nonce, ciphertext, None)
+            return aesgcm.decrypt(nonce, ciphertext, aad)
 
         except InvalidTag:
             return None
@@ -299,8 +323,8 @@ class PKIEncryptedStore:
     def delete(self, ref: str) -> bool:
         self._require_unlocked()
 
-        blob_path = self._storage_dir / ref
-        if not blob_path.exists():
+        blob_path = self._checked_blob_path(ref)
+        if blob_path is None or not blob_path.exists():
             return False
         blob_path.unlink()
         return True

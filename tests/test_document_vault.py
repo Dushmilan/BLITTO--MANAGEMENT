@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
@@ -270,3 +272,22 @@ def test_pki_unlock_rejects_wrong_length_key_fast(tmp_path, monkeypatch) -> None
     short = base64.b64encode(b"too-short").decode()
     assert store.unlock(short) is False
     assert store.is_unlocked() is False
+
+
+def test_pki_ref_is_safe_filename(pki_store) -> None:
+    ref = pki_store.put(b"hello")
+    assert re.fullmatch(r"[0-9a-f-]+\.enc", ref), ref
+    assert pki_store.get("../private_key.enc") is None
+    assert pki_store.delete("../../etc/passwd.enc") is False
+
+
+def test_pki_blob_binds_file_id(pki_store) -> None:
+    ref = pki_store.put(b"bind me")
+    blob = (pki_store._storage_dir / ref).read_bytes()
+    assert blob[:2] == b"V1"
+    # Copy ref1's whole blob to ref2's path. It is a valid ciphertext for
+    # file_id1, but get(ref2) uses file_id2 as AAD -> must fail.
+    # Without AAD binding this decrypts successfully (returns b"bind me").
+    ref2 = pki_store.put(b"other content here!!")
+    (pki_store._storage_dir / ref2).write_bytes(blob)
+    assert pki_store.get(ref2) is None
