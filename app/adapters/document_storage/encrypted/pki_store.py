@@ -9,6 +9,7 @@ Vault lifecycle:
 from __future__ import annotations
 
 import base64
+import binascii
 import logging
 import os
 import uuid
@@ -92,8 +93,10 @@ class PKIEncryptedStore:
         if not enc_path.exists():
             self._first_time_init(enc_path, pub_path)
             return
-
-        # Load public key for put() — private key stays encrypted until unlock.
+        if not pub_path.exists():
+            logger.error("cert dir half-initialized: %s missing, re-derive on unlock", pub_path)
+            self._public_key = None
+            return
         pub_pem = pub_path.read_bytes()
         self._public_key = serialization.load_pem_public_key(pub_pem)
 
@@ -187,8 +190,10 @@ class PKIEncryptedStore:
     def unlock(self, master_key_b64: str) -> bool:
         """Unlock vault with base64-encoded *master_key*. Returns True on success."""
         try:
-            master_key_bytes = base64.b64decode(master_key_b64)
-        except (ValueError, TypeError):
+            master_key_bytes = base64.b64decode(master_key_b64, validate=True)
+        except (ValueError, TypeError, binascii.Error):
+            return False
+        if len(master_key_bytes) != 32:
             return False
 
         private_key = self._decrypt_private_key(master_key_bytes)
@@ -197,6 +202,13 @@ class PKIEncryptedStore:
 
         self._private_key = private_key
         self._public_key = private_key.public_key()
+        pub_path = self._cert_dir / _PUBLIC_KEY_FILE
+        if not pub_path.exists():
+            pub_pem = self._public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            )
+            pub_path.write_bytes(pub_pem)
         self._unlocked_until = datetime.now(timezone.utc) + timedelta(
             hours=self._ttl_hours,
         )

@@ -249,3 +249,24 @@ def test_pki_does_not_write_env_file(tmp_path, monkeypatch) -> None:
     content = (tmp_path / ".env").read_text(encoding="utf-8")
     assert "BLITTO_VAULT_MASTER_KEY" not in content
     assert content.strip() == "EXISTING=1"
+
+
+def test_pki_init_with_enc_but_missing_pub_does_not_crash(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    s1 = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d1"))
+    key = s1.generated_master_key
+    assert key is not None
+    (tmp_path / "c" / "public_key.pem").unlink()
+    s2 = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d2"))
+    assert s2.unlock(key) is True
+
+
+def test_pki_unlock_rejects_wrong_length_key_fast(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    import base64
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    store = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d"))
+    short = base64.b64encode(b"too-short").decode()
+    assert store.unlock(short) is False
+    assert store.is_unlocked() is False
