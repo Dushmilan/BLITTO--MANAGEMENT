@@ -3,7 +3,7 @@
 Vault lifecycle:
   First run → generates RSA key pair + random 256-bit master key.
   Admin enters master key → decrypts RSA private key → 12-hour unlock window.
-  Lock / expiry → RSA key zeroed from memory.
+  Lock / expiry → private key reference dropped (reclaimed by GC; NOT secure zeroization).
 """
 
 from __future__ import annotations
@@ -218,6 +218,7 @@ class PKIEncryptedStore:
         return True
 
     def lock(self) -> None:
+        """Lock vault: drop in-memory private key reference (GC reclaims; not secure zeroization)."""
         self._private_key = None
         self._unlocked_until = None
 

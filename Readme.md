@@ -82,18 +82,10 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 ---
 
 ## Document Security (current state)
-
-- **Default store is plaintext at rest** (local in-memory/file adapter). Do not
-  treat the default as encrypted — see issue #49.
-- **PKI adapter exists** (`PKIEncryptedStore`, RSA/AES hybrid) but is **not wired
-  as the default** in `app/main.py`; selecting it via env is still to do.
-- **Vault lock gate**: document endpoints require an unlocked vault
-  (`X-Vault-PIN`); uploads validate PDF extension/MIME and quarantine failures.
-- **Downloads are audit-logged** (`download_granted_patent`, timestamped
-  filenames, `X-Downloaded-At`); GRANTED patents without a document return 409
-  `document_pending` instead of a file.
-- **No client-side encryption**: PDFs upload in plaintext; encryption (when the
-  PKI store is selected) happens server-side before storage.
+- **Store selectable via `BLITTO_DOCUMENT_STORE`**: `local` (plaintext, dev-only — startup fails if `environment != local`) or `pki` (RSA-4096 + AES-256-GCM envelope). Production must set `pki`.
+- **Master key never persisted by the app**: first run emits the base64 key once to the log; store it in your secret manager as `BLITTO_VAULT_MASTER_KEY`, then call `POST /api/vault/unlock`.
+- **Vault gate**: all document endpoints still require an unlocked vault (423 when locked). The PKI store additionally supports encrypt-with-public-key, so uploads can be decoupled from unlock later; the API does not expose that yet (see `test_vault_blocks_upload_when_locked`).
+- **Uploads**: 10 MB cap, extension allow-list, 423 when locked, 429 after 5 failed unlocks per IP / 10 min.
 
 ---
 

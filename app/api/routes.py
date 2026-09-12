@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import mimetypes
+import time
 import zipfile
 from datetime import datetime, timezone
 from typing import Optional
@@ -122,6 +123,21 @@ async def list_deadlines(
 
 # --- Vault unlock/lock/status ---
 
+_UNLOCK_ATTEMPTS: dict[str, list[float]] = {}
+_WINDOW_S = 600.0
+_MAX_FAILS = 5
+
+
+def _unlock_allowed(ip: str) -> bool:
+    now = time.monotonic()
+    hits = [t for t in _UNLOCK_ATTEMPTS.get(ip, []) if now - t < _WINDOW_S]
+    _UNLOCK_ATTEMPTS[ip] = hits
+    return len(hits) < _MAX_FAILS
+
+
+def _record_unlock_fail(ip: str) -> None:
+    _UNLOCK_ATTEMPTS.setdefault(ip, []).append(time.monotonic())
+
 
 @router.get("/vault/status", tags=["documentVault"])
 async def vault_status(request: Request, user: User = Depends(StaffUser)):
@@ -138,9 +154,14 @@ async def vault_unlock(
     body: dict,
     user: User = Depends(StaffUser),
 ):
+    ip = request.client.host if request.client else "unknown"
+    if not _unlock_allowed(ip):
+        raise HTTPException(status_code=429, detail="Too many unlock attempts")
     ok = request.app.state.document_vault.unlock(body.get("master_key", ""))
     if not ok:
+        _record_unlock_fail(ip)
         raise HTTPException(status_code=401, detail="Invalid master key")
+    _UNLOCK_ATTEMPTS.pop(ip, None)
     return {"status": "unlocked"}
 
 
