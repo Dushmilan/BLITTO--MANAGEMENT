@@ -39,8 +39,12 @@ class Settings(BaseSettings):
     demo_inventor2_name: str = ""
     # How often (in hours) to check for unacknowledged filings and notify admin.
     nipo_follow_up_interval_hours: int = 24
-    # Vault master key (auto-saved to .env on first run).
+    # Vault master key (provided via env/secret manager; never persisted by the app).
     vault_master_key: str = ""
+    document_store: str = "local"          # "local" | "pki"
+    vault_cert_dir: str = "certs"
+    vault_storage_dir: str = "encrypted_docs"
+    vault_ttl_hours: int = 12
 
 
 @lru_cache

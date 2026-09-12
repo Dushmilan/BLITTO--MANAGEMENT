@@ -8,6 +8,9 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.domain.common import Role
+from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+from app.adapters.document_storage.interface import DocumentStoreAdapter
+from app.adapters.document_storage.local import LocalDocumentStore
 from app.modules.application_intake.local import LocalApplicationIntakeModule
 from app.modules.audit.local import LocalAuditModule
 from app.modules.authorization.local import LocalAuthorizationModule
@@ -22,13 +25,32 @@ from app.api import router as api_router
 from scripts.seed import seed_demo_data
 
 
+def build_document_vault() -> LocalDocumentVaultModule:
+    choice = settings.document_store.lower()
+    if choice == "pki":
+        store: DocumentStoreAdapter = PKIEncryptedStore(
+            cert_dir=settings.vault_cert_dir,
+            storage_dir=settings.vault_storage_dir,
+            ttl_hours=settings.vault_ttl_hours,
+        )
+    elif choice == "local":
+        if settings.environment.lower() != "local":
+            raise RuntimeError(
+                "BLITTO_DOCUMENT_STORE=local is dev-only; set 'pki' in production"
+            )
+        store = LocalDocumentStore()
+    else:
+        raise ValueError(f"Unknown BLITTO_DOCUMENT_STORE: {settings.document_store!r}")
+    return LocalDocumentVaultModule(store=store)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
     # Wire module instances (local adapters) into application state.
     app.state.application_intake = LocalApplicationIntakeModule()
     app.state.docketing = LocalDocketingModule()
-    app.state.document_vault = LocalDocumentVaultModule()
+    app.state.document_vault = build_document_vault()
     app.state.prosecution = LocalProsecutionModule(
         docketing=app.state.docketing,
         document_vault=app.state.document_vault,

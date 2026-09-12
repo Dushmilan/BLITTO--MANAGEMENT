@@ -1,4 +1,4 @@
-"""Document storage seam - local in-memory adapter (test/production-local)."""
+"""Document storage seam - plaintext dev-only adapter. Never use for real documents."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class LocalDocumentStore:
 
     def unlock(self, master_key: str) -> bool:
         self._locked = False
-        return True
+        return True  # dev bypass: any key unlocks; NOT a security boundary
 
     def lock(self) -> None:
         self._locked = True
@@ -38,4 +38,4 @@ class LocalDocumentStore:
         return not self._locked
 
     def unlock_remaining(self) -> float:
-        return 86400.0 if not self._locked else 0.0
+        return 0.0  # no expiry concept for plaintext dev store

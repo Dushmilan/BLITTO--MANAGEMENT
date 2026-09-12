@@ -304,3 +304,24 @@ def test_pki_put_while_locked_succeeds_get_requires_unlock(tmp_path, monkeypatch
         store.get(ref)
     assert store.unlock(key) is True
     assert store.get(ref) == b"encrypt while locked"
+
+
+def test_local_store_unlock_remaining_is_zero_when_unlocked() -> None:
+    from app.adapters.document_storage.local import LocalDocumentStore
+    store = LocalDocumentStore()
+    store.unlock("anything")
+    assert store.is_unlocked() is True
+    assert store.unlock_remaining() == 0.0
+
+
+def test_build_vault_selects_pki_when_env_set(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    # `settings` is a cached singleton built at import; patch the object itself.
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "document_store", "pki")
+    monkeypatch.setattr(settings, "vault_cert_dir", str(tmp_path / "certs"))
+    monkeypatch.setattr(settings, "vault_storage_dir", str(tmp_path / "docs"))
+    from app.main import build_document_vault
+    vault = build_document_vault()
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    assert isinstance(vault._store, PKIEncryptedStore)
