@@ -61,11 +61,12 @@ def test_j2_pending_request_then_ready(api, journey_users) -> None:
 def test_j3_rejection_flow(api, journey_users) -> None:
     admin_token = journey_users["admin_token"]
     app_id = journey_create_app(api, admin_token, journey_users["inv_email"])
-    rej = api.post(
-        f"/applications/{app_id}/status?new_status=REJECTED",
-        headers={"Authorization": f"Bearer {admin_token}"},
-    )
-    assert rej.status == 200
+    for _status in ("FILED", "REJECTED"):
+        rej = api.post(
+            f"/applications/{app_id}/status?new_status={_status}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert rej.status == 200, rej.text()
     inv_h = {"Authorization": f"Bearer {journey_users['inv_token']}"}
     listed = api.get("/applications", headers=inv_h).json()
     assert any(a["id"] == app_id and a["status"] == "REJECTED" for a in listed)
@@ -88,10 +89,12 @@ def test_j4_multi_document_zip_download(api, journey_users) -> None:
 
 
 def test_j5_expired_token_rejected(api, journey_users) -> None:  # noqa: ARG001
+    from app.core.config import settings
+
     expired = jwt.encode(
         {"sub": "x", "email": "md@pdn.ac.lk", "role": "md",
          "exp": int(time.time()) - 10},
-        "change-me-in-production",
+        settings.auth_secret,
         algorithm="HS256",
     )
     r = api.get("/auth/me", headers={"Authorization": f"Bearer {expired}"})

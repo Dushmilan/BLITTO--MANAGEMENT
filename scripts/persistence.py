@@ -7,6 +7,7 @@ previous session.
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,8 @@ from typing import Any
 from app.domain.common import AuditLog, StatusHistory
 from app.modules.application_intake.models import Application
 from app.modules.authorization.models import User
+from app.modules.docketing.models import Deadline
+from app.modules.document_vault.models import Document
 from app.modules.filing_workflow.models import FilingRecord
 from app.modules.notification.models import Notification
 from app.modules.prosecution.models import DefectSheet, OfficeAction, Response
@@ -63,6 +66,42 @@ def save_dev_state(state: Any, path: str = "dev-data/state.json") -> None:
         },
     }
 
+    if "docketing" in state:
+        docketing = state["docketing"]
+        data["docketing"] = {
+            "deadlines": {
+                did: d.model_dump(mode="json") for did, d in docketing._store.items()
+            },
+        }
+
+    if "document_vault" in state:
+        vault = state["document_vault"]
+        data["document_vault"] = {
+            "documents": {
+                did: d.model_dump(mode="json") for did, d in vault._index.items()
+            },
+            "contents": {
+                ref: base64.b64encode(content).decode()
+                for ref, content in getattr(vault._store, "_data", {}).items()
+            },
+        }
+        store = vault._store
+        if hasattr(store, "_cert_dir") and hasattr(store, "_storage_dir"):
+            cert_dir = Path(store._cert_dir)
+            storage_dir = Path(store._storage_dir)
+            blobs: dict[str, str] = {}
+            if storage_dir.exists():
+                for blob_path in sorted(storage_dir.glob("*.enc")):
+                    blobs[blob_path.name] = base64.b64encode(blob_path.read_bytes()).decode()
+            pki: dict[str, Any] = {"blobs": blobs}
+            enc_path = cert_dir / "private_key.enc"
+            pub_path = cert_dir / "public_key.pem"
+            if enc_path.exists():
+                pki["private_key_enc"] = base64.b64encode(enc_path.read_bytes()).decode()
+            if pub_path.exists():
+                pki["public_key_pem"] = pub_path.read_text(encoding="utf-8")
+            data["document_vault"]["pki"] = pki
+
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
@@ -109,11 +148,48 @@ def load_dev_state(state: Any, path: str = "dev-data/state.json") -> bool:
     }
 
     filing = state["filing_workflow"]
+    filing_data = data.get("filing_workflow", {})
     filing._records = {
-        aid: FilingRecord.model_validate(r) for aid, r in data["filing_workflow"]["records"].items()
+        aid: FilingRecord.model_validate(r) for aid, r in filing_data.get("records", {}).items()
     }
     filing._defect_sheets = {
-        did: DefectSheet.model_validate(d) for did, d in data["filing_workflow"]["defect_sheets"].items()
+        did: DefectSheet.model_validate(d) for did, d in filing_data.get("defect_sheets", {}).items()
     }
+
+    if "docketing" in state and "docketing" in data:
+        docketing = state["docketing"]
+        docketing._store = {
+            did: Deadline.model_validate(d)
+            for did, d in data["docketing"].get("deadlines", {}).items()
+        }
+
+    if "document_vault" in state and "document_vault" in data:
+        vault = state["document_vault"]
+        vault._index = {
+            did: Document.model_validate(d)
+            for did, d in data["document_vault"].get("documents", {}).items()
+        }
+        store_data = getattr(vault._store, "_data", None)
+        if isinstance(store_data, dict):
+            store_data.clear()
+            for ref, b64 in data["document_vault"].get("contents", {}).items():
+                store_data[ref] = base64.b64decode(b64)
+        pki = data["document_vault"].get("pki")
+        store = vault._store
+        if pki and hasattr(store, "_cert_dir") and hasattr(store, "_storage_dir"):
+            cert_dir = Path(store._cert_dir)
+            storage_dir = Path(store._storage_dir)
+            cert_dir.mkdir(parents=True, exist_ok=True)
+            storage_dir.mkdir(parents=True, exist_ok=True)
+            if pki.get("private_key_enc"):
+                (cert_dir / "private_key.enc").write_bytes(
+                    base64.b64decode(pki["private_key_enc"])
+                )
+            if pki.get("public_key_pem"):
+                (cert_dir / "public_key.pem").write_text(
+                    pki["public_key_pem"], encoding="utf-8"
+                )
+            for name, b64 in pki.get("blobs", {}).items():
+                (storage_dir / name).write_bytes(base64.b64decode(b64))
 
     return True

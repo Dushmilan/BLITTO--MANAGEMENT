@@ -13,6 +13,14 @@ def _isolated_cwd(tmp_path, monkeypatch) -> None:
     """PKIEncryptedStore persists the master key to ./.env — keep that in tmp."""
     monkeypatch.chdir(tmp_path)
 
+
+@pytest.fixture(autouse=True)
+def _clear_unlock_limiter():
+    from app.api import routes as routes_mod
+    routes_mod._UNLOCK_ATTEMPTS.clear()
+    yield
+    routes_mod._UNLOCK_ATTEMPTS.clear()
+
 MD_EMAIL = "vault-md@pdn.ac.lk"
 MD_PW = "vaultmdpw-123"
 
@@ -126,9 +134,36 @@ def test_pki_locked_store_raises_on_operations(tmp_path):
         cert_dir=str(tmp_path / "certs"),
         storage_dir=str(tmp_path / "docs"),
     )
+    ref = store.put(b"test")  # encrypt allowed while locked
     with pytest.raises(PermissionError, match="locked"):
-        store.put(b"test")
+        store.get(ref)
     with pytest.raises(PermissionError, match="locked"):
-        store.get("any-ref")
-    with pytest.raises(PermissionError, match="locked"):
-        store.delete("any-ref")
+        store.delete(ref)
+
+
+def test_vault_unlock_rate_limited_after_5_failures(client, tmp_path, monkeypatch) -> None:
+    from tests.conftest import auth_headers, MD_EMAIL, MD_PW
+    from app.domain.common import Role
+    from app.modules.authorization.models import RegisterRequest
+    from app.modules.document_vault.local import LocalDocumentVaultModule
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    from app.api import routes as routes_mod
+
+    monkeypatch.chdir(tmp_path)
+    routes_mod._UNLOCK_ATTEMPTS.clear()  # module-global; isolate from other tests
+    # The default local store accepts any key, so swap in a real PKI vault.
+    client.app.state.document_vault = LocalDocumentVaultModule(
+        store=PKIEncryptedStore(
+            cert_dir=str(tmp_path / "certs"), storage_dir=str(tmp_path / "docs")
+        )
+    )
+    auth = client.app.state.authorization
+    if not any(u.email == MD_EMAIL for u in auth._users.values()):
+        auth.register(RegisterRequest(email=MD_EMAIL, role=Role.MD, password=MD_PW))
+    resp = client.post("/api/auth/login", json={"email": MD_EMAIL, "password": MD_PW})
+    headers = auth_headers(resp.json()["access_token"])
+    for _ in range(5):
+        r = client.post("/api/vault/unlock", json={"master_key": "wrong"}, headers=headers)
+        assert r.status_code == 401
+    r = client.post("/api/vault/unlock", json={"master_key": "wrong"}, headers=headers)
+    assert r.status_code == 429

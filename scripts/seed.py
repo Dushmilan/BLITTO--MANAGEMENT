@@ -65,10 +65,11 @@ def seed_demo_data(
     def _seed(title: str, name: str, email: str, status: ApplicationStatus, **kw) -> None:
         if not email:
             return
+        kw.setdefault("now", now)
         _seed_app(
             intake, prosecution, filing_workflow,
             title=title, inventor_name=name, inventor_email=email,
-            status=status, now=now, **kw,
+            status=status, **kw,
         )
 
     _seed(
@@ -188,8 +189,8 @@ def _seed_app(
     now: datetime,
 ) -> None:
     disclosure = Disclosure(
-        name=inventor_name,
-        email=inventor_email,
+        inventor_name=inventor_name,
+        inventor_email=inventor_email,
         title=title,
         summary=f"Demo patent application: {title}",
     )

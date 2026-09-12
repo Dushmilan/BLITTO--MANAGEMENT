@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
@@ -221,17 +223,105 @@ def test_pki_unlock_persists_across_store_recreation(tmp_path) -> None:
     assert store2.get(ref) == b"persistent content"
 
 
-def test_pki_put_get_while_locked_raises(tmp_path) -> None:
+def test_pki_put_allowed_while_locked_get_delete_require_unlock(tmp_path) -> None:
     store = PKIEncryptedStore(
         cert_dir=str(tmp_path / "certs"),
         storage_dir=str(tmp_path / "docs"),
     )
+    ref = store.put(b"test")  # allowed while locked (public-key encrypt)
     with pytest.raises(PermissionError, match="locked"):
-        store.put(b"test")
+        store.get(ref)
     with pytest.raises(PermissionError, match="locked"):
-        store.get("some-ref")
-    with pytest.raises(PermissionError, match="locked"):
-        store.delete("some-ref")
+        store.delete(ref)
     store.unlock(store.generated_master_key)
-    ref = store.put(b"now it works")
-    assert store.get(ref) == b"now it works"
+    assert store.get(ref) == b"test"
+
+
+def test_pki_does_not_write_env_file(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text("EXISTING=1\n", encoding="utf-8")
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    assert store.generated_master_key is not None
+    content = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert "BLITTO_VAULT_MASTER_KEY" not in content
+    assert content.strip() == "EXISTING=1"
+
+
+def test_pki_init_with_enc_but_missing_pub_does_not_crash(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    s1 = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d1"))
+    key = s1.generated_master_key
+    assert key is not None
+    (tmp_path / "c" / "public_key.pem").unlink()
+    s2 = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d2"))
+    assert s2.unlock(key) is True
+
+
+def test_pki_unlock_rejects_wrong_length_key_fast(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    import base64
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    store = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d"))
+    short = base64.b64encode(b"too-short").decode()
+    assert store.unlock(short) is False
+    assert store.is_unlocked() is False
+
+
+def test_pki_ref_is_safe_filename(pki_store) -> None:
+    ref = pki_store.put(b"hello")
+    assert re.fullmatch(r"[0-9a-f-]+\.enc", ref), ref
+    assert pki_store.get("../private_key.enc") is None
+    assert pki_store.delete("../../etc/passwd.enc") is False
+
+
+def test_pki_blob_binds_file_id(pki_store) -> None:
+    ref = pki_store.put(b"bind me")
+    blob = (pki_store._storage_dir / ref).read_bytes()
+    assert blob[:2] == b"V1"
+    # Copy ref1's whole blob to ref2's path. It is a valid ciphertext for
+    # file_id1, but get(ref2) uses file_id2 as AAD -> must fail.
+    # Without AAD binding this decrypts successfully (returns b"bind me").
+    ref2 = pki_store.put(b"other content here!!")
+    (pki_store._storage_dir / ref2).write_bytes(blob)
+    assert pki_store.get(ref2) is None
+
+
+def test_pki_put_while_locked_succeeds_get_requires_unlock(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    store = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d"))
+    key = store.generated_master_key
+    assert store.is_unlocked() is False
+    ref = store.put(b"encrypt while locked")
+    assert ref.endswith(".enc")
+    import pytest
+    with pytest.raises(PermissionError, match="locked"):
+        store.get(ref)
+    assert store.unlock(key) is True
+    assert store.get(ref) == b"encrypt while locked"
+
+
+def test_local_store_unlock_remaining_is_zero_when_unlocked() -> None:
+    from app.adapters.document_storage.local import LocalDocumentStore
+    store = LocalDocumentStore()
+    store.unlock("anything")
+    assert store.is_unlocked() is True
+    assert store.unlock_remaining() == 0.0
+
+
+def test_build_vault_selects_pki_when_env_set(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    # `settings` is a cached singleton built at import; patch the object itself.
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "document_store", "pki")
+    monkeypatch.setattr(settings, "vault_cert_dir", str(tmp_path / "certs"))
+    monkeypatch.setattr(settings, "vault_storage_dir", str(tmp_path / "docs"))
+    from app.main import build_document_vault
+    vault = build_document_vault()
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    assert isinstance(vault._store, PKIEncryptedStore)

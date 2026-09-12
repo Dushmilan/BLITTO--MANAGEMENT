@@ -49,14 +49,23 @@ def _auth(tok):
     return {"Authorization": f"Bearer {tok}"}
 
 
+def _grant(client, app_id, tok):
+    """Walk the legal lifecycle to GRANTED (DRAFT->FILED->ACK->EXAM->GRANTED)."""
+    last = None
+    for status in ("FILED", "ACKNOWLEDGED", "EXAMINATION", "GRANTED"):
+        last = client.post(
+            f"/applications/{app_id}/status",
+            params={"new_status": status},
+            headers=_auth(tok),
+        )
+        assert last.status_code == 200, last.text[:300]
+    return last
+
+
 def test_grant_without_document_returns_warning_and_missing_list() -> None:
     client, app_id, admin_tok, _ = _setup_client()
     try:
-        resp = client.post(
-            f"/applications/{app_id}/status",
-            params={"new_status": "GRANTED"},
-            headers=_auth(admin_tok),
-        )
+        resp = _grant(client, app_id, admin_tok)
         assert resp.status_code == 200
         assert "warning" in resp.json(), resp.json()
 
@@ -78,11 +87,7 @@ def test_user_download_granted_with_timestamp_and_audit() -> None:
             content=b"%PDF-1.4 granted",
             headers={**_auth(admin_tok), "Content-Type": "application/pdf"},
         )
-        client.post(
-            f"/applications/{app_id}/status",
-            params={"new_status": "GRANTED"},
-            headers=_auth(admin_tok),
-        )
+        _grant(client, app_id, admin_tok)
         resp = client.get(
             f"/applications/{app_id}/download", headers=_auth(inv_tok)
         )
@@ -99,11 +104,7 @@ def test_user_download_granted_with_timestamp_and_audit() -> None:
 def test_user_download_granted_without_doc_gives_pending() -> None:
     client, app_id, admin_tok, inv_tok = _setup_client()
     try:
-        client.post(
-            f"/applications/{app_id}/status",
-            params={"new_status": "GRANTED"},
-            headers=_auth(admin_tok),
-        )
+        _grant(client, app_id, admin_tok)
         resp = client.get(
             f"/applications/{app_id}/download", headers=_auth(inv_tok)
         )
@@ -116,11 +117,7 @@ def test_user_download_granted_without_doc_gives_pending() -> None:
 def test_user_can_request_document_when_pending() -> None:
     client, app_id, admin_tok, inv_tok = _setup_client()
     try:
-        client.post(
-            f"/applications/{app_id}/status",
-            params={"new_status": "GRANTED"},
-            headers=_auth(admin_tok),
-        )
+        _grant(client, app_id, admin_tok)
         resp = client.post(
             f"/applications/{app_id}/request-document", headers=_auth(inv_tok)
         )

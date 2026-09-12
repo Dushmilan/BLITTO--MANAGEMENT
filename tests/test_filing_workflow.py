@@ -103,8 +103,9 @@ def test_defect_sheet_max_three() -> None:
 
 
 def test_mark_granted_updates_status_and_notifies() -> None:
-    app, workflow, _, notification, _ = _fixtures()
+    app, workflow, intake, notification, _ = _fixtures()
     workflow.mark_filed(app.id, "md@pdn.ac.lk")
+    intake.change_status(app.id, ApplicationStatus.EXAMINATION, "md@pdn.ac.lk")
 
     result = workflow.mark_granted(app.id, "LK/PAT/2026/00123", "md@pdn.ac.lk")
 
@@ -301,7 +302,7 @@ def test_acknowledge_nonexistent_app() -> None:
         audit=LocalAuditModule(),
     )
 
-    with pytest.raises(ValueError, match="not found"):
+    with pytest.raises(ValueError, match="No filing record"):
         workflow.acknowledge_nipo("nonexistent-id", "md@pdn.ac.lk")
 
 

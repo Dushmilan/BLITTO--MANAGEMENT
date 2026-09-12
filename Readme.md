@@ -16,12 +16,12 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React.js (future) |
+| Frontend | React (Vite) in `frontend/` — dev proxy `/api` → `localhost:8000` |
 | Backend | FastAPI (Python) |
-| Database | None (in-memory / local adapters) |
-| Authentication | better-auth (JWT/JWKS) — local stub in skeleton |
-| Document Storage | Local in-memory/file adapter (S3 seam reserved) |
-| Encryption | Server-side PKI (RSA/AES hybrid) — future |
+| Database | None (in-memory stores; optional JSON snapshot in `dev-data/state.json`) |
+| Authentication | Local stub (institution email + password, Bearer tokens) — better-auth JWT/JWKS adapter reserved for prod |
+| Document Storage | Local in-memory/file adapter (default); PKI-encrypted adapter exists but is not the default |
+| Encryption | `PKIEncryptedStore` adapter (RSA/AES hybrid) exists; **default store is plaintext at rest** (see issue #49) |
 | Architecture mgmt | graphify (`graphifyy`) |
 
 ---
@@ -81,42 +81,59 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 
 ---
 
-## Document Security
-
-- **Encryption**: Server-side PKI using RSA/AES hybrid encryption
-- **Key Management**: Admin-managed certificates; master key stored offline in a physical locker
-- **Storage**: Encrypted PDFs only, stored in Google Drive
-- **Decryption**: On-demand, server-side, logged in audit trail
-- **No client-side encryption**: PDFs are uploaded in plaintext by Admin; encryption happens before Google Drive storage
+## Document Security (current state)
+- **Store selectable via `BLITTO_DOCUMENT_STORE`**: `local` (plaintext, dev-only — startup fails if `environment != local`) or `pki` (RSA-4096 + AES-256-GCM envelope). Production must set `pki`.
+- **Master key never persisted by the app**: the app NEVER logs or persists the key — on first run it exists only in memory (`PKIEncryptedStore.generated_master_key`); the operator must capture it during provisioning into their secret manager as `BLITTO_VAULT_MASTER_KEY`, then `POST /api/vault/unlock`.
+- **Vault gate**: all document endpoints still require an unlocked vault (423 when locked). The PKI store additionally supports encrypt-with-public-key, so uploads can be decoupled from unlock later; the API does not expose that yet (see `test_vault_blocks_upload_when_locked`).
+- **Uploads**: 10 MB cap, extension allow-list, 423 when locked, 429 after 5 failed unlocks per IP / 10 min.
 
 ---
 
-## Data Model
+## Data Model (in-memory)
 
 | Entity | Key Fields |
 |--------|-----------|
-| **Users** | `id`, `email`, `role` (user/director/md), `user_code`, `supabase_uid`, `created_at` |
-| **Patents** | `id`, `title`, `application_number`, `user_code`, `status`, `nipo_reference`, `inventor_name`, `inventor_email`, `created_at`, `updated_at` |
-| **Documents** | `id`, `patent_id`, `filename`, `google_drive_file_id`, `encryption_key_id`, `uploaded_by`, `uploaded_at` |
-| **StatusHistory** | `id`, `patent_id`, `old_status`, `new_status`, `changed_by`, `changed_at` |
-| **AuditLogs** | `id`, `user_id`, `patent_id`, `action`, `timestamp`, `ip_address` |
+| **Users** | `id`, `email` (institution mail only), `role` (user/director/md), `user_code`, `created_at` |
+| **Applications** | `id`, `title`, `user_code`, `status`, `inventor_name`, `inventor_email`, `created_at`, `updated_at` |
+| **Documents** | `id`, `application_id`, `filename`, `content_type`, `uploaded_by`, `uploaded_at` |
+| **Deadlines** | `id`, `application_id`, `type` (FILING/RESPONSE/MAINTENANCE_FEE), `status` (OPEN/MET/…), `due_date` |
+| **OfficeActions** | `id`, `application_id`, `kind`, `body` (+ responses) |
+| **Filing** | NIPO ack refs, defect sheets (max 3, numbered 1–3), file/grant/reject records |
+| **AuditLogs** | actor, action (`download_granted_patent`, `grant_without_document`, …), timestamp |
 
 ---
 
 ## API & Backend Notes
 
-- **Monolith architecture** — single Spring Boot deployable
-- **Authentication**: JWT tokens via Supabase Auth
-- **Authorization**: Role checks on every endpoint; users filtered by `user_code`
-- **File handling**: Stream to memory → encrypt → upload to Google Drive; reverse for download
+- **Modular FastAPI monolith** — one deployable; domain modules under
+  `app/modules/<name>/` (`interface.py` Protocol + `local/` in-memory adapter):
+  `application_intake`, `authorization`, `docketing`, `document_vault`,
+  `prosecution`, `filing_workflow`, `portfolio_analytics`, `notification`, `audit`
+- **Routes are dual-mounted** at `/...` and `/api/...` (`app/main.py`); the
+  frontend dev proxy targets `/api`
+- **Authentication**: `POST /auth/register` (self-register as `user`; only MD
+  may create director/MD roles), `POST /auth/login` (public, institution mail),
+  `POST /auth/token` (MD-only), `GET /auth/me`, `GET /users` (MD-only)
+- **Authorization**: role gates on every endpoint (`MDUser`, `StaffUser`
+  = director+md, `CurrentUser`); users see only their own applications
+- **Key flows**: GRANTED download (`GET /applications/{id}/download`, 409
+  `document_pending` when no file yet), `.../request-document` (rate-limited),
+  `GET /applications/missing-documents`, docketing (`POST
+  /applications/{id}/deadlines`, `GET /deadlines`), office actions
+  (auto-docket response deadlines), filing workflow (acknowledge / defect
+  sheets / file / grant / reject), analytics (`/analytics/portfolio`,
+  `/analytics/deadlines`)
+- **Tests**: `make test` (pytest), `make test-cov` (coverage gate: fail under
+  80%), `make test-e2e` (Playwright journeys vs live server, no browsers needed)
 
 ---
 
 ## Deployment
 
-- **Target**: University-owned server (on-premise)
+- **Target**: University-owned server (on-premise), single `uvicorn` process
 - **Scale target**: 1,000 users
-- **Database**: PostgreSQL on same server or managed instance
+- **Database**: none — in-memory stores; optional JSON snapshot persistence via
+  `scripts/persistence.py` (`dev-data/state.json`) for local dev only
 
 ---
 
@@ -192,3 +209,14 @@ pip install -e ".[dev]"
 uvicorn app.main:app --reload --port 8000
 # docs at http://localhost:8000/docs
 ```
+
+### Run the frontend
+
+```bash
+cd frontend && npm install && npm run dev
+# vite dev server proxies /api -> http://localhost:8000
+```
+
+> **Note:** the frontend still uses the pre-merge role model
+> (`admin/attorney/paralegal/inventor`) and does not match the current
+> `user/director/md` API — see issues #9/#10.

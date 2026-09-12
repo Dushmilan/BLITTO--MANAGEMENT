@@ -132,10 +132,14 @@ def journey_upload(api, admin_token: str, app_id: str, filename: str, content: b
 
 
 def journey_grant(api, admin_token: str, app_id: str):
-    return api.post(
-        f"/applications/{app_id}/status?new_status=GRANTED",
-        headers={"Authorization": f"Bearer {admin_token}"},
-    )
+    last = None
+    for status in ("FILED", "ACKNOWLEDGED", "EXAMINATION", "GRANTED"):
+        last = api.post(
+            f"/applications/{app_id}/status?new_status={status}",
+            headers={"Authorization": f"Bearer {admin_token}"},
+        )
+        assert last.status == 200, last.text()
+    return last
 
 
 def journey_download(api, token: str, app_id: str):
