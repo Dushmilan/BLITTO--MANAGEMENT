@@ -228,15 +228,13 @@ def test_pki_put_get_while_locked_raises(tmp_path) -> None:
         cert_dir=str(tmp_path / "certs"),
         storage_dir=str(tmp_path / "docs"),
     )
+    ref = store.put(b"test")  # allowed while locked (public-key encrypt)
     with pytest.raises(PermissionError, match="locked"):
-        store.put(b"test")
+        store.get(ref)
     with pytest.raises(PermissionError, match="locked"):
-        store.get("some-ref")
-    with pytest.raises(PermissionError, match="locked"):
-        store.delete("some-ref")
+        store.delete(ref)
     store.unlock(store.generated_master_key)
-    ref = store.put(b"now it works")
-    assert store.get(ref) == b"now it works"
+    assert store.get(ref) == b"test"
 
 
 def test_pki_does_not_write_env_file(tmp_path, monkeypatch) -> None:
@@ -291,3 +289,18 @@ def test_pki_blob_binds_file_id(pki_store) -> None:
     ref2 = pki_store.put(b"other content here!!")
     (pki_store._storage_dir / ref2).write_bytes(blob)
     assert pki_store.get(ref2) is None
+
+
+def test_pki_put_while_locked_succeeds_get_requires_unlock(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    store = PKIEncryptedStore(cert_dir=str(tmp_path / "c"), storage_dir=str(tmp_path / "d"))
+    key = store.generated_master_key
+    assert store.is_unlocked() is False
+    ref = store.put(b"encrypt while locked")
+    assert ref.endswith(".enc")
+    import pytest
+    with pytest.raises(PermissionError, match="locked"):
+        store.get(ref)
+    assert store.unlock(key) is True
+    assert store.get(ref) == b"encrypt while locked"

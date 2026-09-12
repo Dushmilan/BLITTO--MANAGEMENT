@@ -126,9 +126,8 @@ def test_pki_locked_store_raises_on_operations(tmp_path):
         cert_dir=str(tmp_path / "certs"),
         storage_dir=str(tmp_path / "docs"),
     )
+    ref = store.put(b"test")  # encrypt allowed while locked
     with pytest.raises(PermissionError, match="locked"):
-        store.put(b"test")
+        store.get(ref)
     with pytest.raises(PermissionError, match="locked"):
-        store.get("any-ref")
-    with pytest.raises(PermissionError, match="locked"):
-        store.delete("any-ref")
+        store.delete(ref)

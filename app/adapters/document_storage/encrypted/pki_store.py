@@ -232,9 +232,12 @@ class PKIEncryptedStore:
         remaining = (self._unlocked_until - datetime.now(timezone.utc)).total_seconds()
         return max(0.0, remaining)
 
-    def _require_unlocked(self) -> None:
+    def _require_unlocked_for_decrypt(self) -> None:
         if not self.is_unlocked():
-            raise VaultLockedError("Vault is locked")
+            raise VaultLockedError("Vault is locked (decrypt requires unlock)")
+
+    # Keep old _require_unlocked as alias to avoid breaking imports:
+    _require_unlocked = _require_unlocked_for_decrypt
 
     # ------------------------------------------------------------------
     # DocumentStoreAdapter protocol
@@ -252,8 +255,8 @@ class PKIEncryptedStore:
         return p
 
     def put(self, content: bytes) -> str:
-        self._require_unlocked()
-
+        if self._public_key is None:
+            raise VaultLockedError("Vault public key unavailable")
         file_id = str(uuid.uuid4())
         ref = f"{file_id}.enc"
 
@@ -262,7 +265,7 @@ class PKIEncryptedStore:
         aesgcm = AESGCM(aes_key)
         ciphertext = aesgcm.encrypt(nonce, content, file_id.encode())
 
-        wrapped_key = self._private_key.public_key().encrypt(
+        wrapped_key = self._public_key.encrypt(
             aes_key,
             padding.OAEP(
                 mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -278,7 +281,7 @@ class PKIEncryptedStore:
         return ref
 
     def get(self, ref: str) -> Optional[bytes]:
-        self._require_unlocked()
+        self._require_unlocked_for_decrypt()
 
         blob_path = self._checked_blob_path(ref)
         if blob_path is None or not blob_path.exists():
@@ -321,7 +324,7 @@ class PKIEncryptedStore:
             return None
 
     def delete(self, ref: str) -> bool:
-        self._require_unlocked()
+        self._require_unlocked_for_decrypt()
 
         blob_path = self._checked_blob_path(ref)
         if blob_path is None or not blob_path.exists():
