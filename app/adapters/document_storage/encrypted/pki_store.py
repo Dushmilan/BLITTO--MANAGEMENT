@@ -36,7 +36,7 @@ _SALT_SIZE = 16
 _ENCRYPTED_KEY_FILE = "private_key.enc"
 _PUBLIC_KEY_FILE = "public_key.pem"
 
-_REF_RE = re.compile(r"[0-9a-fA-F-]+\.enc")
+_REF_RE = re.compile(r"[0-9a-f-]+\.enc")
 
 
 def _generate_rsa_key_pair() -> rsa.RSAPrivateKey:

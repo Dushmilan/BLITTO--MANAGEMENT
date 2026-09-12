@@ -83,7 +83,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 
 ## Document Security (current state)
 - **Store selectable via `BLITTO_DOCUMENT_STORE`**: `local` (plaintext, dev-only — startup fails if `environment != local`) or `pki` (RSA-4096 + AES-256-GCM envelope). Production must set `pki`.
-- **Master key never persisted by the app**: first run emits the base64 key once to the log; store it in your secret manager as `BLITTO_VAULT_MASTER_KEY`, then call `POST /api/vault/unlock`.
+- **Master key never persisted by the app**: the app NEVER logs or persists the key — on first run it exists only in memory (`PKIEncryptedStore.generated_master_key`); the operator must capture it during provisioning into their secret manager as `BLITTO_VAULT_MASTER_KEY`, then `POST /api/vault/unlock`.
 - **Vault gate**: all document endpoints still require an unlocked vault (423 when locked). The PKI store additionally supports encrypt-with-public-key, so uploads can be decoupled from unlock later; the API does not expose that yet (see `test_vault_blocks_upload_when_locked`).
 - **Uploads**: 10 MB cap, extension allow-list, 423 when locked, 429 after 5 failed unlocks per IP / 10 min.
 

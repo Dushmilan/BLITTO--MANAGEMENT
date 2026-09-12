@@ -13,6 +13,14 @@ def _isolated_cwd(tmp_path, monkeypatch) -> None:
     """PKIEncryptedStore persists the master key to ./.env — keep that in tmp."""
     monkeypatch.chdir(tmp_path)
 
+
+@pytest.fixture(autouse=True)
+def _clear_unlock_limiter():
+    from app.api import routes as routes_mod
+    routes_mod._UNLOCK_ATTEMPTS.clear()
+    yield
+    routes_mod._UNLOCK_ATTEMPTS.clear()
+
 MD_EMAIL = "vault-md@pdn.ac.lk"
 MD_PW = "vaultmdpw-123"
 

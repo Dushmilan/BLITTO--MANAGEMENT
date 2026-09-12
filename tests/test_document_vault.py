@@ -223,7 +223,7 @@ def test_pki_unlock_persists_across_store_recreation(tmp_path) -> None:
     assert store2.get(ref) == b"persistent content"
 
 
-def test_pki_put_get_while_locked_raises(tmp_path) -> None:
+def test_pki_put_allowed_while_locked_get_delete_require_unlock(tmp_path) -> None:
     store = PKIEncryptedStore(
         cert_dir=str(tmp_path / "certs"),
         storage_dir=str(tmp_path / "docs"),

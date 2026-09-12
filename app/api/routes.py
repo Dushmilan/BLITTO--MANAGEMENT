@@ -156,7 +156,7 @@ async def vault_unlock(
 ):
     ip = request.client.host if request.client else "unknown"
     if not _unlock_allowed(ip):
-        raise HTTPException(status_code=429, detail="Too many unlock attempts")
+        raise HTTPException(status_code=429, detail="Too many unlock attempts", headers={"Retry-After": "600"})
     ok = request.app.state.document_vault.unlock(body.get("master_key", ""))
     if not ok:
         _record_unlock_fail(ip)
