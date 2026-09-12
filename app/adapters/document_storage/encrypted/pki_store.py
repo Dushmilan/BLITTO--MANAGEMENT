@@ -16,8 +16,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from app.core.config import settings
-
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
@@ -99,24 +97,6 @@ class PKIEncryptedStore:
         pub_pem = pub_path.read_bytes()
         self._public_key = serialization.load_pem_public_key(pub_pem)
 
-        # Re-expose master key from env if available.
-        if settings.vault_master_key and not self.generated_master_key:
-            self.generated_master_key = settings.vault_master_key
-
-    @staticmethod
-    def _save_master_key_to_env(master_key_b64: str) -> None:
-        """Write BLITTO_VAULT_MASTER_KEY to .env so the key persists across restarts."""
-        env_path = Path(".env")
-        key_line = f"BLITTO_VAULT_MASTER_KEY={master_key_b64}\n"
-        if env_path.exists():
-            content = env_path.read_text(encoding="utf-8")
-            if "BLITTO_VAULT_MASTER_KEY" in content:
-                return  # already persisted, don't overwrite
-            env_path.write_text(content.rstrip() + "\n" + key_line, encoding="utf-8")
-        else:
-            env_path.write_text(key_line, encoding="utf-8")
-        logger.info("Master key saved to .env")
-
     def _first_time_init(
         self, enc_path: Path, pub_path: Path
     ) -> None:
@@ -128,8 +108,10 @@ class PKIEncryptedStore:
         master_key_bytes = os.urandom(32)
         self.generated_master_key = base64.b64encode(master_key_bytes).decode()
 
-        # Persist master key to .env so admin can recover it.
-        self._save_master_key_to_env(self.generated_master_key)
+        logger.warning(
+            "First-run vault master key generated. Persist it securely "
+            "(e.g. BLITTO_VAULT_MASTER_KEY secret); it will not be saved to disk."
+        )
 
         # Write public key (plain).
         pub_pem = self._public_key.public_bytes(

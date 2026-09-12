@@ -235,3 +235,17 @@ def test_pki_put_get_while_locked_raises(tmp_path) -> None:
     store.unlock(store.generated_master_key)
     ref = store.put(b"now it works")
     assert store.get(ref) == b"now it works"
+
+
+def test_pki_does_not_write_env_file(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text("EXISTING=1\n", encoding="utf-8")
+    from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
+    store = PKIEncryptedStore(
+        cert_dir=str(tmp_path / "certs"),
+        storage_dir=str(tmp_path / "docs"),
+    )
+    assert store.generated_master_key is not None
+    content = (tmp_path / ".env").read_text(encoding="utf-8")
+    assert "BLITTO_VAULT_MASTER_KEY" not in content
+    assert content.strip() == "EXISTING=1"
