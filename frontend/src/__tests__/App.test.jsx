@@ -21,15 +21,19 @@ vi.mock('../pages/LoginPage.jsx', () => ({
     </div>
   ),
 }))
-vi.mock('../components/layout/AdminLayout.jsx', () => ({
-  default: ({ user, onLogout }) => (
-    <div>
-      <span>ADMIN_LAYOUT</span>
-      <span>{user.email}</span>
-      <button onClick={onLogout}>do-logout</button>
-    </div>
-  ),
-}))
+vi.mock('../components/layout/UnifiedLayout.jsx', async (importOriginal) => {
+  const { Outlet } = await import('react-router-dom')
+  return {
+    default: ({ user, onLogout }) => (
+      <div>
+        <span>UNIFIED_LAYOUT</span>
+        <span>{user.email}</span>
+        <button onClick={onLogout}>do-logout</button>
+        <Outlet />
+      </div>
+    ),
+  }
+})
 vi.mock('../pages/UserPanel.jsx', () => ({
   default: ({ user, onLogout }) => (
     <div>
@@ -66,7 +70,7 @@ describe('App routing & auth gating', () => {
     getToken.mockReturnValue(null)
     renderApp()
     await waitFor(() => expect(screen.getByText('LOGIN_PAGE')).toBeInTheDocument())
-    expect(screen.queryByText('ADMIN_LAYOUT')).not.toBeInTheDocument()
+    expect(screen.queryByText('UNIFIED_LAYOUT')).not.toBeInTheDocument()
     expect(screen.queryByText('USER_PANEL')).not.toBeInTheDocument()
   })
 
@@ -74,7 +78,7 @@ describe('App routing & auth gating', () => {
     getToken.mockReturnValue('tok')
     api.me.mockResolvedValue(ADMIN)
     renderApp()
-    await waitFor(() => expect(screen.getByText('ADMIN_LAYOUT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('UNIFIED_LAYOUT')).toBeInTheDocument())
     expect(screen.getByText('admin@peradeniya.lk')).toBeInTheDocument()
   })
 
@@ -83,7 +87,7 @@ describe('App routing & auth gating', () => {
     api.me.mockResolvedValue(INVENTOR)
     renderApp()
     await waitFor(() => expect(screen.getByText('USER_PANEL')).toBeInTheDocument())
-    expect(screen.getByText('inventor@peradeniya.lk')).toBeInTheDocument()
+    expect(screen.getAllByText('inventor@peradeniya.lk').length).toBeGreaterThan(0)
   })
 
   it('clears the session and shows login if the stored token is invalid', async () => {
@@ -103,7 +107,7 @@ describe('App routing & auth gating', () => {
     await waitFor(() => expect(screen.getByText('LOGIN_PAGE')).toBeInTheDocument())
     await userEvent.click(screen.getByText('do-login'))
 
-    await waitFor(() => expect(screen.getByText('ADMIN_LAYOUT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('UNIFIED_LAYOUT')).toBeInTheDocument())
     expect(api.login).toHaveBeenCalledWith('admin@peradeniya.lk', 'pw')
     expect(setToken).toHaveBeenCalledWith('tok')
   })
@@ -113,10 +117,36 @@ describe('App routing & auth gating', () => {
     api.me.mockResolvedValue(ADMIN)
     renderApp()
 
-    await waitFor(() => expect(screen.getByText('ADMIN_LAYOUT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('UNIFIED_LAYOUT')).toBeInTheDocument())
     await userEvent.click(screen.getByText('do-logout'))
 
     expect(clearToken).toHaveBeenCalled()
     await waitFor(() => expect(screen.getByText('LOGIN_PAGE')).toBeInTheDocument())
+  })
+
+  it('blocks inventors from staff routes', async () => {
+    getToken.mockReturnValue('tok')
+    api.me.mockResolvedValue(INVENTOR)
+    renderApp(['/admin/patents'])
+
+    await waitFor(() => expect(screen.getByText('USER_PANEL')).toBeInTheDocument())
+    expect(screen.queryByText('PATENTS_PAGE')).not.toBeInTheDocument()
+  })
+
+  it('blocks staff from inventor routes', async () => {
+    getToken.mockReturnValue('tok')
+    api.me.mockResolvedValue(ADMIN)
+    renderApp(['/user'])
+
+    await waitFor(() => expect(screen.getByText('UNIFIED_LAYOUT')).toBeInTheDocument())
+    expect(screen.queryByText('USER_PANEL')).not.toBeInTheDocument()
+  })
+
+  it('redirects unknown paths to the role home', async () => {
+    getToken.mockReturnValue('tok')
+    api.me.mockResolvedValue(ADMIN)
+    renderApp(['/nope'])
+
+    await waitFor(() => expect(screen.getByText('UNIFIED_LAYOUT')).toBeInTheDocument())
   })
 })
