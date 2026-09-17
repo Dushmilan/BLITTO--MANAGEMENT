@@ -64,8 +64,8 @@ export default function DashboardPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg p-md" style={{ backgroundColor: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)' }}>
-          <p className="text-body-sm font-sans" style={{ color: '#dc2626' }}>{error}</p>
+        <div className="rounded-lg p-md bg-status-rejected/10 border border-status-rejected/20">
+          <p className="text-body-sm font-sans text-status-rejected">{error}</p>
         </div>
       )}
 

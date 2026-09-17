@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component {
         <div className="min-h-screen bg-ivory flex items-center justify-center p-xl" role="alert">
           <div className="max-w-[480px] text-center bg-canvas border border-hairline rounded-xl p-2xl shadow-editorial-md">
             <div className="mx-auto mb-lg w-12 h-12 rounded-full bg-copper-100 flex items-center justify-center">
-              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-copper" aria-hidden="true">
+              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-copper" >
                 <path d="M12 3L2 21h20L12 3z" strokeLinejoin="round" />
                 <path d="M12 10v5" strokeLinecap="round" />
                 <circle cx="12" cy="18" r="0.5" fill="currentColor" />

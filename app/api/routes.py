@@ -438,6 +438,35 @@ async def receive_office_action(
     return request.app.state.prosecution.receive_office_action(application_id, kind, body)
 
 
+# --- Non-critical field edits + status history (issue #27) ---
+@router.patch("/applications/{application_id}", tags=["applicationIntake"])
+async def update_application(
+    request: Request,
+    application_id: str,
+    body: dict,
+    staff: User = Depends(StaffUser),
+):
+    allowed = {"title", "technology_area"}
+    fields = {k: v for k, v in body.items() if k in allowed}
+    if not fields:
+        raise HTTPException(status_code=422, detail="No editable fields provided")
+    application = request.app.state.application_intake.update_application_fields(
+        application_id, **fields
+    )
+    if application is None:
+        raise HTTPException(status_code=404, detail="Unknown application")
+    return application
+
+
+@router.get("/applications/{application_id}/history", tags=["applicationIntake"])
+async def application_history(
+    request: Request, application_id: str, user: User = Depends(CurrentUser)
+):
+    if request.app.state.application_intake.get_application(application_id) is None:
+        raise HTTPException(status_code=404, detail="Unknown application")
+    return request.app.state.application_intake.get_status_history(application_id)
+
+
 # --- Status transition (director/MD shared power, domain lifecycle) ---
 @router.post("/applications/{application_id}/status", tags=["applicationIntake"])
 async def change_status(

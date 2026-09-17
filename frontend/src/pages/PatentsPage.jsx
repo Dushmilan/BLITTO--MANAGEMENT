@@ -9,9 +9,10 @@ import DataTable from '../components/ui/DataTable.jsx'
 import Dropdown from '../components/ui/Dropdown.jsx'
 import SearchInput from '../components/ui/SearchInput.jsx'
 import Modal from '../components/ui/Modal.jsx'
+import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 import Input from '../components/ui/Input.jsx'
 import { useToast } from '../hooks/useToast.js'
-import { STATUS_OPTIONS } from '../utils/notifyHelpers.js'
+import { STATUS_OPTIONS, inventorSummary, normalizeInventors } from '../utils/notifyHelpers.js'
 
 const TABS = [
   { id: 'list', label: 'Patents' },
@@ -28,12 +29,18 @@ export default function PatentsPage({ user }) {
   )
   const [apps, setApps] = useState([])
   const [loading, setLoading] = useState(true)
+  const [docAppId, setDocAppId] = useState('')
   const isAdmin = user?.role === 'admin'
   const visibleTabs = TABS.filter((t) => !t.adminOnly || isAdmin)
 
   function selectTab(id) {
     setActiveTab(id)
     setSearchParams(id === 'list' ? {} : { tab: id })
+  }
+
+  function goToDocuments(appId) {
+    setDocAppId(appId)
+    selectTab('documents')
   }
 
   useEffect(() => {
@@ -82,10 +89,10 @@ export default function PatentsPage({ user }) {
 
       {/* Tab Content */}
       {activeTab === 'list' && (
-        <PatentsTab apps={apps} loading={loading} onReload={loadApps} user={user} />
+        <PatentsTab apps={apps} loading={loading} onReload={loadApps} user={user} onViewDocuments={goToDocuments} />
       )}
       {activeTab === 'documents' && (
-        <DocumentsTab apps={apps} user={user} />
+        <DocumentsTab apps={apps} user={user} initialAppId={docAppId} />
       )}
     </div>
   )
@@ -93,7 +100,7 @@ export default function PatentsPage({ user }) {
 
 /* ─── Patents List Tab ─── */
 
-function PatentsTab({ apps, loading, onReload, user }) {
+function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [showNewModal, setShowNewModal] = useState(false)
@@ -104,8 +111,13 @@ function PatentsTab({ apps, loading, onReload, user }) {
   const [grantingApp, setGrantingApp] = useState(null)
   const [grantPatentNumber, setGrantPatentNumber] = useState('')
   const [granting, setGranting] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState(null)
   const toast = useToast()
   const [searchParams] = useSearchParams()
+  const [editingTech, setEditingTech] = useState(false)
+  const [techDraft, setTechDraft] = useState('')
+  const [savingTech, setSavingTech] = useState(false)
+  const [history, setHistory] = useState([])
 
   // Deep-link (?focus=<id>) opens the patent detail modal once data arrives.
   useEffect(() => {
@@ -116,6 +128,40 @@ function PatentsTab({ apps, loading, onReload, user }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apps])
+
+  // Reset the detail editor and load status history whenever selection changes.
+  useEffect(() => {
+    setEditingTech(false)
+    setHistory([])
+    if (!selectedApp) return
+    setTechDraft(selectedApp.technology_area || '')
+    let cancelled = false
+    api.applicationHistory(selectedApp.id)
+      .then((h) => { if (!cancelled) setHistory(h || []) })
+      .catch(() => { if (!cancelled) setHistory([]) })
+    return () => { cancelled = true }
+  }, [selectedApp])
+
+  async function handleTechSave() {
+    if (!selectedApp) return
+    setSavingTech(true)
+    try {
+      const updated = await api.updateApplication(selectedApp.id, { technology_area: techDraft })
+      setSelectedApp(updated)
+      setEditingTech(false)
+      toast.success('Technology area updated')
+      await onReload()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setSavingTech(false)
+    }
+  }
+
+  function goToDocuments(appId) {
+    setSelectedApp(null)
+    onViewDocuments?.(appId)
+  }
 
   function addInventor() {
     setNewForm({ ...newForm, inventors: [...newForm.inventors, { inventor_name: '', inventor_email: '' }] })
@@ -178,8 +224,8 @@ function PatentsTab({ apps, loading, onReload, user }) {
         setShowGrantModal(true)
         return
       } else if (action === 'reject') {
-        if (!confirm('Reject this patent?')) return
-        await api.markRejected(app.id)
+        setPendingConfirm({ kind: 'reject', app })
+        return
       }
       await onReload()
     } catch (err) {
@@ -189,18 +235,51 @@ function PatentsTab({ apps, loading, onReload, user }) {
 
   async function handleGrantConfirm() {
     if (!grantingApp || !grantPatentNumber.trim()) return
+    // Step 1 done (number captured) — step 2 is the explicit confirmation.
+    setPendingConfirm({ kind: 'grant', app: grantingApp, number: grantPatentNumber.trim() })
+    setShowGrantModal(false)
+  }
+
+  // Runs after the ConfirmDialog is accepted (grant/reject live here;
+  // document deletes confirm inside DocumentsTab, which owns that state).
+  async function handlePendingConfirm() {
+    const pending = pendingConfirm
+    setPendingConfirm(null)
+    if (!pending) return
     setGranting(true)
     try {
-      await api.markGranted(grantingApp.id, grantPatentNumber.trim())
-      setShowGrantModal(false)
-      setGrantingApp(null)
-      setGrantPatentNumber('')
-      toast.success('Patent granted')
+      if (pending.kind === 'grant') {
+        await api.markGranted(pending.app.id, pending.number)
+        setGrantingApp(null)
+        setGrantPatentNumber('')
+        toast.success('Patent granted')
+      } else if (pending.kind === 'reject') {
+        await api.markRejected(pending.app.id)
+        toast.success('Patent rejected')
+      }
       await onReload()
     } catch (err) {
       toast.error(err.message)
     } finally {
       setGranting(false)
+    }
+  }
+
+  function pendingDialogProps() {
+    if (!pendingConfirm) return null
+    if (pendingConfirm.kind === 'grant') {
+      return {
+        title: 'Confirm grant',
+        message: `Grant "${pendingConfirm.app.title}" (currently ${pendingConfirm.app.status}) with patent number ${pendingConfirm.number}? This action is irreversible.`,
+        confirmLabel: 'Grant Patent',
+        requireConfirm: 'I understand granting is permanent and irreversible',
+      }
+    }
+    return {
+      title: 'Reject patent?',
+      message: `Reject "${pendingConfirm.app.title}"? This action is irreversible.`,
+      confirmLabel: 'Reject',
+      danger: true,
     }
   }
 
@@ -255,15 +334,12 @@ function PatentsTab({ apps, loading, onReload, user }) {
       key: 'inventors',
       label: 'Inventors',
       render: (val) => {
-        if (!val || val.length === 0) return <span className="text-body-sm text-steel font-sans">{'\u2014'}</span>
+        const { first, extra } = inventorSummary(val)
+        if (!first) return <span className="text-body-sm text-steel font-sans">{'\u2014'}</span>
         return (
-          <div className="flex flex-wrap gap-x-sm gap-y-0.5">
-            {val.map((inv, i) => (
-              <span key={i} className="text-body-sm text-steel font-sans">
-                {inv.inventor_name || inv.inventor_email}{i < val.length - 1 ? ',' : ''}
-              </span>
-            ))}
-          </div>
+          <span className="text-body-sm text-steel font-sans">
+            {first}{extra > 0 && <span className="text-muted"> +{extra} more</span>}
+          </span>
         )
       },
     },
@@ -481,7 +557,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
               <div>
                 <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Inventors</p>
                 <div className="space-y-xs">
-                  {selectedApp.inventors && selectedApp.inventors.length > 0 ? selectedApp.inventors.map((inv, i) => (
+                  {normalizeInventors(selectedApp.inventors).length > 0 ? normalizeInventors(selectedApp.inventors).map((inv, i) => (
                     <p key={i} className="text-body-sm text-ink font-sans">
                       {inv.inventor_name} <span className="text-steel">({inv.inventor_email})</span>
                     </p>
@@ -490,8 +566,68 @@ function PatentsTab({ apps, loading, onReload, user }) {
               </div>
               <div>
                 <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Technology Area</p>
-                <p className="text-body-sm text-ink font-sans">{selectedApp.technology_area || '—'}</p>
+                {editingTech ? (
+                  <div className="flex items-center gap-xs">
+                    <Input
+                      value={techDraft}
+                      onChange={(e) => setTechDraft(e.target.value)}
+                      placeholder="e.g. Electrical Engineering"
+                      aria-label="Technology area"
+                    />
+                    <Button variant="primary" size="sm" onClick={handleTechSave} disabled={savingTech}>
+                      {savingTech ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingTech(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-body-sm text-ink font-sans">
+                    {selectedApp.technology_area || '—'}
+                    <button
+                      type="button"
+                      onClick={() => setEditingTech(true)}
+                      aria-label="Edit technology area"
+                      className="touch-target ml-xs text-copper hover:text-copper-700 text-body-sm font-sans"
+                    >
+                      Edit
+                    </button>
+                  </p>
+                )}
               </div>
+              <div>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Created</p>
+                <p className="text-body-sm text-ink font-sans">
+                  {selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleString() : '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Last updated</p>
+                <p className="text-body-sm text-ink font-sans">
+                  {selectedApp.updated_at ? new Date(selectedApp.updated_at).toLocaleString() : '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Status history */}
+            {history.length > 0 && (
+              <div>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-sm">Status history</p>
+                <ul className="space-y-xs">
+                  {history.map((h) => (
+                    <li key={h.id} className="text-body-sm text-steel font-sans">
+                      {h.old_status} → <span className="text-ink font-medium">{h.new_status}</span>
+                      <span className="text-muted"> by {h.changed_by}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-sm">
+              <Button variant="secondary" size="sm" onClick={() => goToDocuments(selectedApp.id)}>
+                View documents
+              </Button>
             </div>
 
             {/* Critical filing actions stay visible — no three-dot hunt.
@@ -509,20 +645,36 @@ function PatentsTab({ apps, loading, onReload, user }) {
           </div>
         )}
       </Modal>
+
+      {/* Destructive/irreversible confirmations (issues #26, #28) */}
+      {pendingConfirm && (
+        <ConfirmDialog
+          open
+          {...pendingDialogProps()}
+          onConfirm={handlePendingConfirm}
+          onCancel={() => setPendingConfirm(null)}
+        />
+      )}
     </div>
   )
 }
 
 /* ─── Documents Tab ─── */
 
-function DocumentsTab({ apps, user }) {
-  const [selectedAppId, setSelectedAppId] = useState('')
+function DocumentsTab({ apps, user, initialAppId = '' }) {
+  const [selectedAppId, setSelectedAppId] = useState(initialAppId)
+
+  // Follow deep-links from the patent detail modal ("View documents").
+  useEffect(() => {
+    if (initialAppId) setSelectedAppId(initialAppId)
+  }, [initialAppId])
   const [documents, setDocuments] = useState([])
   const [docsLoading, setDocsLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState(null)
   const [deleting, setDeleting] = useState(null)
+  const [pendingDelete, setPendingDelete] = useState(null)
   const fileInputRef = useRef(null)
   const toast = useToast()
 
@@ -642,11 +794,18 @@ function DocumentsTab({ apps, user }) {
   }
 
   async function handleDelete(doc) {
-    if (!confirm(`Delete "${doc.filename}"? This cannot be undone.`)) return
+    setPendingDelete(doc)
+  }
+
+  async function handleDeleteConfirm() {
+    const doc = pendingDelete
+    setPendingDelete(null)
+    if (!doc) return
     setDeleting(doc.id)
     try {
       await api.deleteDocument(selectedAppId, doc.id)
       await loadDocs()
+      toast.success('Document deleted')
     } catch (err) {
       toast.error(err.message)
     } finally {
@@ -824,6 +983,23 @@ function DocumentsTab({ apps, user }) {
             </div>
           )}
         </div>
+        {/* Selected-patent context bar (issue #30) */}
+        {selectedAppId && (() => {
+          const selected = apps.find((a) => a.id === selectedAppId)
+          if (!selected) return null
+          return (
+            <div className="mt-md flex flex-wrap items-center gap-x-md gap-y-xs rounded-md bg-ivory-200 px-md py-sm" data-testid="doc-context-bar">
+              <span className="text-body-sm-medium text-ink font-sans">{selected.title}</span>
+              <Badge>{selected.status || 'draft'}</Badge>
+              <span className="text-body-sm text-steel font-mono">
+                {(selected.application_number || selected.id)?.slice(0, 12)}
+              </span>
+              {selected.technology_area && (
+                <span className="text-body-sm text-steel font-sans">{selected.technology_area}</span>
+              )}
+            </div>
+          )
+        })()}
         {uploadStatus && (
           <div aria-live="polite" className={`mt-md px-md py-sm rounded-md text-body-sm font-sans flex items-center gap-sm ${
             uploadStatus.type === 'success'
@@ -928,6 +1104,19 @@ function DocumentsTab({ apps, user }) {
           </div>
         )}
       </div>
+
+      {/* Document delete confirmation (issue #26) */}
+      {pendingDelete && (
+        <ConfirmDialog
+          open
+          title="Delete document?"
+          message={`Delete "${pendingDelete.filename}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   )
 }

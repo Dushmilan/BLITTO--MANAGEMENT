@@ -120,6 +120,27 @@ class LocalApplicationIntakeModule:
     def get_application(self, application_id: str) -> Optional[Application]:
         return self._store.get(application_id)
 
+    def update_application_fields(
+        self,
+        application_id: str,
+        *,
+        title: Optional[str] = None,
+        technology_area: Optional[str] = None,
+    ) -> Optional[Application]:
+        """Edit non-critical fields (issue #27). Status/identity are immutable here."""
+        application = self._store.get(application_id)
+        if application is None:
+            return None
+        if title is not None:
+            application.title = title
+        if technology_area is not None:
+            application.technology_area = technology_area
+        application.updated_at = datetime.now(timezone.utc)
+        return application
+
+    def get_status_history(self, application_id: str) -> list[StatusHistory]:
+        return list(self._history.get(application_id, []))
+
     def list_applications(self) -> list[Application]:
         return list(self._store.values())
 
