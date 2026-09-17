@@ -4,6 +4,8 @@ import { api } from '../../api.js'
 import StatCard from '../../components/ui/StatCard.jsx'
 import Card from '../../components/ui/Card.jsx'
 import Badge from '../../components/ui/Badge.jsx'
+import Skeleton from '../../components/ui/Skeleton.jsx'
+import EmptyState from '../../components/ui/EmptyState.jsx'
 
 export default function AdminDashboard() {
   const [apps, setApps] = useState([])
@@ -31,13 +33,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-section">
-        <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
-          <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-            <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <span className="font-sans text-body-sm">Loading dashboard...</span>
-        </div>
+        <Skeleton rows={3} label="Loading dashboard..." />
       </div>
     )
   }
@@ -87,7 +83,7 @@ export default function AdminDashboard() {
             <Link to="/admin/patents" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
           </div>
           {recentApps.length === 0 ? (
-            <p className="text-body-sm text-steel font-sans py-lg">No applications yet.</p>
+            <EmptyState title="No applications yet." />
           ) : (
             <div className="overflow-x-auto">
               <table className="doc-table">
@@ -118,7 +114,7 @@ export default function AdminDashboard() {
             <Link to="/admin/users" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
           </div>
           {users.length === 0 ? (
-            <p className="text-body-sm text-steel font-sans py-lg">No users yet.</p>
+            <EmptyState title="No users yet." />
           ) : (
             <div className="overflow-x-auto">
               <table className="doc-table">

@@ -1,10 +1,10 @@
 const VARIANTS = {
   primary:
-    'bg-copper text-white rounded-full px-5 py-[10px] text-button-md shadow-editorial-sm hover:bg-copper-600 hover:shadow-copper-glow',
+    'bg-copper text-white rounded-full px-lg py-xs text-button-md shadow-editorial-sm hover:bg-copper-600 hover:shadow-copper-glow',
   'primary-dark':
-    'bg-navy text-white rounded-full px-5 py-[10px] text-button-md shadow-editorial-sm hover:bg-navy-800',
+    'bg-navy text-white rounded-full px-lg py-xs text-button-md shadow-editorial-sm hover:bg-navy-800',
   secondary:
-    'bg-transparent text-ink rounded-full px-5 py-[10px] text-button-md border border-hairline hover:bg-ivory-200',
+    'bg-transparent text-ink rounded-full px-lg py-xs text-button-md border border-hairline hover:bg-ivory-200',
   ghost:
     'bg-transparent text-slate rounded-md px-3 py-2 text-body-sm-medium hover:bg-ivory-200 hover:text-ink',
   link:
@@ -12,13 +12,13 @@ const VARIANTS = {
   'icon-circular':
     'bg-canvas text-slate rounded-full border border-hairline w-8 h-8 flex items-center justify-center hover:bg-ivory-200 hover:text-ink',
   'danger':
-    'bg-status-rejected text-white rounded-full px-5 py-[10px] text-button-md hover:bg-red-700',
+    'bg-status-rejected text-white rounded-full px-lg py-xs text-button-md hover:bg-red-700',
 }
 
 const SIZES = {
-  sm: 'h-8 text-body-sm px-3 py-1',
+  sm: 'h-8 text-body-sm px-sm py-xxs',
   md: 'h-10',
-  lg: 'h-12 px-7 text-button-md',
+  lg: 'h-12 px-xxl text-button-md',
 }
 
 export default function Button({

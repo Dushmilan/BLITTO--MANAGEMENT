@@ -27,4 +27,16 @@ describe('SearchInput', () => {
     const wrapper = screen.getByRole('textbox').parentElement
     expect(wrapper.className).toContain('my-wrapper')
   })
+
+  it('shows a clear button when text is present and clears on click', async () => {
+    const onChange = vi.fn()
+    render(<SearchInput value="query" onChange={onChange} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Clear search' }))
+    expect(onChange).toHaveBeenCalledWith('')
+  })
+
+  it('hides the clear button when empty', () => {
+    render(<SearchInput value="" onChange={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Clear search' })).not.toBeInTheDocument()
+  })
 })

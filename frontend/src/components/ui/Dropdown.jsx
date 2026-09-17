@@ -104,7 +104,7 @@ export default function Dropdown({ trigger, items, className = '' }) {
                 role="menuitem"
                 onClick={() => handleItemClick(item)}
                 onKeyDown={(e) => handleMenuKeyDown(e, i)}
-                className="w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 focus-visible:bg-ivory-200 focus-visible:outline-none transition-colors duration-150 flex items-center gap-sm min-h-[44px]"
+                className="touch-target w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 focus-visible:bg-ivory-200 focus-visible:outline-none transition-colors duration-150 flex items-center gap-sm"
               >
                 {item.icon && <span className="text-steel" aria-hidden="true">{item.icon}</span>}
                 {item.label}

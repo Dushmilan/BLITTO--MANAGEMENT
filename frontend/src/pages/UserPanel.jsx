@@ -4,6 +4,8 @@ import { api } from '../api.js'
 import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import Card from '../components/ui/Card.jsx'
+import Skeleton from '../components/ui/Skeleton.jsx'
+import EmptyState from '../components/ui/EmptyState.jsx'
 
 // Inventor content inside UnifiedLayout (the layout owns the header/nav).
 // `section` selects which slice renders: 'overview' | 'patents' |
@@ -35,13 +37,7 @@ export default function UserPanel({ user, section = 'all' }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-xxl">
-        <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
-          <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-            <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <span className="font-sans text-body-sm">Loading...</span>
-        </div>
+        <Skeleton rows={3} label="Loading..." />
       </div>
     )
   }
@@ -79,11 +75,10 @@ export default function UserPanel({ user, section = 'all' }) {
           <div className="animate-slide-up stagger-1">
             <h2 className="font-display text-heading-3 text-ink mb-lg">My Patents</h2>
             {apps.length === 0 ? (
-              <Card variant="base">
-                <p className="text-body-sm text-steel font-sans py-lg text-center">
-                  No patents found. Your patents will appear here once submitted.
-                </p>
-              </Card>
+              <EmptyState
+                title="No patents found."
+                description="Your patents will appear here once submitted."
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="doc-table">
@@ -156,11 +151,10 @@ export default function UserPanel({ user, section = 'all' }) {
           <div className="animate-slide-up stagger-2">
             <h2 className="font-display text-heading-3 text-ink mb-lg">Notifications</h2>
             {notifications.length === 0 ? (
-              <Card variant="base">
-                <p className="text-body-sm text-steel font-sans py-lg text-center">
-                  No notifications yet. You'll receive updates about your patents here.
-                </p>
-              </Card>
+              <EmptyState
+                title="No notifications yet."
+                description="You'll receive updates about your patents here."
+              />
             ) : (
               <div className="space-y-md">
                 {[...notifications].reverse().map((notif) => (

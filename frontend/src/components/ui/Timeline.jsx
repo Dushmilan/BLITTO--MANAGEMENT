@@ -1,14 +1,11 @@
 import { Link } from 'react-router-dom'
+import EmptyState from './EmptyState.jsx'
 
 // Activity timeline (issue #20). Items with a `to` target render as
 // keyboard-accessible links (focus-visible styled); others stay text.
 export default function Timeline({ items = [] }) {
   if (items.length === 0) {
-    return (
-      <div className="py-xl text-center">
-        <p className="text-body-md text-steel font-sans">No recent activity.</p>
-      </div>
-    )
+    return <EmptyState title="No recent activity." />
   }
 
   return (
