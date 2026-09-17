@@ -119,3 +119,39 @@
     );
   }
 }
+
+/* Print: hide app chrome, expand content, black on white. */
+@media print {
+  aside,
+  nav,
+  header,
+  [role='alert'],
+  .grain-overlay::before {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  main,
+  [role='main'],
+  #root {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .doc-table th,
+  .doc-table td {
+    color: #000 !important;
+    border-color: #999 !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+}

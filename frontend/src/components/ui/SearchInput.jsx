@@ -16,10 +16,11 @@ export default function SearchInput({ value, onChange, placeholder = 'Search...'
       </svg>
       <input
         type="text"
+        data-search-input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 pl-10 pr-md bg-ivory-200 text-ink text-body-sm border border-transparent rounded-md outline-none transition-all duration-200 font-sans placeholder:text-muted focus:bg-canvas focus:border-hairline focus:ring-2 focus:ring-copper-100"
+        className="w-full h-9 pl-10 pr-md bg-ivory-200 text-ink text-body-sm border border-transparent rounded-md outline-none transition-all duration-200 font-sans placeholder:text-muted focus:bg-canvas focus:border-hairline focus-visible:ring-2 focus-visible:ring-copper-100"
       />
     </div>
   )
