@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { api, clearToken, getToken, setToken } from './api.js'
 import UnifiedLayout from './components/layout/UnifiedLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ToastProvider from './components/ToastProvider.jsx'
+import KeyboardShortcutsModal from './components/ui/KeyboardShortcutsModal.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut.js'
 import LoginPage from './pages/LoginPage.jsx'
@@ -19,6 +20,7 @@ const STAFF_ROLES = ['admin', 'attorney', 'paralegal']
 export default function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function loadUser() {
@@ -51,6 +53,18 @@ export default function App() {
     setUser(null)
   }, [])
 
+  // A 401 anywhere (expired/invalid session) drops the user at /login —
+  // announced by api.js, never a silent dead session (issue #41).
+  useEffect(() => {
+    function onUnauthorized() {
+      clearToken()
+      setUser(null)
+      navigate('/login')
+    }
+    window.addEventListener('blitto:unauthorized', onUnauthorized)
+    return () => window.removeEventListener('blitto:unauthorized', onUnauthorized)
+  }, [navigate])
+
   // Power-user shortcut: Ctrl/Cmd+K focuses the first search box on screen.
   // Escape closes modals/menus in their own components (Modal, Dropdown).
   const focusSearch = useCallback((e) => {
@@ -62,6 +76,9 @@ export default function App() {
   }, [])
   useKeyboardShortcut('ctrl+k', focusSearch)
   useKeyboardShortcut('meta+k', focusSearch)
+  // '?' opens the shortcut reference (issue #45).
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  useKeyboardShortcut('?', () => setShortcutsOpen(true))
 
   if (loading) {
     return (
@@ -82,6 +99,7 @@ export default function App() {
   return (
     <ThemeProvider>
     <ToastProvider>
+    <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     <Routes>
       {/* Public routes */}
       <Route

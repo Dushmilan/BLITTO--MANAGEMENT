@@ -12,9 +12,66 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
+// --- Token lifecycle (issue #41) ---
+
+// Seconds of remaining lifetime below which a token counts as expired.
+const EXPIRY_SKEW_SEC = 300
+
+export function tokenExp(token) {
+  try {
+    const [, payload] = token.split('.')
+    return JSON.parse(atob(payload)).exp ?? null
+  } catch {
+    return null
+  }
+}
+
+export function isTokenExpired(token, skewSec = EXPIRY_SKEW_SEC) {
+  if (!token) return true
+  const exp = tokenExp(token)
+  if (!exp) return true
+  return Date.now() / 1000 >= exp - skewSec
+}
+
+// Single-flight refresh: concurrent requests share one /auth/refresh call.
+let refreshPromise = null
+
+export function refreshToken() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const token = getToken()
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error('Token refresh failed')
+      const data = await res.json()
+      setToken(data.access_token)
+      return data.access_token
+    })().finally(() => {
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
+function announceUnauthorized() {
+  clearToken()
+  // App.jsx listens and routes back to /login — no silent failures.
+  window.dispatchEvent(new CustomEvent('blitto:unauthorized'))
+}
+
 async function request(path, { method = 'GET', body, params } = {}) {
+  let token = getToken()
+  // Proactive refresh: never send a token that dies mid-session.
+  if (token && isTokenExpired(token)) {
+    try {
+      token = await refreshToken()
+    } catch {
+      // Fall through with the stale token; the 401 path below handles it.
+    }
+  }
   const headers = { 'Content-Type': 'application/json' }
-  const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   let url = `/api${path}`
@@ -39,6 +96,10 @@ async function request(path, { method = 'GET', body, params } = {}) {
       detail = (await res.json()).detail ?? detail
     } catch {
       /* ignore */
+    }
+    // Expired/invalid session: drop it and tell the app to route to login.
+    if (res.status === 401 && path !== '/auth/login') {
+      announceUnauthorized()
     }
     // Attach the HTTP status so callers can distinguish error types
     // (401 wrong credentials vs 403 forbidden vs 429 throttled, ...).

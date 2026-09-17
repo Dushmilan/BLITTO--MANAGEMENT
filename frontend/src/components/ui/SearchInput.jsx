@@ -20,7 +20,7 @@ export default function SearchInput({ value, onChange, placeholder = 'Search...'
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 pl-10 pr-10 bg-ivory-200 dark:bg-navy-700 text-ink dark:text-white text-body-sm border border-transparent rounded-md outline-none transition-all duration-200 font-sans placeholder:text-muted dark:placeholder:text-white/30 focus:bg-canvas dark:focus:bg-navy-700 focus:border-hairline dark:focus:border-hairline-dark focus-visible:ring-2 focus-visible:ring-copper-100"
+        className="touch-target w-full h-9 pl-10 pr-10 bg-ivory-200 dark:bg-navy-700 text-ink dark:text-white text-body-sm border border-transparent rounded-md outline-none transition-all duration-200 font-sans placeholder:text-muted dark:placeholder:text-white/30 focus:bg-canvas dark:focus:bg-navy-700 focus:border-hairline dark:focus:border-hairline-dark focus-visible:ring-2 focus-visible:ring-copper-100"
       />
       {value && (
         <button
