@@ -1,14 +1,14 @@
 const VARIANTS = {
   default:
-    'bg-ivory-200 text-slate',
+    'bg-ivory-200 dark:bg-white/10 text-slate dark:text-white/70',
   status:
-    'bg-navy-50 text-navy',
+    'bg-navy-50 dark:bg-white/10 text-navy dark:text-white/80',
   required:
     'bg-status-rejected/10 text-status-rejected',
   type:
-    'bg-ivory-200 text-steel',
+    'bg-ivory-200 dark:bg-white/10 text-steel dark:text-white/70',
   tag:
-    'bg-copper-50 text-copper',
+    'bg-copper-50 dark:bg-copper/20 text-copper dark:text-copper-200',
   draft:
     'bg-status-draft/10 text-status-draft',
   filed:

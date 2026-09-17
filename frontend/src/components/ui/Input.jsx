@@ -33,7 +33,7 @@ export default function Input({
         autoFocus={autoFocus}
         disabled={disabled}
         placeholder={placeholder}
-        className="w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none transition-all duration-200 font-sans placeholder:text-muted focus:border-copper focus-visible:ring-2 focus-visible:ring-copper-100 disabled:bg-ivory-200 disabled:text-muted disabled:cursor-not-allowed"
+        className="w-full h-10 px-md bg-canvas dark:bg-navy-700 text-ink dark:text-white text-body-md border border-hairline dark:border-hairline-dark rounded-md outline-none transition-all duration-200 font-sans placeholder:text-muted dark:placeholder:text-white/30 focus:border-copper focus-visible:ring-2 focus-visible:ring-copper-100 disabled:bg-ivory-200 dark:disabled:bg-white/5 disabled:text-muted disabled:cursor-not-allowed"
         {...props}
       />
     </div>

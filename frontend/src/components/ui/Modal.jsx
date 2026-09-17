@@ -39,13 +39,13 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
       <div className="absolute inset-0 bg-navy/60 backdrop-blur-sm" />
 
       {/* Dialog */}
-      <div className={`relative bg-canvas rounded-xl border border-hairline shadow-editorial-xl w-full ${sizes[size]} animate-scale-in`}>
+      <div className={`relative bg-canvas dark:bg-navy-800 rounded-xl border border-hairline dark:border-hairline-dark shadow-editorial-xl w-full ${sizes[size]} animate-scale-in`}>
         {/* Header */}
-        <div className="px-xl py-lg border-b border-hairline flex items-center justify-between">
-          <h2 className="font-display text-heading-4 text-ink">{title}</h2>
+        <div className="px-xl py-lg border-b border-hairline dark:border-hairline-dark flex items-center justify-between">
+          <h2 className="font-display text-heading-4 text-ink dark:text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="touch-target text-muted hover:text-ink transition-colors p-xs rounded-md hover:bg-ivory-200"
+            className="touch-target text-muted dark:text-white/50 hover:text-ink dark:hover:text-white transition-colors p-xs rounded-md hover:bg-ivory-200 dark:hover:bg-white/10"
             aria-label="Close"
           >
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">

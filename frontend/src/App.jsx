@@ -4,6 +4,7 @@ import { api, clearToken, getToken, setToken } from './api.js'
 import UnifiedLayout from './components/layout/UnifiedLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ToastProvider from './components/ToastProvider.jsx'
+import { ThemeProvider } from './hooks/useTheme.jsx'
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut.js'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
@@ -79,6 +80,7 @@ export default function App() {
   const isStaff = user && STAFF_ROLES.includes(user.role)
 
   return (
+    <ThemeProvider>
     <ToastProvider>
     <Routes>
       {/* Public routes */}
@@ -130,5 +132,6 @@ export default function App() {
       />
     </Routes>
     </ToastProvider>
+    </ThemeProvider>
   )
 }

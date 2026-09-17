@@ -28,14 +28,14 @@ export default function Timeline({ items = [] }) {
                 <Link
                   to={item.to}
                   aria-label={`View patent: ${item.text}`}
-                  className="text-body-sm text-ink font-sans rounded hover:text-copper hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"
+                  className="text-body-sm text-ink dark:text-white font-sans rounded hover:text-copper hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper"
                 >
                   {item.text}
                 </Link>
               ) : (
-                <p className="text-body-sm text-ink font-sans">{item.text}</p>
+                <p className="text-body-sm text-ink dark:text-white font-sans">{item.text}</p>
               )}
-              <p className="text-caption text-muted mt-xxs font-sans">{item.time}</p>
+              <p className="text-caption text-muted dark:text-white/50 mt-xxs font-sans">{item.time}</p>
             </div>
           </li>
         ))}

@@ -13,6 +13,16 @@
     <meta name="twitter:title" content="BLITTO Patent Management" />
     <meta name="twitter:description" content="Track filings, deadlines, documents and prosecution for your patent portfolio." />
     <title>BLITTO Patent Management</title>
+    <script>
+      // Pre-paint theme: apply the stored/OS dark class before first render
+      // so toggling never flashes the wrong theme.
+      try {
+        var t = localStorage.getItem('blitto-theme');
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

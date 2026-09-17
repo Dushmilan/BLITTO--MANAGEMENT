@@ -62,7 +62,7 @@ export default function UsersPage() {
       key: 'created_at',
       label: 'Created',
       render: (val) => (
-        <span className="font-mono text-body-sm text-steel">
+        <span className="font-mono text-body-sm text-steel dark:text-white/60">
           {val ? new Date(val).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '\u2014'}
         </span>
       ),
@@ -72,14 +72,14 @@ export default function UsersPage() {
   return (
     <div className="space-y-xxl">
       <div className="animate-slide-up">
-        <h1 className="font-display text-heading-1 text-ink mb-xs">Users</h1>
-        <p className="text-body-md text-steel font-sans">
+        <h1 className="font-display text-heading-1 text-ink mb-xs dark:text-white">Users</h1>
+        <p className="text-body-md text-steel font-sans dark:text-white/60">
           Manage user accounts and roles
         </p>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-lg animate-slide-up stagger-2">
-        <p className="text-body-md text-steel font-sans">
+        <p className="text-body-md text-steel font-sans dark:text-white/60">
           {users.length} {users.length === 1 ? 'user' : 'users'} registered
         </p>
       </div>

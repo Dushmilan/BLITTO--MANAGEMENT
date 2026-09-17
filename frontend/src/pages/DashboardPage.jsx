@@ -53,8 +53,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-xxl">
       <div>
-        <h1 className="font-display text-heading-1 text-ink mb-xs">Dashboard</h1>
-        <p className="text-body-md text-steel font-sans">
+        <h1 className="font-display text-heading-1 text-ink mb-xs dark:text-white">Dashboard</h1>
+        <p className="text-body-md text-steel font-sans dark:text-white/60">
           Portfolio overview and recent activity
         </p>
       </div>
@@ -85,14 +85,14 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-xl">
         <Card variant="base" className="lg:col-span-3">
-          <h2 className="font-display text-heading-4 text-ink mb-lg">Recent Activity</h2>
+          <h2 className="font-display text-heading-4 text-ink mb-lg dark:text-white">Recent Activity</h2>
           <Timeline items={timelineItems} />
         </Card>
       </div>
 
       <Card variant="base">
         <div className="flex items-center justify-between mb-lg">
-          <h2 className="font-display text-heading-4 text-ink">Recent Applications</h2>
+          <h2 className="font-display text-heading-4 text-ink dark:text-white">Recent Applications</h2>
           <Link to="/patents" className="text-body-sm-medium text-copper hover:text-copper-700 transition-colors font-sans">View all</Link>
         </div>
         {recentApps.length === 0 ? (
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 {recentApps.map((app) => (
                   <tr key={app.id}>
                     <td className="font-medium font-sans">{app.title}</td>
-                    <td className="font-mono text-steel text-body-sm">{app.application_number || app.id?.slice(0, 8)}</td>
+                    <td className="font-mono text-steel text-body-sm dark:text-white/60">{app.application_number || app.id?.slice(0, 8)}</td>
                     <td><Badge>{app.status || 'draft'}</Badge></td>
                   </tr>
                 ))}
