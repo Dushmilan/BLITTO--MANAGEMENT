@@ -13,7 +13,7 @@ from app.modules.application_intake.local import LocalApplicationIntakeModule
 from app.modules.application_intake.models import Application, Disclosure, Inventor
 from app.modules.audit.local import LocalAuditModule
 from app.modules.authorization.local import LocalAuthorizationModule
-from app.modules.authorization.models import RegisterRequest
+from app.modules.authorization.models import LoginRequest, RegisterRequest
 from app.modules.document_vault.local import LocalDocumentVaultModule
 from app.modules.filing_workflow.local import LocalFilingWorkflowModule
 from app.modules.filing_workflow.models import FilingRecord
@@ -127,7 +127,14 @@ class TestRoundTrip:
         auth_users = fresh["authorization"]._users
         assert len(auth_users) == 2
         admin_user = next(u for u in auth_users.values() if u.email == "persist-md@pdn.ac.lk")
-        assert fresh["authorization"]._passwords[admin_user.id] == "pw"
+        # Passwords persist as bcrypt hashes, never plaintext — login still works.
+        assert fresh["authorization"]._passwords[admin_user.id] != "pw"
+        assert (
+            fresh["authorization"].login(
+                LoginRequest(email="persist-md@pdn.ac.lk", password="pw")
+            )
+            is not None
+        )
 
         # Application intake
         apps = list(fresh["application_intake"]._store.values())

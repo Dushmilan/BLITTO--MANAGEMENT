@@ -4,8 +4,8 @@ Issues and verifies a locally-signed JWT (PyJWT) with a dev-only secret.
 Mirrors the better-auth JWT shape so the verification path is swappable.
 
 Includes a minimal credential model so inventors can self-login (Readme flow):
-passwords are stored/checked in plaintext here ONLY because this is a local
-stub — production delegates auth (and secrets) to better-auth.
+passwords are bcrypt-hashed here; production delegates auth (and secrets)
+to better-auth.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt
 import jwt
 
 from app.core.config import settings
@@ -24,6 +25,24 @@ from app.modules.authorization.models import LoginRequest, RegisterRequest, Toke
 
 _ALG = "HS256"
 _TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12h for the local stub
+# bcrypt truncates silently past 72 bytes — reject instead of mis-verifying.
+_MAX_PASSWORD_BYTES = 72
+
+
+def _hash_password(password: str) -> str:
+    raw = password.encode("utf-8")
+    if len(raw) > _MAX_PASSWORD_BYTES:
+        raise ValueError(
+            f"password exceeds {_MAX_PASSWORD_BYTES} bytes (bcrypt limit)"
+        )
+    return bcrypt.hashpw(raw, bcrypt.gensalt()).decode("utf-8")
+
+
+def _check_password(password: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+    except ValueError:
+        return False
 
 
 class LocalAuthorizationModule:
@@ -47,7 +66,7 @@ class LocalAuthorizationModule:
         )
         self._users[user.id] = user
         if request.password:
-            self._passwords[user.id] = request.password
+            self._passwords[user.id] = _hash_password(request.password)
         return user
 
     def login(self, request: LoginRequest) -> Optional[Token]:
@@ -57,7 +76,8 @@ class LocalAuthorizationModule:
         user = next((u for u in self._users.values() if u.email == email), None)
         if user is None:
             return None
-        if self._passwords.get(user.id) != request.password:
+        stored = self._passwords.get(user.id, "")
+        if not stored or not _check_password(request.password, stored):
             return None
         return self._issue(user)
 

@@ -19,7 +19,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 | Frontend | React (Vite) in `frontend/` — dev proxy `/api` → `localhost:8000` |
 | Backend | FastAPI (Python) |
 | Database | None (in-memory stores; optional JSON snapshot in `dev-data/state.json`) |
-| Authentication | Local stub (institution email + password, Bearer tokens) — better-auth JWT/JWKS adapter reserved for prod |
+| Authentication | Local stub (institution email + bcrypt-hashed password, Bearer tokens) — startup refuses the default `BLITTO_AUTH_SECRET` outside `local` env; `/auth/login` throttled (5 fails / 10 min / account → 429). Better-auth JWT/JWKS adapter reserved for prod |
 | Document Storage | Local in-memory/file adapter (default); PKI-encrypted adapter exists but is not the default |
 | Encryption | `PKIEncryptedStore` adapter (RSA/AES hybrid) exists; **default store is plaintext at rest** (see issue #49) |
 | Architecture mgmt | graphify (`graphifyy`) |
@@ -86,6 +86,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 - **Master key never persisted by the app**: the app NEVER logs or persists the key — on first run it exists only in memory (`PKIEncryptedStore.generated_master_key`); the operator must capture it during provisioning into their secret manager as `BLITTO_VAULT_MASTER_KEY`, then `POST /api/vault/unlock`.
 - **Vault gate**: all document endpoints still require an unlocked vault (423 when locked). The PKI store additionally supports encrypt-with-public-key, so uploads can be decoupled from unlock later; the API does not expose that yet (see `test_vault_blocks_upload_when_locked`).
 - **Uploads**: 10 MB cap, extension allow-list, 423 when locked, 429 after 5 failed unlocks per IP / 10 min.
+- **Master-key rotation**: blobs are encrypted to the RSA public key, so rotation only re-wraps the private key (`PKIEncryptedStore.rotate_master_key(old, new)`) — no data re-encryption, no downtime. Operator runbook: unlock with the current key, call `rotate_master_key` with the new 32-byte base64 key, verify `unlock(new)` succeeds and `unlock(old)` fails, then retire the old key in the secret manager.
 
 ---
 

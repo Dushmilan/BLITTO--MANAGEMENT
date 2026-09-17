@@ -5,6 +5,11 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+#: Sentinel default for the local-stub auth secret. Deployments outside the
+#: local env must override it via BLITTO_AUTH_SECRET (see ensure_production_ready).
+DEFAULT_AUTH_SECRET = "change-me-in-production-32byte-minimum!"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="BLITTO_", env_file=".env", extra="ignore")
 
@@ -15,7 +20,7 @@ class Settings(BaseSettings):
     better_auth_issuer: str = ""
     better_auth_audience: str = ""
     # Secret for the local-stub auth adapter (better-auth handles secrets in prod).
-    auth_secret: str = "change-me-in-production-32byte-minimum!"
+    auth_secret: str = DEFAULT_AUTH_SECRET
     # Institution-mail gate: only these domains may register/log in.
     # Env: BLITTO_ALLOWED_EMAIL_DOMAINS="pdn.ac.lk,sci.pdn.ac.lk" (comma-separated).
     allowed_email_domains: str = "pdn.ac.lk"
@@ -45,6 +50,21 @@ class Settings(BaseSettings):
     vault_cert_dir: str = "certs"
     vault_storage_dir: str = "encrypted_docs"
     vault_ttl_hours: int = 12
+
+    def ensure_production_ready(self) -> None:
+        """Fail fast when the default auth secret is used outside local env.
+
+        Same pattern as the dev-only document-store guard in app/main.py:
+        a deploy without BLITTO_AUTH_SECRET would get forgeable tokens.
+        """
+        if (
+            self.environment.lower() != "local"
+            and self.auth_secret == DEFAULT_AUTH_SECRET
+        ):
+            raise RuntimeError(
+                "BLITTO_AUTH_SECRET is still the default value; "
+                "set a unique secret when BLITTO_ENVIRONMENT != local"
+            )
 
 
 @lru_cache

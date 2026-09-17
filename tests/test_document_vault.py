@@ -325,3 +325,35 @@ def test_build_vault_selects_pki_when_env_set(tmp_path, monkeypatch) -> None:
     vault = build_document_vault()
     from app.adapters.document_storage.encrypted.pki_store import PKIEncryptedStore
     assert isinstance(vault._store, PKIEncryptedStore)
+
+
+def test_pki_master_key_rotation(tmp_path) -> None:
+    import base64
+    import os
+
+    cert_dir = str(tmp_path / "certs")
+    docs = str(tmp_path / "docs")
+    store = PKIEncryptedStore(cert_dir=cert_dir, storage_dir=docs)
+    old_key = store.generated_master_key
+    assert old_key is not None
+    assert store.unlock(old_key) is True
+    ref = store.put(b"rotate-me")
+
+    new_key = base64.b64encode(os.urandom(32)).decode()
+    assert store.rotate_master_key(old_key, new_key) is True
+
+    # Old key no longer unlocks; new key does; stored data is intact.
+    store.lock()
+    assert store.unlock(old_key) is False
+    assert store.unlock(new_key) is True
+    assert store.get(ref) == b"rotate-me"
+
+
+def test_pki_rotation_rejects_wrong_old_key(pki_store: PKIEncryptedStore) -> None:
+    import base64
+    import os
+
+    bogus = base64.b64encode(os.urandom(32)).decode()
+    other = base64.b64encode(os.urandom(32)).decode()
+    assert pki_store.rotate_master_key(bogus, other) is False
+    assert pki_store.rotate_master_key("not-base64!!", other) is False
