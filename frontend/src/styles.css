@@ -19,6 +19,15 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Dark theme (class strategy, see useTheme): page + native controls. */
+  .dark {
+    color-scheme: dark;
+  }
+  .dark body {
+    background-color: theme('colors.navy.900');
+    color: #fff;
+  }
+
   ::selection {
     background-color: theme('colors.copper.200');
     color: theme('colors.navy.900');
@@ -89,6 +98,17 @@
     outline: 2px solid theme('colors.copper');
     outline-offset: -2px;
   }
+  .dark .doc-table th {
+    border-color: theme('colors.navy.700');
+  }
+  .dark .doc-table td {
+    border-color: theme('colors.navy.700');
+    color: #fff;
+  }
+  .dark .doc-table tbody tr:hover,
+  .dark .doc-table tbody tr:focus-visible {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
 
   /* Staggered animation delays */
   .stagger-1 { animation-delay: 0.05s; }
@@ -109,6 +129,10 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     background-repeat: repeat;
     background-size: 256px;
+  }
+  /* Grain reads heavier on dark surfaces — raise slightly per spec. */
+  .dark .grain-overlay::before {
+    opacity: 0.05;
   }
 
   /* Editorial divider */

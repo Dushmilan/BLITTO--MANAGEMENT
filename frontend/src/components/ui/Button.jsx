@@ -4,13 +4,13 @@ const VARIANTS = {
   'primary-dark':
     'bg-navy text-white rounded-full px-lg py-xs text-button-md shadow-editorial-sm hover:bg-navy-800',
   secondary:
-    'bg-transparent text-ink rounded-full px-lg py-xs text-button-md border border-hairline hover:bg-ivory-200',
+    'bg-transparent text-ink dark:text-white rounded-full px-lg py-xs text-button-md border border-hairline dark:border-hairline-dark hover:bg-ivory-200 dark:hover:bg-white/10',
   ghost:
-    'bg-transparent text-slate rounded-md px-3 py-2 text-body-sm-medium hover:bg-ivory-200 hover:text-ink',
+    'bg-transparent text-slate dark:text-white/60 rounded-md px-3 py-2 text-body-sm-medium hover:bg-ivory-200 dark:hover:bg-white/10 hover:text-ink dark:hover:text-white',
   link:
     'bg-transparent text-copper p-0 text-body-sm-medium hover:text-copper-700 underline-offset-2 hover:underline',
   'icon-circular':
-    'bg-canvas text-slate rounded-full border border-hairline w-8 h-8 flex items-center justify-center hover:bg-ivory-200 hover:text-ink',
+    'bg-canvas dark:bg-navy-700 text-slate dark:text-white/70 rounded-full border border-hairline dark:border-hairline-dark w-8 h-8 flex items-center justify-center hover:bg-ivory-200 dark:hover:bg-white/10 hover:text-ink dark:hover:text-white',
   'danger':
     'bg-status-rejected text-white rounded-full px-lg py-xs text-button-md hover:bg-red-700',
 }

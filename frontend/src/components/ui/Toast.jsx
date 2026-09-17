@@ -1,7 +1,7 @@
 const KIND_STYLES = {
-  success: 'border-status-granted/30 bg-canvas text-ink',
-  error: 'border-status-rejected/30 bg-canvas text-ink',
-  info: 'border-hairline bg-canvas text-ink',
+  success: 'border-status-granted/30 bg-canvas dark:bg-navy-800 text-ink dark:text-white',
+  error: 'border-status-rejected/30 bg-canvas dark:bg-navy-800 text-ink dark:text-white',
+  info: 'border-hairline dark:border-hairline-dark bg-canvas dark:bg-navy-800 text-ink dark:text-white',
 }
 
 const KIND_DOT = {
@@ -27,7 +27,7 @@ export default function Toast({ toasts, onDismiss }) {
             type="button"
             onClick={() => onDismiss(toast.id)}
             aria-label="Dismiss notification"
-            className="touch-target text-muted hover:text-ink transition-colors rounded focus-visible:ring-2 focus-visible:ring-copper"
+            className="touch-target text-muted dark:text-white/50 hover:text-ink dark:hover:text-white transition-colors rounded focus-visible:ring-2 focus-visible:ring-copper"
           >
             <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" >
               <path d="M3 3l8 8M11 3l-8 8" />

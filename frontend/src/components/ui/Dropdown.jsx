@@ -92,7 +92,7 @@ export default function Dropdown({ trigger, items, className = '' }) {
         {trigger}
       </div>
       {open && (
-        <div id={menuId} className="absolute right-0 z-50 mt-1 min-w-[180px] bg-canvas rounded-md border border-hairline shadow-editorial-md py-1 animate-scale-in" role="menu">
+        <div id={menuId} className="absolute right-0 z-50 mt-1 min-w-[180px] bg-canvas dark:bg-navy-800 rounded-md border border-hairline dark:border-hairline-dark shadow-editorial-md py-1 animate-scale-in" role="menu">
           {items.map((item, i) =>
             item.type === 'separator' ? (
               <div key={`sep-${i}`} role="separator" aria-hidden="true" className="my-1 border-t border-hairline" />
@@ -104,9 +104,9 @@ export default function Dropdown({ trigger, items, className = '' }) {
                 role="menuitem"
                 onClick={() => handleItemClick(item)}
                 onKeyDown={(e) => handleMenuKeyDown(e, i)}
-                className="touch-target w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 focus-visible:bg-ivory-200 focus-visible:outline-none transition-colors duration-150 flex items-center gap-sm"
+                className="touch-target w-full text-left px-md py-sm text-body-sm font-sans text-ink dark:text-white hover:bg-ivory-200 dark:hover:bg-white/10 focus-visible:bg-ivory-200 dark:focus-visible:bg-white/10 focus-visible:outline-none transition-colors duration-150 flex items-center gap-sm"
               >
-                {item.icon && <span className="text-steel" aria-hidden="true">{item.icon}</span>}
+                {item.icon && <span className="text-steel dark:text-white/60" aria-hidden="true">{item.icon}</span>}
                 {item.label}
               </button>
             )

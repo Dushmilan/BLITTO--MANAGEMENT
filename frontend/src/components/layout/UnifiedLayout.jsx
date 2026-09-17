@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar, { DashboardIcon, PatentsIcon, UsersIcon, BellIcon } from '../ui/Sidebar.jsx'
 import Avatar from '../ui/Avatar.jsx'
 import Button from '../ui/Button.jsx'
+import ThemeToggle from '../ui/ThemeToggle.jsx'
 
 const STAFF_NAV = [
   { to: '/admin', label: 'Overview', icon: DashboardIcon, end: true },
@@ -41,7 +42,7 @@ export default function UnifiedLayout({ user, onLogout }) {
   }
 
   return (
-    <div className="min-h-screen bg-ivory grain-overlay">
+    <div className="min-h-screen bg-ivory dark:bg-navy-900 grain-overlay">
       <Sidebar
         items={items}
         collapsed={collapsed}
@@ -61,7 +62,7 @@ export default function UnifiedLayout({ user, onLogout }) {
 
       {/* Main content area: no fixed margin on mobile, responsive on lg */}
       <div className={`transition-all duration-300 ${collapsed ? 'lg:ml-[64px]' : 'lg:ml-[240px]'}`}>
-        <header className="sticky top-0 z-20 bg-ivory/80 backdrop-blur-md border-b border-hairline-soft">
+        <header className="sticky top-0 z-20 bg-ivory/80 dark:bg-navy-900/80 backdrop-blur-md border-b border-hairline-soft dark:border-hairline-dark">
           <div className="px-xl py-md flex items-center justify-between">
             <div className="flex items-center gap-sm">
               <button
@@ -83,10 +84,11 @@ export default function UnifiedLayout({ user, onLogout }) {
               </span>
             </div>
             <div className="flex items-center gap-lg">
+              <ThemeToggle />
               <div className="flex items-center gap-sm text-right">
                 <Avatar name={user?.email} size="sm" />
                 <div className="hidden sm:block">
-                  <p className="text-body-sm-medium text-ink font-sans leading-tight">{user?.email}</p>
+                  <p className="text-body-sm-medium text-ink dark:text-white font-sans leading-tight">{user?.email}</p>
                   <p className={`text-micro capitalize font-sans ${roleColors[user?.role] || 'text-slate'}`}>
                     {user?.role}
                   </p>

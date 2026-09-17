@@ -64,14 +64,14 @@ export default function PatentsPage({ user }) {
   return (
     <div className="space-y-xxl">
       <div className="animate-slide-up">
-        <h1 className="font-display text-heading-1 text-ink mb-xs">Patents</h1>
-        <p className="text-body-md text-steel font-sans">
+        <h1 className="font-display text-heading-1 text-ink mb-xs dark:text-white">Patents</h1>
+        <p className="text-body-md text-steel font-sans dark:text-white/60">
           Manage patent portfolio and documents
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-hairline animate-slide-up stagger-1">
+      <div className="border-b border-hairline animate-slide-up stagger-1 dark:border-hairline-dark">
         <nav className="flex gap-lg -mb-px">
           {visibleTabs.map((tab) => (
             <button
@@ -273,7 +273,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
     if (pendingConfirm.kind === 'grant') {
       return {
         title: 'Confirm grant',
-        message: `Grant "${pendingConfirm.app.title}" (currently ${pendingConfirm.app.status}) with patent number ${pendingConfirm.number}? This action is irreversible.`,
+        message: `Grant  dark:text-white"${pendingConfirm.app.title}" (currently ${pendingConfirm.app.status}) with patent number ${pendingConfirm.number}? This action is irreversible.`,
         confirmLabel: 'Grant Patent',
         requireConfirm: 'I understand granting is permanent and irreversible',
       }
@@ -326,7 +326,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
       key: 'application_number',
       label: 'Reference',
       render: (val, row) => (
-        <span className="font-mono text-steel text-body-sm">{val || row.id?.slice(0, 8)}</span>
+        <span className="font-mono text-steel text-body-sm dark:text-white/60">{val || row.id?.slice(0, 8)}</span>
       ),
     },
     {
@@ -339,10 +339,10 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
       label: 'Inventors',
       render: (val) => {
         const { first, extra } = inventorSummary(val)
-        if (!first) return <span className="text-body-sm text-steel font-sans">{'\u2014'}</span>
+        if (!first) return <span className="text-body-sm text-steel font-sans dark:text-white/60">{'\u2014'}</span>
         return (
-          <span className="text-body-sm text-steel font-sans">
-            {first}{extra > 0 && <span className="text-muted"> +{extra} more</span>}
+          <span className="text-body-sm text-steel font-sans dark:text-white/60">
+            {first}{extra > 0 && <span className="text-muted dark:text-white/50"> +{extra} more</span>}
           </span>
         )
       },
@@ -350,7 +350,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
     {
       key: 'technology_area',
       label: 'Tech Area',
-      render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
+      render: (val) => <span className="text-body-sm text-steel font-sans dark:text-white/60">{val || '\u2014'}</span>,
     },
     ...(user?.role === 'admin'
       ? [{
@@ -364,7 +364,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
                 trigger={
                   <button
                     type="button"
-                    className="touch-target w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+                    className="touch-target w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150 dark:text-white"
                     aria-label="Filing actions"
                   >
                     <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -385,7 +385,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
   return (
     <div className="space-y-xxl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-lg animate-slide-up stagger-2">
-        <p className="text-body-md text-steel font-sans" aria-live="polite">
+        <p className="text-body-md text-steel font-sans dark:text-white/60" aria-live="polite">
           {filtered.length} of {apps.length} {apps.length === 1 ? 'patent' : 'patents'} shown
         </p>
         <Button variant="primary" onClick={() => setShowNewModal(true)}>
@@ -406,7 +406,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="h-9 px-md bg-ivory-200 text-ink text-body-sm border border-transparent rounded-md outline-none font-sans cursor-pointer hover:border-hairline focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+          className="h-9 px-md bg-ivory-200 text-ink text-body-sm border border-transparent rounded-md outline-none font-sans cursor-pointer hover:border-hairline focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200 dark:text-white"
         >
           <option value="">All statuses</option>
           {STATUS_OPTIONS.map((s) => (
@@ -442,7 +442,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
             placeholder="e.g. Novel Semiconductor Device Architecture"
           />
           <div className="space-y-sm">
-            <label className="block text-micro text-muted uppercase tracking-wider font-sans">
+            <label className="block text-micro text-muted uppercase tracking-wider font-sans dark:text-white/50">
               Inventors
             </label>
             {newForm.inventors.map((inv, i) => (
@@ -453,14 +453,14 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
                     value={inv.inventor_name}
                     onChange={(e) => updateInventor(i, 'inventor_name', e.target.value)}
                     placeholder="Inventor name"
-                    className="w-full h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md outline-none font-sans placeholder:text-steel focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+                    className="w-full h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md outline-none font-sans placeholder:text-steel focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200 dark:text-white"
                   />
                   <input
                     type="email"
                     value={inv.inventor_email}
                     onChange={(e) => updateInventor(i, 'inventor_email', e.target.value)}
                     placeholder="inventor@university.edu"
-                    className="w-full h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md outline-none font-sans placeholder:text-steel focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+                    className="w-full h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md outline-none font-sans placeholder:text-steel focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200 dark:text-white"
                   />
                 </div>
                 <button
@@ -507,8 +507,8 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
       {/* Grant Modal */}
       <Modal open={showGrantModal} onClose={() => { setShowGrantModal(false); setGrantingApp(null) }} title="Grant Patent" size="sm">
         <div className="flex flex-col gap-lg">
-          <p className="font-sans text-body-sm text-steel">
-            Enter the patent number for <span className="font-medium text-ink">{grantingApp?.title}</span>.
+          <p className="font-sans text-body-sm text-steel dark:text-white/60">
+            Enter the patent number for <span className="font-medium text-ink dark:text-white">{grantingApp?.title}</span>.
           </p>
           <Input
             id="grant-patent-number"
@@ -541,29 +541,29 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
           <div className="space-y-lg">
             <div className="grid grid-cols-2 gap-lg">
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Title</p>
-                <p className="text-body-md text-ink font-sans font-medium">{selectedApp.title}</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Title</p>
+                <p className="text-body-md text-ink font-sans font-medium dark:text-white">{selectedApp.title}</p>
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Status</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Status</p>
                 <Badge>{selectedApp.status || 'draft'}</Badge>
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Reference</p>
-                <p className="text-body-sm text-ink font-mono">{selectedApp.application_number || selectedApp.id}</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Reference</p>
+                <p className="text-body-sm text-ink font-mono dark:text-white">{selectedApp.application_number || selectedApp.id}</p>
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Inventors</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Inventors</p>
                 <div className="space-y-xs">
                   {normalizeInventors(selectedApp.inventors).length > 0 ? normalizeInventors(selectedApp.inventors).map((inv, i) => (
-                    <p key={i} className="text-body-sm text-ink font-sans">
-                      {inv.inventor_name} <span className="text-steel">({inv.inventor_email})</span>
+                    <p key={i} className="text-body-sm text-ink font-sans dark:text-white">
+                      {inv.inventor_name} <span className="text-steel dark:text-white/60">({inv.inventor_email})</span>
                     </p>
-                  )) : <p className="text-body-sm text-steel font-sans">{'\u2014'}</p>}
+                  )) : <p className="text-body-sm text-steel font-sans dark:text-white/60">{'\u2014'}</p>}
                 </div>
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Technology Area</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Technology Area</p>
                 {editingTech ? (
                   <div className="flex items-center gap-xs">
                     <Input
@@ -580,7 +580,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-body-sm text-ink font-sans">
+                  <p className="text-body-sm text-ink font-sans dark:text-white">
                     {selectedApp.technology_area || '—'}
                     <button
                       type="button"
@@ -594,14 +594,14 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
                 )}
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Created</p>
-                <p className="text-body-sm text-ink font-sans">
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Created</p>
+                <p className="text-body-sm text-ink font-sans dark:text-white">
                   {selectedApp.created_at ? new Date(selectedApp.created_at).toLocaleString() : '—'}
                 </p>
               </div>
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Last updated</p>
-                <p className="text-body-sm text-ink font-sans">
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">Last updated</p>
+                <p className="text-body-sm text-ink font-sans dark:text-white">
                   {selectedApp.updated_at ? new Date(selectedApp.updated_at).toLocaleString() : '—'}
                 </p>
               </div>
@@ -610,12 +610,12 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
             {/* Status history */}
             {history.length > 0 && (
               <div>
-                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-sm">Status history</p>
+                <p className="text-micro text-muted uppercase tracking-wider font-sans mb-sm dark:text-white/50">Status history</p>
                 <ul className="space-y-xs">
                   {history.map((h) => (
-                    <li key={h.id} className="text-body-sm text-steel font-sans">
-                      {h.old_status} → <span className="text-ink font-medium">{h.new_status}</span>
-                      <span className="text-muted"> by {h.changed_by}</span>
+                    <li key={h.id} className="text-body-sm text-steel font-sans dark:text-white/60">
+                      {h.old_status} → <span className="text-ink font-medium dark:text-white">{h.new_status}</span>
+                      <span className="text-muted dark:text-white/50"> by {h.changed_by}</span>
                     </li>
                   ))}
                 </ul>
@@ -631,7 +631,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
             {/* Critical filing actions stay visible — no three-dot hunt.
                 Grant/Reject are one-way; Reject still confirms (see #26). */}
             {['filed', 'acknowledged', 'examination', 'defect_sheet_1', 'defect_sheet_2', 'defect_sheet_3'].includes(selectedApp.status?.toLowerCase()) && (
-              <div className="flex flex-wrap gap-sm pt-md border-t border-hairline" aria-label="Filing decision">
+              <div className="flex flex-wrap gap-sm pt-md border-t border-hairline dark:border-hairline-dark" aria-label="Filing decision">
                 <Button variant="primary" size="sm" onClick={() => handleFilingAction(selectedApp, 'grant')}>
                   Grant Patent
                 </Button>
@@ -833,7 +833,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
       render: (val) => (
         <div className="flex items-center gap-sm">
           <FileIcon />
-          <span className="font-medium font-sans text-ink">{val}</span>
+          <span className="font-medium font-sans text-ink dark:text-white">{val}</span>
         </div>
       ),
     },
@@ -841,19 +841,19 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
       key: 'file_size',
       label: 'Size',
       render: (val) => (
-        <span className="font-mono text-body-sm text-steel">{formatSize(val)}</span>
+        <span className="font-mono text-body-sm text-steel dark:text-white/60">{formatSize(val)}</span>
       ),
     },
     {
       key: 'uploaded_by',
       label: 'Uploaded By',
-      render: (val) => <span className="text-body-sm text-steel font-sans">{val || '\u2014'}</span>,
+      render: (val) => <span className="text-body-sm text-steel font-sans dark:text-white/60">{val || '\u2014'}</span>,
     },
     {
       key: 'uploaded_at',
       label: 'Date',
       render: (val) => (
-        <span className="font-mono text-body-sm text-steel">
+        <span className="font-mono text-body-sm text-steel dark:text-white/60">
           {val ? new Date(val).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '\u2014'}
         </span>
       ),
@@ -866,7 +866,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
           <button
             type="button"
             onClick={() => handleDownload(row)}
-            className="touch-target w-7 h-7 flex items-center justify-center rounded-md hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+            className="touch-target w-7 h-7 flex items-center justify-center rounded-md hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150 dark:text-white"
             aria-label={`Download ${row.filename}`}
             title="Download"
           >
@@ -916,13 +916,13 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
       <Card variant="base" className="animate-slide-up stagger-2">
         <div className="flex flex-col sm:flex-row sm:items-center gap-lg">
           <div className="flex-1">
-            <label className="block text-micro text-muted uppercase tracking-wider font-sans mb-xs">
+            <label className="block text-micro text-muted uppercase tracking-wider font-sans mb-xs dark:text-white/50">
               Select Patent
             </label>
             <select
               value={selectedAppId}
               onChange={(e) => setSelectedAppId(e.target.value)}
-              className="w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans cursor-pointer focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+              className="w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans cursor-pointer focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200 dark:text-white"
             >
               <option value="">Choose a patent</option>
               {apps.map((app) => (
@@ -972,7 +972,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
             </div>
           )}
           {isStaff && !vaultLocked && vaultRemaining > 0 && (
-            <div className="flex items-center gap-sm text-body-sm text-steel font-sans">
+            <div className="flex items-center gap-sm text-body-sm text-steel font-sans dark:text-white/60">
               <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="7" cy="7" r="5" />
                 <path d="M7 3.5v4l3 1.5" />
@@ -987,13 +987,13 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
           if (!selected) return null
           return (
             <div className="mt-md flex flex-wrap items-center gap-x-md gap-y-xs rounded-md bg-ivory-200 px-md py-sm" data-testid="doc-context-bar">
-              <span className="text-body-sm-medium text-ink font-sans">{selected.title}</span>
+              <span className="text-body-sm-medium text-ink font-sans dark:text-white">{selected.title}</span>
               <Badge>{selected.status || 'draft'}</Badge>
-              <span className="text-body-sm text-steel font-mono">
+              <span className="text-body-sm text-steel font-mono dark:text-white/60">
                 {(selected.application_number || selected.id)?.slice(0, 12)}
               </span>
               {selected.technology_area && (
-                <span className="text-body-sm text-steel font-sans">{selected.technology_area}</span>
+                <span className="text-body-sm text-steel font-sans dark:text-white/60">{selected.technology_area}</span>
               )}
             </div>
           )
@@ -1032,7 +1032,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
         {selectedAppId && (
           <div className="animate-slide-up stagger-3">
             <div className="flex items-center justify-between mb-lg">
-              <h2 className="font-display text-heading-4 text-ink">
+              <h2 className="font-display text-heading-4 text-ink dark:text-white">
                 {selectedApp?.title || 'Documents'}
               </h2>
               <SearchInput
@@ -1068,8 +1068,8 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
                   </svg>
                 </div>
               </div>
-              <h3 className="font-display text-heading-4 text-ink mb-xs">Vault Locked</h3>
-              <p className="font-sans text-body-sm text-steel mb-lg">
+              <h3 className="font-display text-heading-4 text-ink mb-xs dark:text-white">Vault Locked</h3>
+              <p className="font-sans text-body-sm text-steel mb-lg dark:text-white/60">
                 Enter the master key to unlock the document vault. The session stays unlocked for 12 hours.
               </p>
               <input
@@ -1078,7 +1078,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
                 onChange={(e) => setUnlockKey(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
                 placeholder="Master key"
-                className="w-full h-10 px-md mb-sm bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
+                className="w-full h-10 px-md mb-sm bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200 dark:text-white"
                 autoFocus
               />
               {vaultError && (

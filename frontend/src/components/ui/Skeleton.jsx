@@ -9,7 +9,7 @@ export default function Skeleton({ rows = 1, label = 'Loading...' }) {
           key={i}
           data-skeleton
           aria-hidden="true"
-          className="animate-pulse rounded-md bg-ivory-200 h-12"
+          className="animate-pulse rounded-md bg-ivory-200 dark:bg-white/10 h-12"
         />
       ))}
     </div>

@@ -10,7 +10,7 @@ const DEFAULT_NAV_ITEMS = [
 // on lg+ it is always visible. State lives in the layout, not here.
 export default function Sidebar({ collapsed = false, onToggle, items = DEFAULT_NAV_ITEMS, mobileOpen = false, onCloseMobile }) {
   return (
-    <aside className={`fixed left-0 top-0 h-screen bg-navy text-white z-40 transition-all duration-300 flex flex-col ${collapsed ? 'w-[64px]' : 'w-[240px]'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+    <aside className={`fixed left-0 top-0 h-screen bg-navy dark:bg-navy-800 text-white z-40 transition-all duration-300 flex flex-col ${collapsed ? 'w-[64px]' : 'w-[240px]'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       {/* Brand */}
       <div className="px-lg py-xl border-b border-white/10 flex items-center justify-between">
         {!collapsed && (

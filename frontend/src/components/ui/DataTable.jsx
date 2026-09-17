@@ -44,7 +44,7 @@ export default function DataTable({
   }
 
   return (
-    <div className="bg-canvas rounded-lg border border-hairline overflow-hidden shadow-editorial-sm">
+    <div className="bg-canvas dark:bg-navy-800 rounded-lg border border-hairline dark:border-hairline-dark overflow-hidden shadow-editorial-sm">
       <table className="doc-table" aria-label={ariaLabel} aria-rowcount={data.length + 1}>
         <thead>
           <tr>
@@ -77,7 +77,7 @@ export default function DataTable({
       </table>
       {paginated && (
         <div className="flex flex-wrap items-center justify-between gap-sm px-md py-sm border-t border-hairline">
-          <p className="text-body-sm text-steel font-sans" aria-live="polite">
+          <p className="text-body-sm text-steel dark:text-white/60 font-sans" aria-live="polite">
             Showing {from}-{to} of {data.length}
           </p>
           <div className="flex items-center gap-sm">
@@ -88,7 +88,7 @@ export default function DataTable({
               id="datatable-page-size"
               value={pageSize}
               onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0) }}
-              className="h-9 px-sm bg-canvas text-ink text-body-sm border border-hairline rounded-md font-sans"
+              className="h-9 px-sm bg-canvas dark:bg-navy-700 text-ink dark:text-white text-body-sm border border-hairline dark:border-hairline-dark rounded-md font-sans"
             >
               {PAGE_SIZE_OPTIONS.map((n) => (
                 <option key={n} value={n}>{n}</option>
