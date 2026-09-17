@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import PatentsPage from '../PatentsPage.jsx'
@@ -302,6 +302,31 @@ describe('PatentsPage', () => {
       expect(screen.getByTestId('doc-context-bar')).toHaveTextContent('Patent Alpha')
     })
     expect(screen.getByTestId('doc-context-bar')).toHaveTextContent('PAT-001')
+  })
+
+  it('locks the vault immediately when the timer expires', async () => {
+    api.applications.mockResolvedValue(APPS)
+    api.vaultStatus.mockResolvedValue({ locked: false, remaining_seconds: 1 })
+    api.documents.mockResolvedValue([])
+    render(
+      <MemoryRouter initialEntries={['/admin/patents?tab=documents']}>
+        <PatentsPage user={{ role: 'admin', email: 'admin@test.com' }} />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Choose a patent')).toBeInTheDocument()
+    })
+    // One second passes: UI locks at once and re-syncs with the server.
+    vi.useFakeTimers()
+    try {
+      await act(async () => { vi.advanceTimersByTime(1200) })
+    } finally {
+      vi.useRealTimers()
+    }
+    await waitFor(() => {
+      expect(screen.getByText('Vault Locked')).toBeInTheDocument()
+    })
+    expect(api.vaultStatus.mock.calls.length).toBeGreaterThan(1)
   })
 
   it('writes the tab to the URL when switching tabs', async () => {

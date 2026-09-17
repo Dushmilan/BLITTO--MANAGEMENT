@@ -88,7 +88,7 @@ export default function DataTable({
               id="datatable-page-size"
               value={pageSize}
               onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0) }}
-              className="h-9 px-sm bg-canvas dark:bg-navy-700 text-ink dark:text-white text-body-sm border border-hairline dark:border-hairline-dark rounded-md font-sans"
+              className="touch-target h-9 px-sm bg-canvas dark:bg-navy-700 text-ink dark:text-white text-body-sm border border-hairline dark:border-hairline-dark rounded-md font-sans"
             >
               {PAGE_SIZE_OPTIONS.map((n) => (
                 <option key={n} value={n}>{n}</option>

@@ -54,6 +54,19 @@ async def auth_token(request: Request, md: User = Depends(MDUser)):
     return token
 
 
+@router.post("/auth/refresh", tags=["authorization"])
+async def auth_refresh(request: Request, user: User = Depends(CurrentUser)):
+    """Re-issue a token for a still-valid session (issue #41).
+
+    The frontend calls this proactively before expiry; expired or forged
+    tokens are rejected by CurrentUser with 401, forcing a fresh login.
+    """
+    token = request.app.state.authorization.issue_token(user.email)
+    if token is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return token
+
+
 # Public login (user self-login flow). Institution mail only.
 # Brute-force guard: sliding window per account, same shape as the vault
 # unlock throttle below (5 failures / 10 min -> 429 + Retry-After).

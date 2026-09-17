@@ -686,13 +686,20 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
   const canUpload = isStaff
   const canDelete = canUpload
 
+  // Serializes vault status checks: the expiry tick and manual actions
+  // must never overlap (issue #42).
+  const checkingVault = useRef(false)
   async function checkVaultStatus() {
+    if (checkingVault.current) return
+    checkingVault.current = true
     try {
       const status = await api.vaultStatus()
       setVaultLocked(status.locked)
       setVaultRemaining(status.remaining_seconds || 0)
     } catch {
       setVaultLocked(true)
+    } finally {
+      checkingVault.current = false
     }
   }
 
@@ -705,6 +712,10 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
     const interval = setInterval(() => {
       setVaultRemaining((prev) => {
         if (prev <= 1) {
+          // Expiry: lock the UI at once (no race with the server state),
+          // then re-sync — the guard above dedupes overlapping polls.
+          clearInterval(interval)
+          setVaultLocked(true)
           checkVaultStatus()
           return 0
         }
@@ -922,7 +933,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
             <select
               value={selectedAppId}
               onChange={(e) => setSelectedAppId(e.target.value)}
-              className="w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans cursor-pointer focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200 dark:text-white"
+              className="touch-target w-full h-10 px-md bg-canvas text-ink text-body-md border border-hairline rounded-md outline-none font-sans cursor-pointer focus:border-copper focus:ring-2 focus:ring-copper-100 transition-all duration-200"
             >
               <option value="">Choose a patent</option>
               {apps.map((app) => (
