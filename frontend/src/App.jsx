@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { api, clearToken, getToken, setToken } from './api.js'
-import AppLayout from './components/layout/AppLayout.jsx'
 import AdminLayout from './components/layout/AdminLayout.jsx'
+import ToastProvider from './components/ToastProvider.jsx'
+import { useKeyboardShortcut } from './hooks/useKeyboardShortcut.js'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import PatentsPage from './pages/PatentsPage.jsx'
@@ -48,6 +49,18 @@ export default function App() {
     setUser(null)
   }, [])
 
+  // Power-user shortcut: Ctrl/Cmd+K focuses the first search box on screen.
+  // Escape closes modals/menus in their own components (Modal, Dropdown).
+  const focusSearch = useCallback((e) => {
+    const input = document.querySelector('input[data-search-input]')
+    if (input) {
+      e.preventDefault()
+      input.focus()
+    }
+  }, [])
+  useKeyboardShortcut('ctrl+k', focusSearch)
+  useKeyboardShortcut('meta+k', focusSearch)
+
   if (loading) {
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
@@ -65,6 +78,7 @@ export default function App() {
   const isAdmin = user && ADMIN_ROLES.includes(user.role)
 
   return (
+    <ToastProvider>
     <Routes>
       {/* Public routes */}
       <Route
@@ -114,5 +128,6 @@ export default function App() {
         }
       />
     </Routes>
+    </ToastProvider>
   )
 }

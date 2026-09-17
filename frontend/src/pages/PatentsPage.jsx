@@ -9,6 +9,7 @@ import Dropdown from '../components/ui/Dropdown.jsx'
 import SearchInput from '../components/ui/SearchInput.jsx'
 import Modal from '../components/ui/Modal.jsx'
 import Input from '../components/ui/Input.jsx'
+import { useToast } from '../hooks/useToast.js'
 import { STATUS_OPTIONS } from '../utils/notifyHelpers.js'
 
 const TABS = [
@@ -91,6 +92,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
   const [grantingApp, setGrantingApp] = useState(null)
   const [grantPatentNumber, setGrantPatentNumber] = useState('')
   const [granting, setGranting] = useState(false)
+  const toast = useToast()
 
   function addInventor() {
     setNewForm({ ...newForm, inventors: [...newForm.inventors, { inventor_name: '', inventor_email: '' }] })
@@ -119,9 +121,10 @@ function PatentsTab({ apps, loading, onReload, user }) {
       await api.createApplication(payload)
       setShowNewModal(false)
       setNewForm({ title: '', inventors: [{ inventor_name: '', inventor_email: '' }], technology_area: '' })
+      toast.success('Patent application created')
       await onReload()
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setCreating(false)
     }
@@ -157,7 +160,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
       }
       await onReload()
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -169,9 +172,10 @@ function PatentsTab({ apps, loading, onReload, user }) {
       setShowGrantModal(false)
       setGrantingApp(null)
       setGrantPatentNumber('')
+      toast.success('Patent granted')
       await onReload()
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setGranting(false)
     }
@@ -486,6 +490,7 @@ function DocumentsTab({ apps, user }) {
   const [uploadStatus, setUploadStatus] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const fileInputRef = useRef(null)
+  const toast = useToast()
 
   const [vaultLocked, setVaultLocked] = useState(true)
   const [vaultRemaining, setVaultRemaining] = useState(0)
@@ -598,7 +603,7 @@ function DocumentsTab({ apps, user }) {
     try {
       await api.downloadDocument(selectedAppId, doc.id)
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
     }
   }
 
@@ -609,7 +614,7 @@ function DocumentsTab({ apps, user }) {
       await api.deleteDocument(selectedAppId, doc.id)
       await loadDocs()
     } catch (err) {
-      alert(err.message)
+      toast.error(err.message)
     } finally {
       setDeleting(null)
     }

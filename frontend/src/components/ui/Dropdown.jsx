@@ -50,7 +50,7 @@ export default function Dropdown({ trigger, items, className = '' }) {
                 type="button"
                 role="menuitem"
                 onClick={() => handleItemClick(item)}
-                className="w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 transition-colors duration-150 flex items-center gap-sm"
+                className="w-full text-left px-md py-sm text-body-sm font-sans text-ink hover:bg-ivory-200 focus-visible:bg-ivory-200 focus-visible:outline-none transition-colors duration-150 flex items-center gap-sm"
               >
                 {item.icon && <span className="text-steel">{item.icon}</span>}
                 {item.label}
