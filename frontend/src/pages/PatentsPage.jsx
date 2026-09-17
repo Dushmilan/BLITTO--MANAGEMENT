@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api.js'
 import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
@@ -18,11 +19,22 @@ const TABS = [
 ]
 
 export default function PatentsPage({ user }) {
-  const [activeTab, setActiveTab] = useState('list')
+  // Tab state lives in the URL (?tab=documents) so navigation and
+  // back/forward preserve the workflow; unknown values fall back to 'list'.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState(
+    TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'list'
+  )
   const [apps, setApps] = useState([])
   const [loading, setLoading] = useState(true)
   const isAdmin = user?.role === 'admin'
   const visibleTabs = TABS.filter((t) => !t.adminOnly || isAdmin)
+
+  function selectTab(id) {
+    setActiveTab(id)
+    setSearchParams(id === 'list' ? {} : { tab: id })
+  }
 
   useEffect(() => {
     loadApps()
@@ -55,7 +67,7 @@ export default function PatentsPage({ user }) {
           {visibleTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => selectTab(tab.id)}
               className={`py-sm px-xs text-body-sm-medium font-sans border-b-2 transition-colors duration-150 ${
                 activeTab === tab.id
                   ? 'border-copper text-copper'
@@ -467,11 +479,22 @@ function PatentsTab({ apps, loading, onReload, user }) {
               </div>
               <div>
                 <p className="text-micro text-muted uppercase tracking-wider font-sans mb-xs">Technology Area</p>
-                <p className="text-body-sm text-ink font-sans">{selectedApp.technology_area || '\u2014'}</p>
+                <p className="text-body-sm text-ink font-sans">{selectedApp.technology_area || '—'}</p>
               </div>
             </div>
 
-
+            {/* Critical filing actions stay visible — no three-dot hunt.
+                Grant/Reject are one-way; Reject still confirms (see #26). */}
+            {['filed', 'acknowledged', 'examination', 'defect_sheet_1', 'defect_sheet_2', 'defect_sheet_3'].includes(selectedApp.status?.toLowerCase()) && (
+              <div className="flex flex-wrap gap-sm pt-md border-t border-hairline" aria-label="Filing decision">
+                <Button variant="primary" size="sm" onClick={() => handleFilingAction(selectedApp, 'grant')}>
+                  Grant Patent
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => handleFilingAction(selectedApp, 'reject')}>
+                  Reject
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </Modal>

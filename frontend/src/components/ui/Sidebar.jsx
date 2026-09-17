@@ -1,13 +1,16 @@
 import { NavLink } from 'react-router-dom'
 
-const NAV_ITEMS = [
+const DEFAULT_NAV_ITEMS = [
   { to: '/', label: 'Overview', icon: DashboardIcon },
   { to: '/patents', label: 'Patents', icon: PatentsIcon },
 ]
 
-export default function Sidebar({ collapsed = false, onToggle }) {
+// `items` override the default links (UnifiedLayout passes per-role nav).
+// `mobileOpen` slides the sidebar in as an overlay drawer on small screens;
+// on lg+ it is always visible. State lives in the layout, not here.
+export default function Sidebar({ collapsed = false, onToggle, items = DEFAULT_NAV_ITEMS, mobileOpen = false, onCloseMobile }) {
   return (
-    <aside className={`fixed left-0 top-0 h-screen bg-navy text-white z-40 transition-all duration-300 flex flex-col ${collapsed ? 'w-[64px]' : 'w-[240px]'}`}>
+    <aside className={`fixed left-0 top-0 h-screen bg-navy text-white z-40 transition-all duration-300 flex flex-col ${collapsed ? 'w-[64px]' : 'w-[240px]'} ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
       {/* Brand */}
       <div className="px-lg py-xl border-b border-white/10 flex items-center justify-between">
         {!collapsed && (
@@ -32,15 +35,16 @@ export default function Sidebar({ collapsed = false, onToggle }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-lg overflow-y-auto">
+      <nav className="flex-1 py-lg overflow-y-auto" aria-label="Primary">
         <ul className="space-y-xxs">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          {items.map(({ to, label, icon: Icon, end }) => (
             <li key={to}>
               <NavLink
                 to={to}
-                end={to === '/'}
+                end={end ?? to === '/'}
+                onClick={() => onCloseMobile?.()}
                 className={({ isActive }) =>
-                  `flex items-center gap-sm px-lg py-sm mx-xs rounded-md text-body-sm-medium font-sans transition-all duration-150 ${
+                  `flex items-center gap-sm px-lg py-sm mx-xs rounded-md text-body-sm-medium font-sans transition-all duration-150 min-h-[44px] ${
                     isActive
                       ? 'bg-copper text-white'
                       : 'text-white/60 hover:bg-white/8 hover:text-white'
@@ -65,9 +69,9 @@ export default function Sidebar({ collapsed = false, onToggle }) {
   )
 }
 
-function DashboardIcon() {
+export function DashboardIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="2" y="2" width="5.5" height="5.5" rx="1" />
       <rect x="10.5" y="2" width="5.5" height="5.5" rx="1" />
       <rect x="2" y="10.5" width="5.5" height="5.5" rx="1" />
@@ -76,11 +80,29 @@ function DashboardIcon() {
   )
 }
 
-function PatentsIcon() {
+export function PatentsIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 2h10a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z" />
       <path d="M6 6h6M6 9h6M6 12h3" />
+    </svg>
+  )
+}
+
+export function UsersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="6" r="3" />
+      <path d="M3 16c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+    </svg>
+  )
+}
+
+export function BellIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 2a5 5 0 015 5c0 4 1.5 5.5 1.5 5.5h-13S4 11 4 7a5 5 0 015-5z" />
+      <path d="M7.5 15a1.5 1.5 0 003 0" />
     </svg>
   )
 }

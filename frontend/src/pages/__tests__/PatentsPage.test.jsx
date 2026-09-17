@@ -168,4 +168,54 @@ describe('PatentsPage', () => {
       expect(api.vaultUnlock).toHaveBeenCalledWith('secret-key')
     })
   })
+
+  it('deep-links to the documents tab via ?tab=documents', async () => {
+    api.applications.mockResolvedValue(APPS)
+    render(
+      <MemoryRouter initialEntries={['/admin/patents?tab=documents']}>
+        <PatentsPage user={{ role: 'admin', email: 'admin@test.com' }} />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Choose a patent')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('2 patents tracked')).not.toBeInTheDocument()
+  })
+
+  it('shows Grant and Reject actions directly in the detail modal', async () => {
+    api.applications.mockResolvedValue(APPS)
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    })
+    // Patent Alpha is 'filed' — eligible for a filing decision.
+    await userEvent.click(screen.getByText('Patent Alpha'))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Patent Details' })).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Grant Patent' }))
+    expect(screen.getByRole('heading', { name: 'Grant Patent' })).toBeInTheDocument()
+  })
+
+  it('writes the tab to the URL when switching tabs', async () => {
+    const { useSearchParams } = await import('react-router-dom')
+    function Probe() {
+      const [params] = useSearchParams()
+      return <span data-testid="loc">{params.toString()}</span>
+    }
+    api.applications.mockResolvedValue(APPS)
+    render(
+      <MemoryRouter initialEntries={['/admin/patents']}>
+        <Probe />
+        <PatentsPage user={{ role: 'admin', email: 'admin@test.com' }} />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Documents' }))
+    await waitFor(() => {
+      expect(screen.getByTestId('loc')).toHaveTextContent('tab=documents')
+    })
+  })
 })

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { api, clearToken, getToken, setToken } from './api.js'
-import AdminLayout from './components/layout/AdminLayout.jsx'
+import UnifiedLayout from './components/layout/UnifiedLayout.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ToastProvider from './components/ToastProvider.jsx'
 import { useKeyboardShortcut } from './hooks/useKeyboardShortcut.js'
 import LoginPage from './pages/LoginPage.jsx'
@@ -12,7 +13,7 @@ import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 
 import UsersPage from './pages/admin/UsersPage.jsx'
 
-const ADMIN_ROLES = ['admin', 'attorney', 'paralegal']
+const STAFF_ROLES = ['admin', 'attorney', 'paralegal']
 
 export default function App() {
   const [user, setUser] = useState(null)
@@ -75,7 +76,7 @@ export default function App() {
     )
   }
 
-  const isAdmin = user && ADMIN_ROLES.includes(user.role)
+  const isStaff = user && STAFF_ROLES.includes(user.role)
 
   return (
     <ToastProvider>
@@ -85,22 +86,20 @@ export default function App() {
         path="/login"
         element={
           user ? (
-            <Navigate to={isAdmin ? '/admin' : '/user'} replace />
+            <Navigate to={isStaff ? '/admin' : '/user'} replace />
           ) : (
             <LoginPage onLogin={handleLogin} />
           )
         }
       />
 
-      {/* Admin routes */}
+      {/* Staff routes — one shared shell, role-guarded */}
       <Route
         path="/admin"
         element={
-          user && isAdmin ? (
-            <AdminLayout user={user} onLogout={handleLogout} />
-          ) : (
-            <Navigate to={user ? '/user' : '/login'} replace />
-          )
+          <ProtectedRoute user={user} allowedRoles={STAFF_ROLES}>
+            <UnifiedLayout user={user} onLogout={handleLogout} />
+          </ProtectedRoute>
         }
       >
         <Route index element={<AdminDashboard />} />
@@ -108,23 +107,25 @@ export default function App() {
         <Route path="users" element={<UsersPage />} />
       </Route>
 
-      {/* User routes (inventor) */}
+      {/* Inventor routes — same shell, inventor slices */}
       <Route
         path="/user"
         element={
-          user && !isAdmin ? (
-            <UserPanel user={user} onLogout={handleLogout} />
-          ) : (
-            <Navigate to={user ? '/admin' : '/login'} replace />
-          )
+          <ProtectedRoute user={user} allowedRoles={['inventor']}>
+            <UnifiedLayout user={user} onLogout={handleLogout} />
+          </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<UserPanel user={user} section="overview" />} />
+        <Route path="patents" element={<UserPanel user={user} section="patents" />} />
+        <Route path="notifications" element={<UserPanel user={user} section="notifications" />} />
+      </Route>
 
-      {/* Catch-all redirect */}
+      {/* Unknown paths redirect to the role home (or login) */}
       <Route
         path="*"
         element={
-          <Navigate to={user ? (isAdmin ? '/admin' : '/user') : '/login'} replace />
+          <Navigate to={user ? (isStaff ? '/admin' : '/user') : '/login'} replace />
         }
       />
     </Routes>
