@@ -3,9 +3,11 @@ import { render, screen } from '@testing-library/react'
 import StatCard from '../StatCard.jsx'
 
 describe('StatCard', () => {
-  it('renders label and value', () => {
+  it('renders the label at micro size with no conflicting font classes', () => {
     render(<StatCard label="Total Patents" value="42" />)
-    expect(screen.getByText('Total Patents')).toBeInTheDocument()
+    const label = screen.getByText('Total Patents')
+    expect(label.className).toContain('text-micro')
+    expect(label.className).not.toContain('text-body-sm')
     expect(screen.getByText('42')).toBeInTheDocument()
   })
 

@@ -1,11 +1,11 @@
 export default function StatCard({ label, value, trend, trendLabel, icon, className = '' }) {
   return (
-    <div className={`bg-canvas rounded-lg p-xl border border-hairline hover:shadow-editorial-md hover:border-copper-200 transition-all duration-200 ${className}`}>
+    <div className={`bg-canvas dark:bg-navy-800 rounded-lg p-xl border border-hairline dark:border-hairline-dark hover:shadow-editorial-md hover:border-copper-200 transition-all duration-200 ${className}`}>
       <div className="flex items-start justify-between mb-sm">
-        <span className="text-body-sm text-steel font-sans uppercase tracking-wider text-micro">{label}</span>
+        <span className="text-steel dark:text-white/60 font-sans uppercase tracking-wider text-micro">{label}</span>
         {icon && <span className="text-copper">{icon}</span>}
       </div>
-      <div className="text-display-lg font-display text-ink leading-none mb-xs">
+      <div className="text-display-lg font-display text-ink dark:text-white leading-none mb-xs">
         {value}
       </div>
       {(trend || trendLabel) && (
@@ -16,7 +16,7 @@ export default function StatCard({ label, value, trend, trendLabel, icon, classN
             </span>
           )}
           {trendLabel && (
-            <span className="text-caption text-muted">{trendLabel}</span>
+            <span className="text-caption text-muted dark:text-white/50">{trendLabel}</span>
           )}
         </div>
       )}
