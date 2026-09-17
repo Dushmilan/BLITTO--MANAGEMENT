@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     vault_cert_dir: str = "certs"
     vault_storage_dir: str = "encrypted_docs"
     vault_ttl_hours: int = 12
+    # Restart persistence: "memory" (default, tests) or "sqlite" snapshot store.
+    storage: str = "memory"
+    sqlite_path: str = "dev-data/state.sqlite3"
 
     def ensure_production_ready(self) -> None:
         """Fail fast when the default auth secret is used outside local env.

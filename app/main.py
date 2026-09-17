@@ -44,6 +44,36 @@ def build_document_vault() -> LocalDocumentVaultModule:
     return LocalDocumentVaultModule(store=store)
 
 
+def _snapshot_state(app) -> dict:
+    """Collect live module instances in the shape scripts/persistence expects."""
+    return {
+        "authorization": app.state.authorization,
+        "application_intake": app.state.application_intake,
+        "docketing": app.state.docketing,
+        "prosecution": app.state.prosecution,
+        "notification": app.state.notification,
+        "audit": app.state.audit,
+        "filing_workflow": app.state.filing_workflow,
+        "document_vault": app.state.document_vault,
+    }
+
+
+def resolve_snapshot_store():
+    """Select the restart-persistence backend from settings (issue #51).
+
+    "memory" (default) keeps the historical in-memory behaviour used by tests;
+    "sqlite" persists a snapshot across restarts. Anything else is a config error.
+    """
+    from app.adapters.persistence.sqlite_snapshot import SQLiteSnapshotStore
+
+    choice = settings.storage.lower()
+    if choice == "memory":
+        return None
+    if choice == "sqlite":
+        return SQLiteSnapshotStore(settings.sqlite_path)
+    raise ValueError(f"Unknown BLITTO_STORAGE: {settings.storage!r}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
@@ -69,11 +99,19 @@ async def lifespan(app: FastAPI):
         application_intake=app.state.application_intake,
         docketing=app.state.docketing,
     )
+    snapshot_store = resolve_snapshot_store()
+    if snapshot_store is not None:
+        # Restart path (BLITTO_STORAGE=sqlite): restore the previous session
+        # BEFORE bootstrap/seed guards run, so a restart never reseeds.
+        # Restore is a full replace, so ordering is also safe if empty.
+        snapshot_store.load(_snapshot_state(app))
     _bootstrap_admin(app.state.authorization)
     _seed_demo_data(app.state)
     task = asyncio.create_task(_nipo_follow_up_scheduler(app))
     yield
     task.cancel()
+    if snapshot_store is not None:
+        snapshot_store.save(_snapshot_state(app))
 
 
 async def _nipo_follow_up_scheduler(app: FastAPI) -> None:
