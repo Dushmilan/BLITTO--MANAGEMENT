@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import Card from '../components/ui/Card.jsx'
-import Avatar from '../components/ui/Avatar.jsx'
 
-export default function UserPanel({ user, onLogout }) {
+// Inventor content inside UnifiedLayout (the layout owns the header/nav).
+// `section` selects which slice renders: 'overview' | 'patents' |
+// 'notifications' | 'all' (default, backward compatible).
+export default function UserPanel({ user, section = 'all' }) {
   const [apps, setApps] = useState([])
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
@@ -29,13 +32,9 @@ export default function UserPanel({ user, onLogout }) {
     load()
   }, [])
 
-  function handleLogout() {
-    onLogout()
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
+      <div className="flex items-center justify-center py-xxl">
         <div className="flex items-center gap-sm text-steel">
           <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
@@ -47,44 +46,36 @@ export default function UserPanel({ user, onLogout }) {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-ivory">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-ivory/80 backdrop-blur-md border-b border-hairline-soft">
-        <div className="px-xl py-md flex items-center justify-between max-w-6xl mx-auto">
-          <div className="flex items-center gap-md">
-            <span className="font-display text-heading-4 text-navy tracking-tight">BLITTO</span>
-            <span className="text-micro text-muted uppercase tracking-widest font-sans hidden sm:inline">
-              Patent Management
-            </span>
-          </div>
-          <div className="flex items-center gap-lg">
-            <div className="flex items-center gap-sm text-right">
-              <Avatar name={user?.email} size="sm" />
-              <div className="hidden sm:block">
-                <p className="text-body-sm-medium text-ink font-sans leading-tight">{user?.email}</p>
-                <p className="text-micro text-status-granted font-sans capitalize">{user?.role}</p>
-              </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
+  const showOverview = section === 'all' || section === 'overview'
+  const showPatents = section === 'all' || section === 'overview' || section === 'patents'
+  const showNotifications = section === 'all' || section === 'overview' || section === 'notifications'
 
-      {/* Main Content */}
-      <main className="px-xl py-section-sm max-w-6xl mx-auto">
+  return (
         <div className="space-y-xxl">
           {/* Welcome */}
+          {showOverview && (
           <div className="animate-slide-up">
             <h1 className="font-display text-heading-1 text-ink mb-xs">Welcome back</h1>
             <p className="text-body-md text-steel font-sans">
               View your patents and notifications
             </p>
+            {section === 'overview' && (
+              <div className="grid grid-cols-2 gap-lg mt-lg">
+                <Link to="/user/patents" className="block rounded-xl border border-hairline bg-canvas p-lg hover:border-copper transition-colors">
+                  <p className="font-display text-heading-2 text-ink">{apps.length}</p>
+                  <p className="text-body-sm text-steel font-sans">My Patents →</p>
+                </Link>
+                <Link to="/user/notifications" className="block rounded-xl border border-hairline bg-canvas p-lg hover:border-copper transition-colors">
+                  <p className="font-display text-heading-2 text-ink">{notifications.length}</p>
+                  <p className="text-body-sm text-steel font-sans">Notifications →</p>
+                </Link>
+              </div>
+            )}
           </div>
+          )}
 
           {/* My Patents */}
+          {showPatents && (
           <div className="animate-slide-up stagger-1">
             <h2 className="font-display text-heading-3 text-ink mb-lg">My Patents</h2>
             {apps.length === 0 ? (
@@ -126,9 +117,10 @@ export default function UserPanel({ user, onLogout }) {
               </div>
             )}
           </div>
+          )}
 
           {/* Patent Detail (expanded inline) */}
-          {selectedApp && (
+          {showPatents && selectedApp && (
             <Card variant="base" className="animate-slide-up">
               <div className="flex items-center justify-between mb-lg">
                 <h3 className="font-display text-heading-4 text-ink">Patent Details</h3>
@@ -160,6 +152,7 @@ export default function UserPanel({ user, onLogout }) {
           )}
 
           {/* Notifications */}
+          {showNotifications && (
           <div className="animate-slide-up stagger-2">
             <h2 className="font-display text-heading-3 text-ink mb-lg">Notifications</h2>
             {notifications.length === 0 ? (
@@ -192,8 +185,7 @@ export default function UserPanel({ user, onLogout }) {
               </div>
             )}
           </div>
+          )}
         </div>
-      </main>
-    </div>
   )
 }

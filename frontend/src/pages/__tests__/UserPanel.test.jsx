@@ -93,15 +93,33 @@ describe('UserPanel', () => {
     })
   })
 
-  it('calls onLogout on sign out', async () => {
-    const onLogout = vi.fn()
+  it('shows section slices via the section prop', async () => {
     api.applications.mockResolvedValue(APPS)
     api.notifications.mockResolvedValue(NOTIFS)
-    renderPage(USER, onLogout)
+    render(
+      <MemoryRouter>
+        <UserPanel user={USER} section="notifications" />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.getByText('Status Update')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('My Patent')).not.toBeInTheDocument()
+    expect(screen.queryByText('Welcome back')).not.toBeInTheDocument()
+  })
+
+  it('overview section links to patents and notifications', async () => {
+    api.applications.mockResolvedValue(APPS)
+    api.notifications.mockResolvedValue(NOTIFS)
+    render(
+      <MemoryRouter>
+        <UserPanel user={USER} section="overview" />
+      </MemoryRouter>
+    )
     await waitFor(() => {
       expect(screen.getByText('Welcome back')).toBeInTheDocument()
     })
-    await userEvent.click(screen.getByText('Sign out'))
-    expect(onLogout).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/My Patents →/)).toBeInTheDocument()
+    expect(screen.getByText(/Notifications →/)).toBeInTheDocument()
   })
 })
