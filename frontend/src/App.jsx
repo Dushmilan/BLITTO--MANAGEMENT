@@ -65,8 +65,8 @@ export default function App() {
   if (loading) {
     return (
       <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <div className="flex flex-col items-center gap-md">
-          <svg className="animate-spin" width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <div className="flex flex-col items-center gap-md" role="status" aria-live="polite" aria-label="Loading BLITTO">
+          <svg aria-hidden="true" className="animate-spin" width="32" height="32" viewBox="0 0 32 32" fill="none">
             <circle cx="16" cy="16" r="12" stroke="currentColor" strokeWidth="2" className="text-hairline" />
             <path d="M16 4a12 12 0 018.49 3.51" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-copper" />
           </svg>

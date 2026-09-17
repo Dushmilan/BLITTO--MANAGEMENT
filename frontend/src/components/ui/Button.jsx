@@ -29,7 +29,7 @@ export default function Button({
   children,
   ...props
 }) {
-  const base = 'inline-flex items-center justify-center cursor-pointer transition-all duration-200 ease-out font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper focus-visible:ring-offset-2'
+  const base = 'touch-target inline-flex items-center justify-center cursor-pointer transition-all duration-200 ease-out font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper focus-visible:ring-offset-2'
   const variantClasses = VARIANTS[variant] || VARIANTS.primary
   const sizeClasses = SIZES[size] || SIZES.md
 

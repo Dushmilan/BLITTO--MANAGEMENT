@@ -105,6 +105,17 @@ function PatentsTab({ apps, loading, onReload, user }) {
   const [grantPatentNumber, setGrantPatentNumber] = useState('')
   const [granting, setGranting] = useState(false)
   const toast = useToast()
+  const [searchParams] = useSearchParams()
+
+  // Deep-link (?focus=<id>) opens the patent detail modal once data arrives.
+  useEffect(() => {
+    const focusId = searchParams.get('focus')
+    if (focusId && apps.length > 0) {
+      const match = apps.find((a) => a.id === focusId)
+      if (match) setSelectedApp(match)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apps])
 
   function addInventor() {
     setNewForm({ ...newForm, inventors: [...newForm.inventors, { inventor_name: '', inventor_email: '' }] })
@@ -273,10 +284,10 @@ function PatentsTab({ apps, loading, onReload, user }) {
                 trigger={
                   <button
                     type="button"
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+                    className="touch-target w-8 h-8 flex items-center justify-center rounded-full hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
                     aria-label="Filing actions"
                   >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                       <circle cx="8" cy="3" r="1.5" />
                       <circle cx="8" cy="8" r="1.5" />
                       <circle cx="8" cy="13" r="1.5" />
@@ -298,7 +309,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
           {apps.length} {apps.length === 1 ? 'patent' : 'patents'} tracked
         </p>
         <Button variant="primary" onClick={() => setShowNewModal(true)}>
-          <svg className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg aria-hidden="true" className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M7 2v10M2 7h10" />
           </svg>
           New Patent
@@ -327,8 +338,8 @@ function PatentsTab({ apps, loading, onReload, user }) {
       <div className="animate-slide-up stagger-3">
         {loading ? (
           <div className="flex items-center justify-center py-section">
-            <div className="flex items-center gap-sm text-steel">
-              <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
+              <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
                 <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
@@ -381,10 +392,10 @@ function PatentsTab({ apps, loading, onReload, user }) {
                 <button
                   type="button"
                   onClick={() => removeInventor(i)}
-                  className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-md hover:bg-status-rejected/10 text-slate hover:text-status-rejected transition-colors duration-150 shrink-0"
+                  className="touch-target mt-0.5 w-7 h-7 flex items-center justify-center rounded-md hover:bg-status-rejected/10 text-slate hover:text-status-rejected transition-colors duration-150 shrink-0"
                   aria-label="Remove inventor"
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M3 3l8 8M11 3l-8 8" />
                   </svg>
                 </button>
@@ -395,7 +406,7 @@ function PatentsTab({ apps, loading, onReload, user }) {
               onClick={addInventor}
               className="flex items-center gap-xs text-body-sm text-copper hover:text-copper-600 font-sans transition-colors duration-150"
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M6 2v8M2 6h8" />
               </svg>
               Add inventor
@@ -698,11 +709,11 @@ function DocumentsTab({ apps, user }) {
           <button
             type="button"
             onClick={() => handleDownload(row)}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
+            className="touch-target w-7 h-7 flex items-center justify-center rounded-md hover:bg-ivory-200 text-slate hover:text-ink transition-colors duration-150"
             aria-label={`Download ${row.filename}`}
             title="Download"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M7 10V3M4 7l3 3 3-3" />
               <path d="M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" />
             </svg>
@@ -712,17 +723,17 @@ function DocumentsTab({ apps, user }) {
               type="button"
               onClick={() => handleDelete(row)}
               disabled={deleting === row.id}
-              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-status-rejected/10 text-slate hover:text-status-rejected transition-colors duration-150 disabled:opacity-40"
+              className="touch-target w-7 h-7 flex items-center justify-center rounded-md hover:bg-status-rejected/10 text-slate hover:text-status-rejected transition-colors duration-150 disabled:opacity-40"
               aria-label={`Delete ${row.filename}`}
               title="Delete"
             >
               {deleting === row.id ? (
-                <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <svg aria-hidden="true" className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
                   <path d="M7 2a5 5 0 013.54 1.46" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               ) : (
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M2 4h10M5 4V2.5A.5.5 0 015.5 2h3a.5.5 0 01.5.5V4M11 4v7.5a1 1 0 01-1 1H4a1 1 0 01-1-1V4" />
                   <path d="M5.5 6.5v4M8.5 6.5v4" />
                 </svg>
@@ -780,7 +791,7 @@ function DocumentsTab({ apps, user }) {
               >
                 {uploading ? (
                   <span className="flex items-center gap-xs">
-                    <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <svg aria-hidden="true" className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
                       <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
                       <path d="M7 2a5 5 0 013.54 1.46" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
@@ -788,7 +799,7 @@ function DocumentsTab({ apps, user }) {
                   </span>
                 ) : (
                   <>
-                    <svg className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <svg aria-hidden="true" className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <path d="M7 10V3M4 5l3-3 3 3" />
                       <path d="M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" />
                     </svg>
@@ -805,7 +816,7 @@ function DocumentsTab({ apps, user }) {
           )}
           {isStaff && !vaultLocked && vaultRemaining > 0 && (
             <div className="flex items-center gap-sm text-body-sm text-steel font-sans">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="7" cy="7" r="5" />
                 <path d="M7 3.5v4l3 1.5" />
               </svg>
@@ -814,17 +825,17 @@ function DocumentsTab({ apps, user }) {
           )}
         </div>
         {uploadStatus && (
-          <div className={`mt-md px-md py-sm rounded-md text-body-sm font-sans flex items-center gap-sm ${
+          <div aria-live="polite" className={`mt-md px-md py-sm rounded-md text-body-sm font-sans flex items-center gap-sm ${
             uploadStatus.type === 'success'
               ? 'bg-status-granted/10 text-status-granted'
               : 'bg-status-rejected/10 text-status-rejected'
           }`}>
             {uploadStatus.type === 'success' ? (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M3 7l3 3 5-5" />
               </svg>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="7" cy="7" r="5" />
                 <path d="M7 4.5v3M7 9.5v.01" />
               </svg>
@@ -835,7 +846,7 @@ function DocumentsTab({ apps, user }) {
               onClick={() => setUploadStatus(null)}
               className="ml-auto text-current opacity-60 hover:opacity-100"
             >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M3 3l6 6M9 3l-6 6" />
               </svg>
             </button>
@@ -859,8 +870,8 @@ function DocumentsTab({ apps, user }) {
             </div>
             {docsLoading ? (
               <div className="flex items-center justify-center py-xl">
-                <div className="flex items-center gap-sm text-steel">
-                  <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
+                  <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
                     <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
@@ -882,7 +893,7 @@ function DocumentsTab({ apps, user }) {
             <Card variant="base" className="w-full max-w-md p-xl text-center shadow-xl">
               <div className="flex justify-center mb-lg">
                 <div className="w-14 h-14 rounded-full bg-copper-100 flex items-center justify-center">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-copper">
+                  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-copper">
                     <rect x="4" y="9" width="16" height="12" rx="2" />
                     <path d="M8 9V6a4 4 0 118 0v3" />
                     <path d="M12 14v3" />
@@ -923,7 +934,7 @@ function DocumentsTab({ apps, user }) {
 
 function FileIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10 2H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V5l-3-3z" />
       <path d="M10 2v3h3" />
     </svg>

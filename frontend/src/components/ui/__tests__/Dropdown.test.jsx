@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import Dropdown from '../Dropdown.jsx'
 
@@ -74,6 +74,54 @@ describe('Dropdown', () => {
     render(
       <Dropdown trigger={<TriggerButton />} items={ITEMS} />
     )
+    expect(screen.queryByText('Notify Filed')).not.toBeInTheDocument()
+  })
+
+  it('moves focus with arrow keys and wraps around', async () => {
+    render(
+      <Dropdown trigger={<TriggerButton />} items={ITEMS} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    const first = screen.getByRole('menuitem', { name: 'Notify Filed' })
+    const second = screen.getByRole('menuitem', { name: 'Notify Granted' })
+    expect(first).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(second).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(first).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(second).toHaveFocus()
+  })
+
+  it('selects the focused item with Enter', async () => {
+    const onFirst = vi.fn()
+    const onSecond = vi.fn()
+    render(
+      <Dropdown trigger={<TriggerButton />} items={[{ label: 'One', onClick: onFirst }, { label: 'Two', onClick: onSecond }]} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    await userEvent.keyboard('{ArrowDown}{Enter}')
+    expect(onSecond).toHaveBeenCalledTimes(1)
+    expect(onFirst).not.toHaveBeenCalled()
+    expect(screen.queryByText('One')).not.toBeInTheDocument()
+  })
+
+  it('returns focus to the trigger on Escape', async () => {
+    render(
+      <Dropdown trigger={<TriggerButton />} items={ITEMS} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('closes the menu on Tab', async () => {
+    render(
+      <Dropdown trigger={<TriggerButton />} items={ITEMS} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    expect(screen.getByText('Notify Filed')).toBeInTheDocument()
+    await userEvent.tab()
     expect(screen.queryByText('Notify Filed')).not.toBeInTheDocument()
   })
 })

@@ -1,7 +1,7 @@
 export default function SearchInput({ value, onChange, placeholder = 'Search...', className = '' }) {
   return (
     <div className={`relative ${className}`}>
-      <svg
+      <svg aria-hidden="true"
         className="absolute left-md top-1/2 -translate-y-1/2 text-muted pointer-events-none"
         width="16"
         height="16"

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import DataTable from '../DataTable.jsx'
 
@@ -56,5 +56,27 @@ describe('DataTable', () => {
     render(<DataTable columns={columns} data={[{ id: 1, name: 'X' }]} />)
     const td = screen.getByText('X').closest('td')
     expect(td.className).toContain('custom-cell')
+  })
+
+  it('makes rows focusable with keyboard activation when onRowClick exists', async () => {
+    const onRowClick = vi.fn()
+    const columns = [{ key: 'name', label: 'Name' }]
+    const data = [{ id: 1, name: 'Alice' }]
+    render(<DataTable columns={columns} data={data} onRowClick={onRowClick} />)
+    const row = screen.getByText('Alice').closest('tr')
+    expect(row).toHaveAttribute('tabIndex', '0')
+    row.focus()
+    expect(row).toHaveFocus()
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(onRowClick).toHaveBeenCalledWith(data[0])
+    onRowClick.mockClear()
+    fireEvent.keyDown(row, { key: ' ' })
+    expect(onRowClick).toHaveBeenCalledWith(data[0])
+  })
+
+  it('leaves rows unfocusable without onRowClick', () => {
+    const columns = [{ key: 'name', label: 'Name' }]
+    render(<DataTable columns={columns} data={[{ id: 1, name: 'Alice' }]} />)
+    expect(screen.getByText('Alice').closest('tr')).not.toHaveAttribute('tabIndex')
   })
 })

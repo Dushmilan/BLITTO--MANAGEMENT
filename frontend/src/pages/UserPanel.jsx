@@ -35,8 +35,8 @@ export default function UserPanel({ user, section = 'all' }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-xxl">
-        <div className="flex items-center gap-sm text-steel">
-          <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
+          <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
             <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -125,7 +125,7 @@ export default function UserPanel({ user, section = 'all' }) {
               <div className="flex items-center justify-between mb-lg">
                 <h3 className="font-display text-heading-4 text-ink">Patent Details</h3>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedApp(null)}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3 3l8 8M11 3l-8 8" />
                   </svg>
                 </Button>

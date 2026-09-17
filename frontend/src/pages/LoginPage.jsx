@@ -105,7 +105,7 @@ export default function LoginPage({ onLogin }) {
             >
               {loading ? (
                 <span className="flex items-center gap-xs">
-                  <svg className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <svg aria-hidden="true" className="animate-spin" width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" opacity="0.3" />
                     <path d="M8 2a6 6 0 014.24 1.76" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>

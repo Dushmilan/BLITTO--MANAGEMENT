@@ -82,7 +82,12 @@
     transition: background-color 0.15s ease;
   }
   .doc-table tbody tr:hover {
-    background-color: #f3f0ec;
+    background-color: theme('colors.ivory.200');
+  }
+  .doc-table tbody tr:focus-visible {
+    background-color: theme('colors.ivory.200');
+    outline: 2px solid theme('colors.copper');
+    outline-offset: -2px;
   }
 
   /* Staggered animation delays */
@@ -117,6 +122,15 @@
       #e8e4de 80%,
       transparent 100%
     );
+  }
+
+  /* WCAG 2.5.8 minimum touch target: 44px on coarse/mobile viewports.
+     Desktop sizes stay compact; apply alongside the base size classes. */
+  @media (max-width: 639px) {
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
 
