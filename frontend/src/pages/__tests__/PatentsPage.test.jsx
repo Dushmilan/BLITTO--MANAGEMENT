@@ -57,7 +57,7 @@ describe('PatentsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
     })
-    expect(screen.getByText('2 patents tracked')).toBeInTheDocument()
+    expect(screen.getByText('2 of 2 patents shown')).toBeInTheDocument()
   })
 
   it('shows empty state when no patents', async () => {
@@ -83,14 +83,14 @@ describe('PatentsPage', () => {
     api.applications.mockResolvedValue(APPS)
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('2 patents tracked')).toBeInTheDocument()
+      expect(screen.getByText('2 of 2 patents shown')).toBeInTheDocument()
     })
     await userEvent.click(screen.getByRole('button', { name: /New Patent/ }))
     expect(screen.getByRole('heading', { name: /New Patent/ })).toBeInTheDocument()
     expect(screen.getByPlaceholderText('e.g. Novel Semiconductor Device Architecture')).toBeInTheDocument()
   })
 
-  it('filters patents by search', async () => {
+  it('filters patents by search (debounced)', async () => {
     api.applications.mockResolvedValue(APPS)
     renderPage()
     await waitFor(() => {
@@ -98,8 +98,13 @@ describe('PatentsPage', () => {
     })
     const searchInput = screen.getByPlaceholderText('Search patents...')
     await userEvent.type(searchInput, 'Beta')
-    expect(screen.queryByText('Patent Alpha')).not.toBeInTheDocument()
+    // Still unfiltered before the 300ms debounce elapses.
+    expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByText('Patent Alpha')).not.toBeInTheDocument()
+    }, { timeout: 2000 })
     expect(screen.getByText('Patent Beta')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2 patents shown')).toBeInTheDocument()
   })
 
   it('creates a new patent via modal', async () => {
@@ -107,7 +112,7 @@ describe('PatentsPage', () => {
     api.createApplication.mockResolvedValue({ id: 'new' })
     renderPage()
     await waitFor(() => {
-      expect(screen.getByText('2 patents tracked')).toBeInTheDocument()
+      expect(screen.getByText('2 of 2 patents shown')).toBeInTheDocument()
     })
     await userEvent.click(screen.getByRole('button', { name: /New Patent/ }))
     const titleInput = screen.getByPlaceholderText('e.g. Novel Semiconductor Device Architecture')
@@ -212,7 +217,7 @@ describe('PatentsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Choose a patent')).toBeInTheDocument()
     })
-    expect(screen.queryByText('2 patents tracked')).not.toBeInTheDocument()
+    expect(screen.queryByText('2 of 2 patents shown')).not.toBeInTheDocument()
   })
 
   it('shows Grant and Reject actions directly in the detail modal', async () => {

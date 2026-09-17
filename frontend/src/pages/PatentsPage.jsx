@@ -5,6 +5,7 @@ import Badge from '../components/ui/Badge.jsx'
 import Button from '../components/ui/Button.jsx'
 import Card from '../components/ui/Card.jsx'
 import DataTable from '../components/ui/DataTable.jsx'
+import Skeleton from '../components/ui/Skeleton.jsx'
 
 import Dropdown from '../components/ui/Dropdown.jsx'
 import SearchInput from '../components/ui/SearchInput.jsx'
@@ -12,6 +13,7 @@ import Modal from '../components/ui/Modal.jsx'
 import ConfirmDialog from '../components/ui/ConfirmDialog.jsx'
 import Input from '../components/ui/Input.jsx'
 import { useToast } from '../hooks/useToast.js'
+import { useDebounce } from '../hooks/useDebounce.js'
 import { STATUS_OPTIONS, inventorSummary, normalizeInventors } from '../utils/notifyHelpers.js'
 
 const TABS = [
@@ -102,6 +104,7 @@ export default function PatentsPage({ user }) {
 
 function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebounce(search)
   const [filterStatus, setFilterStatus] = useState('')
   const [showNewModal, setShowNewModal] = useState(false)
   const [selectedApp, setSelectedApp] = useState(null)
@@ -304,10 +307,11 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
   }
 
   const filtered = apps.filter((app) => {
-    const matchesSearch = !search ||
-      app.title?.toLowerCase().includes(search.toLowerCase()) ||
-      app.application_number?.toLowerCase().includes(search.toLowerCase()) ||
-      app.id?.toLowerCase().includes(search.toLowerCase())
+    const q = debouncedSearch.trim().toLowerCase()
+    const matchesSearch = !q ||
+      app.title?.toLowerCase().includes(q) ||
+      app.application_number?.toLowerCase().includes(q) ||
+      app.id?.toLowerCase().includes(q)
     const matchesStatus = !filterStatus || app.status?.toLowerCase() === filterStatus
     return matchesSearch && matchesStatus
   })
@@ -381,8 +385,8 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
   return (
     <div className="space-y-xxl">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-lg animate-slide-up stagger-2">
-        <p className="text-body-md text-steel font-sans">
-          {apps.length} {apps.length === 1 ? 'patent' : 'patents'} tracked
+        <p className="text-body-md text-steel font-sans" aria-live="polite">
+          {filtered.length} of {apps.length} {apps.length === 1 ? 'patent' : 'patents'} shown
         </p>
         <Button variant="primary" onClick={() => setShowNewModal(true)}>
           <svg aria-hidden="true" className="mr-xs" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
@@ -414,13 +418,7 @@ function PatentsTab({ apps, loading, onReload, user, onViewDocuments }) {
       <div className="animate-slide-up stagger-3">
         {loading ? (
           <div className="flex items-center justify-center py-section">
-            <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
-              <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-                <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              <span className="font-sans text-body-sm">Loading patents...</span>
-            </div>
+            <Skeleton rows={4} label="Loading patents..." />
           </div>
         ) : (
           <DataTable
@@ -1046,13 +1044,7 @@ function DocumentsTab({ apps, user, initialAppId = '' }) {
             </div>
             {docsLoading ? (
               <div className="flex items-center justify-center py-xl">
-                <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
-                  <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
-                    <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                  <span className="font-sans text-body-sm">Loading documents...</span>
-                </div>
+                <Skeleton rows={3} label="Loading documents..." />
               </div>
             ) : (
               <DataTable

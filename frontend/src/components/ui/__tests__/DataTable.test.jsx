@@ -79,4 +79,26 @@ describe('DataTable', () => {
     render(<DataTable columns={columns} data={[{ id: 1, name: 'Alice' }]} />)
     expect(screen.getByText('Alice').closest('tr')).not.toHaveAttribute('tabIndex')
   })
+
+  it('paginates large datasets with page-size control', async () => {
+    const columns = [{ key: 'name', label: 'Name' }]
+    const data = Array.from({ length: 30 }, (_, i) => ({ id: i, name: `Row ${i}` }))
+    render(<DataTable columns={columns} data={data} pageSize={10} />)
+    expect(screen.getByText('Row 0')).toBeInTheDocument()
+    expect(screen.queryByText('Row 10')).not.toBeInTheDocument()
+    expect(screen.getByText('Showing 1-10 of 30')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /next page/i }))
+    expect(screen.getByText('Row 10')).toBeInTheDocument()
+    expect(screen.queryByText('Row 0')).not.toBeInTheDocument()
+    expect(screen.getByText('Showing 11-20 of 30')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /previous page/i }))
+    expect(screen.getByText('Row 0')).toBeInTheDocument()
+  })
+
+  it('hides pagination for small datasets', () => {
+    const columns = [{ key: 'name', label: 'Name' }]
+    render(<DataTable columns={columns} data={[{ id: 1, name: 'Alice' }]} />)
+    expect(screen.queryByRole('button', { name: /next page/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Showing/)).not.toBeInTheDocument()
+  })
 })
