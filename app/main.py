@@ -47,6 +47,8 @@ def build_document_vault() -> LocalDocumentVaultModule:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
+    # Fail fast on insecure production config (default auth secret, dev-only store).
+    settings.ensure_production_ready()
     # Wire module instances (local adapters) into application state.
     app.state.application_intake = LocalApplicationIntakeModule()
     app.state.docketing = LocalDocketingModule()

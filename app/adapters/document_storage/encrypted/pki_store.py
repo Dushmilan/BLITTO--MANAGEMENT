@@ -217,6 +217,37 @@ class PKIEncryptedStore:
         )
         return True
 
+    def rotate_master_key(self, old_key_b64: str, new_key_b64: str) -> bool:
+        """Re-wrap the RSA private key from *old* to *new* master key.
+
+        Document blobs are encrypted to the RSA public key, so rotation only
+        re-encrypts the private-key wrap on disk — no data re-encryption and
+        no downtime. Returns False when the old key is wrong or either key
+        is malformed; the existing wrap is left untouched in that case.
+        """
+        try:
+            old_bytes = base64.b64decode(old_key_b64, validate=True)
+            new_bytes = base64.b64decode(new_key_b64, validate=True)
+        except (ValueError, TypeError, binascii.Error):
+            return False
+        if len(old_bytes) != 32 or len(new_bytes) != 32:
+            return False
+
+        private_key = self._decrypt_private_key(old_bytes)
+        if private_key is None:
+            return False
+
+        self._write_encrypted_private_key(
+            private_key, new_bytes, self._cert_dir / _ENCRYPTED_KEY_FILE
+        )
+        # Keep serving if currently unlocked — the key object is unchanged.
+        if self._private_key is not None:
+            self._private_key = private_key
+            self._unlocked_until = datetime.now(timezone.utc) + timedelta(
+                hours=self._ttl_hours,
+            )
+        return True
+
     def lock(self) -> None:
         """Lock vault: drop in-memory private key reference (GC reclaims; not secure zeroization)."""
         self._private_key = None

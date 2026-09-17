@@ -55,13 +55,36 @@ async def auth_token(request: Request, md: User = Depends(MDUser)):
 
 
 # Public login (user self-login flow). Institution mail only.
+# Brute-force guard: sliding window per account, same shape as the vault
+# unlock throttle below (5 failures / 10 min -> 429 + Retry-After).
+_LOGIN_ATTEMPTS: dict[str, list[float]] = {}
+_LOGIN_WINDOW_S = 600.0
+_LOGIN_MAX_FAILS = 5
+
+
+def _login_allowed(email: str) -> bool:
+    now = time.monotonic()
+    hits = [t for t in _LOGIN_ATTEMPTS.get(email, []) if now - t < _LOGIN_WINDOW_S]
+    _LOGIN_ATTEMPTS[email] = hits
+    return len(hits) < _LOGIN_MAX_FAILS
+
+
+def _record_login_fail(email: str) -> None:
+    _LOGIN_ATTEMPTS.setdefault(email, []).append(time.monotonic())
+
+
 @router.post("/auth/login", tags=["authorization"])
 async def auth_login(request: Request, body: LoginRequest):
     if not is_institution_email(body.email):
         raise HTTPException(status_code=403, detail="Institution email required")
+    email = body.email.strip().lower()
+    if not _login_allowed(email):
+        raise HTTPException(status_code=429, detail="Too many login attempts", headers={"Retry-After": "600"})
     token = request.app.state.authorization.login(body)
     if token is None:
+        _record_login_fail(email)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    _LOGIN_ATTEMPTS.pop(email, None)
     return token
 
 
