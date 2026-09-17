@@ -18,7 +18,7 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 |-------|-----------|
 | Frontend | React (Vite) in `frontend/` — dev proxy `/api` → `localhost:8000` |
 | Backend | FastAPI (Python) |
-| Database | None (in-memory stores; optional JSON snapshot in `dev-data/state.json`) |
+| Database | In-memory stores by default; restart-safe SQLite snapshot via `BLITTO_STORAGE=sqlite` (see below). Legacy JSON snapshot in `dev-data/state.json` |
 | Authentication | Local stub (institution email + bcrypt-hashed password, Bearer tokens) — startup refuses the default `BLITTO_AUTH_SECRET` outside `local` env; `/auth/login` throttled (5 fails / 10 min / account → 429). Better-auth JWT/JWKS adapter reserved for prod |
 | Document Storage | Local in-memory/file adapter (default); PKI-encrypted adapter exists but is not the default |
 | Encryption | `PKIEncryptedStore` adapter (RSA/AES hybrid) exists; **default store is plaintext at rest** (see issue #49) |
@@ -91,6 +91,15 @@ BLITTO serves as the bridge between university inventors and NIPO. Inventors sub
 ---
 
 ## Data Model (in-memory)
+
+> **Restart persistence (issue #51).** All state still lives in process dicts, but
+> `BLITTO_STORAGE=sqlite` (default `memory`) snapshots every module to SQLite on
+> shutdown and restores it on boot — users, applications, documents (+ bytes),
+> audit events and all. Snapshot path: `BLITTO_SQLITE_PATH` (default
+> `dev-data/state.sqlite3`). Tests keep using `memory`.
+> **Migration path:** existing JSON snapshots import cleanly —
+> `python scripts/migrate_state_to_sqlite.py [dev-data/state.json] [dev-data/state.sqlite3]`,
+> then restart with `BLITTO_STORAGE=sqlite`.
 
 | Entity | Key Fields |
 |--------|-----------|

@@ -23,8 +23,8 @@ from app.modules.notification.models import Notification
 from app.modules.prosecution.models import DefectSheet, OfficeAction, Response
 
 
-def save_dev_state(state: Any, path: str = "dev-data/state.json") -> None:
-    """Serialize every module's in-memory dicts/lists to JSON."""
+def dump_state(state: Any) -> dict[str, Any]:
+    """Serialize every module's in-memory dicts/lists to a JSON-safe dict."""
     data: dict[str, Any] = {"version": 1}
 
     auth = state["authorization"]
@@ -102,13 +102,19 @@ def save_dev_state(state: Any, path: str = "dev-data/state.json") -> None:
                 pki["public_key_pem"] = pub_path.read_text(encoding="utf-8")
             data["document_vault"]["pki"] = pki
 
+    return data
+
+
+def save_dev_state(state: Any, path: str = "dev-data/state.json") -> None:
+    """Serialize every module's in-memory dicts/lists to a JSON file."""
+    data = dump_state(state)
     out = Path(path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
 
 
 def load_dev_state(state: Any, path: str = "dev-data/state.json") -> bool:
-    """Deserialize JSON back into module stores.
+    """Deserialize a JSON snapshot file back into module stores.
 
     Returns True if state was loaded, False if the file doesn't exist.
     """
@@ -117,7 +123,12 @@ def load_dev_state(state: Any, path: str = "dev-data/state.json") -> bool:
         return False
 
     data = json.loads(src.read_text(encoding="utf-8"))
+    restore_state(state, data)
+    return True
 
+
+def restore_state(state: Any, data: dict[str, Any]) -> None:
+    """Populate module stores from an already-deserialized snapshot dict."""
     auth = state["authorization"]
     auth._users = {uid: User.model_validate(u) for uid, u in data["authorization"]["users"].items()}
     auth._passwords = dict(data["authorization"]["passwords"])
@@ -191,5 +202,3 @@ def load_dev_state(state: Any, path: str = "dev-data/state.json") -> bool:
                 )
             for name, b64 in pki.get("blobs", {}).items():
                 (storage_dir / name).write_bytes(base64.b64decode(b64))
-
-    return True
