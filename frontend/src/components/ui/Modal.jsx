@@ -45,10 +45,10 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
           <h2 className="font-display text-heading-4 text-ink">{title}</h2>
           <button
             onClick={onClose}
-            className="text-muted hover:text-ink transition-colors p-xs rounded-md hover:bg-ivory-200"
+            className="touch-target text-muted hover:text-ink transition-colors p-xs rounded-md hover:bg-ivory-200"
             aria-label="Close"
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M4 4l10 10M14 4L4 14" />
             </svg>
           </button>

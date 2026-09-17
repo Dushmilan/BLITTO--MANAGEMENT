@@ -197,6 +197,18 @@ describe('PatentsPage', () => {
     expect(screen.getByRole('heading', { name: 'Grant Patent' })).toBeInTheDocument()
   })
 
+  it('opens the focused patent from ?focus= deep link', async () => {
+    api.applications.mockResolvedValue(APPS)
+    render(
+      <MemoryRouter initialEntries={['/admin/patents?focus=app-1']}>
+        <PatentsPage user={{ role: 'admin', email: 'admin@test.com' }} />
+      </MemoryRouter>
+    )
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Patent Details' })).toBeInTheDocument()
+    })
+  })
+
   it('writes the tab to the URL when switching tabs', async () => {
     const { useSearchParams } = await import('react-router-dom')
     function Probe() {

@@ -95,8 +95,8 @@ export default function UsersPage() {
       <div className="animate-slide-up stagger-3">
         {loading ? (
           <div className="flex items-center justify-center py-section">
-            <div className="flex items-center gap-sm text-steel">
-              <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
+              <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
                 <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>

@@ -27,8 +27,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-section">
-        <div className="flex items-center gap-sm text-steel">
-          <svg className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <div className="flex items-center gap-sm text-steel" role="status" aria-live="polite">
+          <svg aria-hidden="true" className="animate-spin" width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
             <path d="M10 2a8 8 0 015.66 2.34" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
@@ -51,6 +51,7 @@ export default function DashboardPage() {
     id: app.id,
     text: `Application "${app.title}" ${app.status ? `is now ${app.status}` : 'created'}`,
     time: app.created_at ? new Date(app.created_at).toLocaleDateString() : 'Recently',
+    to: `/admin/patents?focus=${app.id}`,
   }))
 
   return (
@@ -70,19 +71,19 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-lg">
         <StatCard label="Total" value={totalApps}
-          icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="2" width="14" height="16" rx="2" /><path d="M7 7h6M7 10h6M7 13h3" /></svg>}
+          icon={<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="2" width="14" height="16" rx="2" /><path d="M7 7h6M7 10h6M7 13h3" /></svg>}
         />
         <StatCard label="Filed" value={statusCounts.filed || statusCounts.published || 0}
-          icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 10l3 3 7-7" /><circle cx="10" cy="10" r="8" /></svg>}
+          icon={<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 10l3 3 7-7" /><circle cx="10" cy="10" r="8" /></svg>}
         />
         <StatCard label="Examination" value={statusCounts.examination || 0}
-          icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8" /><path d="M10 6v4l2.5 1.5" /></svg>}
+          icon={<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8" /><path d="M10 6v4l2.5 1.5" /></svg>}
         />
         <StatCard label="Granted" value={statusCounts.granted || 0}
-          icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.3L10 14.5 5.1 17l.9-5.3-4-3.9 5.5-.8z" /></svg>}
+          icon={<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.3L10 14.5 5.1 17l.9-5.3-4-3.9 5.5-.8z" /></svg>}
         />
         <StatCard label="Draft" value={statusCounts.draft || 0}
-          icon={<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2H5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7l-5-5z" /><path d="M11 2v5h5" /></svg>}
+          icon={<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2H5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7l-5-5z" /><path d="M11 2v5h5" /></svg>}
         />
       </div>
 
