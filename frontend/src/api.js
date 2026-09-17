@@ -40,7 +40,11 @@ async function request(path, { method = 'GET', body, params } = {}) {
     } catch {
       /* ignore */
     }
-    throw new Error(detail)
+    // Attach the HTTP status so callers can distinguish error types
+    // (401 wrong credentials vs 403 forbidden vs 429 throttled, ...).
+    const error = new Error(detail)
+    error.status = res.status
+    throw error
   }
   if (res.status === 204) return null
   return res.json()
@@ -63,6 +67,10 @@ export const api = {
       method: 'POST',
       params: { new_status: newStatus },
     }),
+  updateApplication: (appId, fields) =>
+    request(`/applications/${appId}`, { method: 'PATCH', body: fields }),
+  applicationHistory: (appId) =>
+    request(`/applications/${appId}/history`),
 
   // Documents
   documents: (appId) =>

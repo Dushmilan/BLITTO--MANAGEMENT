@@ -71,7 +71,7 @@ export default function Sidebar({ collapsed = false, onToggle, items = DEFAULT_N
 
 export function DashboardIcon() {
   return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" >
       <rect x="2" y="2" width="5.5" height="5.5" rx="1" />
       <rect x="10.5" y="2" width="5.5" height="5.5" rx="1" />
       <rect x="2" y="10.5" width="5.5" height="5.5" rx="1" />
@@ -82,7 +82,7 @@ export function DashboardIcon() {
 
 export function PatentsIcon() {
   return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" >
       <path d="M4 2h10a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z" />
       <path d="M6 6h6M6 9h6M6 12h3" />
     </svg>
@@ -91,7 +91,7 @@ export function PatentsIcon() {
 
 export function UsersIcon() {
   return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" >
       <circle cx="9" cy="6" r="3" />
       <path d="M3 16c0-3.3 2.7-6 6-6s6 2.7 6 6" />
     </svg>
@@ -100,7 +100,7 @@ export function UsersIcon() {
 
 export function BellIcon() {
   return (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" >
       <path d="M9 2a5 5 0 015 5c0 4 1.5 5.5 1.5 5.5h-13S4 11 4 7a5 5 0 015-5z" />
       <path d="M7.5 15a1.5 1.5 0 003 0" />
     </svg>

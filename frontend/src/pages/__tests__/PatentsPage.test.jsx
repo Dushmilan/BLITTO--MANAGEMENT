@@ -20,13 +20,15 @@ vi.mock('../../api.js', () => ({
     vaultStatus: vi.fn(),
     vaultUnlock: vi.fn(),
     vaultLock: vi.fn(),
+    updateApplication: vi.fn(),
+    applicationHistory: vi.fn(),
   },
 }))
 
 import { api } from '../../api.js'
 
 const APPS = [
-  { id: 'app-1', title: 'Patent Alpha', status: 'filed', application_number: 'PAT-001', inventors: [{ inventor_name: 'Alice', inventor_email: 'alice@test.com' }], technology_area: 'AI' },
+  { id: 'app-1', title: 'Patent Alpha', status: 'filed', application_number: 'PAT-001', inventors: [{ inventor_name: 'Alice', inventor_email: 'alice@test.com' }], technology_area: 'AI', created_at: '2024-05-01T10:00:00Z', updated_at: '2024-06-01T12:00:00Z' },
   { id: 'app-2', title: 'Patent Beta', status: 'draft', inventors: [], technology_area: '' },
 ]
 
@@ -45,6 +47,7 @@ function renderPage(user = { role: 'admin', email: 'admin@test.com' }) {
 describe('PatentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    api.applicationHistory.mockResolvedValue([])
   })
 
   it('shows loading then renders patents list', async () => {
@@ -143,8 +146,38 @@ describe('PatentsPage', () => {
     const patentInput = screen.getByPlaceholderText('e.g. LK/PAT/2026/00123')
     await userEvent.type(patentInput, 'LK/PAT/2026/999')
     await userEvent.click(screen.getByText('Confirm Grant'))
+    // Step 2: irreversible-action confirmation with explicit checkbox.
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Confirm grant' })).toBeInTheDocument()
+    })
+    expect(screen.getByText(/This action is irreversible/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(screen.getByRole('button', { name: 'Grant Patent' }))
     await waitFor(() => {
       expect(api.markGranted).toHaveBeenCalledWith('app-1', 'LK/PAT/2026/999')
+    })
+  })
+
+  it('rejects a patent through the confirm dialog', async () => {
+    api.applications.mockResolvedValue(APPS)
+    api.markRejected.mockResolvedValue({})
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Patent Alpha'))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Patent Details' })).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Reject' }))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Reject patent?' })).toBeInTheDocument()
+    })
+    // Two Reject buttons now (detail bar + dialog) — confirm in the dialog.
+    const rejects = screen.getAllByRole('button', { name: 'Reject' })
+    await userEvent.click(rejects[rejects.length - 1])
+    await waitFor(() => {
+      expect(api.markRejected).toHaveBeenCalledWith('app-1')
     })
   })
 
@@ -199,6 +232,7 @@ describe('PatentsPage', () => {
 
   it('opens the focused patent from ?focus= deep link', async () => {
     api.applications.mockResolvedValue(APPS)
+    api.applicationHistory.mockResolvedValue([])
     render(
       <MemoryRouter initialEntries={['/admin/patents?focus=app-1']}>
         <PatentsPage user={{ role: 'admin', email: 'admin@test.com' }} />
@@ -207,6 +241,62 @@ describe('PatentsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Patent Details' })).toBeInTheDocument()
     })
+  })
+
+  it('shows timestamps and status history in the detail modal', async () => {
+    api.applications.mockResolvedValue(APPS)
+    api.applicationHistory.mockResolvedValue([
+      { id: 'h1', old_status: 'draft', new_status: 'filed', changed_by: 'md@test.com' },
+    ])
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Patent Alpha'))
+    await waitFor(() => {
+      expect(screen.getByText('Status history')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Created')).toBeInTheDocument()
+    expect(screen.getByText('Last updated')).toBeInTheDocument()
+    expect(screen.getByText(/md@test.com/)).toBeInTheDocument()
+  })
+
+  it('edits the technology area inline', async () => {
+    api.applications.mockResolvedValue(APPS)
+    api.updateApplication.mockResolvedValue({ ...APPS[0], technology_area: 'Bio' })
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Patent Alpha'))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Patent Details' })).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Edit technology area' }))
+    await userEvent.clear(screen.getByLabelText('Technology area'))
+    await userEvent.type(screen.getByLabelText('Technology area'), 'Bio')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => {
+      expect(api.updateApplication).toHaveBeenCalledWith('app-1', { technology_area: 'Bio' })
+    })
+  })
+
+  it('jumps from detail to documents with context bar', async () => {
+    api.applications.mockResolvedValue(APPS)
+    api.vaultStatus.mockResolvedValue({ locked: true, remaining_seconds: 0 })
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByText('Patent Alpha')).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByText('Patent Alpha'))
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Patent Details' })).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'View documents' }))
+    await waitFor(() => {
+      expect(screen.getByTestId('doc-context-bar')).toHaveTextContent('Patent Alpha')
+    })
+    expect(screen.getByTestId('doc-context-bar')).toHaveTextContent('PAT-001')
   })
 
   it('writes the tab to the URL when switching tabs', async () => {

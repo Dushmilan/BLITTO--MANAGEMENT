@@ -1,22 +1,38 @@
 import { useState } from 'react'
 import Button from '../components/ui/Button.jsx'
 
+export function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  function friendlyError(err) {
+    if (err?.status === 401) return 'Incorrect email or password. Please try again.'
+    if (err?.status === 429) return 'Too many attempts. Please wait a few minutes and try again.'
+    if (err instanceof TypeError) return 'Cannot reach the server. Check your connection and try again.'
+    return err?.message || 'Sign-in failed. Please try again.'
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
+    const trimmed = email.trim()
+    if (!isValidEmail(trimmed)) {
+      setError('Enter a valid email address.')
+      return
+    }
     setError('')
     setLoading(true)
     try {
-      await onLogin(email, password)
+      await onLogin(trimmed, password)
       // Don't navigate here - App.jsx will re-render and the route logic
       // will redirect to "/" because user state is now set
     } catch (err) {
-      setError(err.message)
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
@@ -69,11 +85,13 @@ export default function LoginPage({ onLogin }) {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); if (error) setError('') }}
                 required
                 autoFocus
+                disabled={loading}
+                aria-describedby={error ? 'login-error' : undefined}
                 placeholder="you@university.edu"
-                className="w-full h-11 px-md bg-white/[0.06] text-white text-body-md border border-white/10 rounded-md outline-none transition-all duration-200 font-sans placeholder:text-white/25 focus:border-copper focus:ring-2 focus:ring-copper/20"
+                className="w-full h-11 px-md bg-white/[0.06] text-white text-body-md border border-white/10 rounded-md outline-none transition-all duration-200 font-sans placeholder:text-white/25 focus:border-copper focus:ring-2 focus:ring-copper/20 disabled:opacity-60"
               />
             </div>
             <div>
@@ -84,15 +102,17 @@ export default function LoginPage({ onLogin }) {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); if (error) setError('') }}
                 required
+                disabled={loading}
+                aria-describedby={error ? 'login-error' : undefined}
                 placeholder="Enter your password"
-                className="w-full h-11 px-md bg-white/[0.06] text-white text-body-md border border-white/10 rounded-md outline-none transition-all duration-200 font-sans placeholder:text-white/25 focus:border-copper focus:ring-2 focus:ring-copper/20"
+                className="w-full h-11 px-md bg-white/[0.06] text-white text-body-md border border-white/10 rounded-md outline-none transition-all duration-200 font-sans placeholder:text-white/25 focus:border-copper focus:ring-2 focus:ring-copper/20 disabled:opacity-60"
               />
             </div>
 
             {error && (
-              <p className="text-body-sm text-status-rejected font-sans animate-slide-up">
+              <p id="login-error" role="alert" className="text-body-sm text-status-rejected font-sans animate-slide-up">
                 {error}
               </p>
             )}

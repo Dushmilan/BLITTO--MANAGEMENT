@@ -70,7 +70,7 @@ export default function UnifiedLayout({ user, onLogout }) {
                 aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
                 className="touch-target lg:hidden text-steel hover:text-ink transition-colors p-xs rounded-md hover:bg-ivory-200 focus-visible:ring-2 focus-visible:ring-copper"
               >
-                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" >
                   {mobileOpen ? (
                     <path d="M5 5l10 10M15 5L5 15" />
                   ) : (
