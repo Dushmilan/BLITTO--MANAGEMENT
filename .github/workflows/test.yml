@@ -1,0 +1,35 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-laravel:
+    name: backend-laravel (Pest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: sqlite3, mbstring, openssl, pdo_sqlite, curl, dom, fileinfo, tokenizer, xml
+          coverage: none
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare environment
+        run: cp .env.example .env && php artisan key:generate
+      - name: Run Pest suite
+        run: vendor/bin/pest

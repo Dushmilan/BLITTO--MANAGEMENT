@@ -4,31 +4,34 @@ graphify-out/
 # Local opencode plugin/config
 .opencode/
 
-# Python
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.venv/
-venv/
-env/
-*.egg-info/
-
-# Node
-node_modules/
-
-# Secrets / certs / encrypted data
-certs/
-encrypted_docs/
+# Laravel / PHP (backend/)
+backend/vendor/
+backend/.env
+backend/.phpunit.result.cache
+backend/.pest/
+backend/node_modules/
+backend/public/hot
+backend/storage/*.key
+backend/storage/framework/{cache,sessions,views,testing}/*
+backend/storage/logs/*
+backend/database/*.sqlite
+backend/database/*.sqlite-journal
 
 # Env / secrets
 .env
 .env.local
 
-# Build
-dist/
-build/
+# Stale artifacts of removed Python/React codebases
+# (source recoverable at tag pre-laravel-final-state)
+__pycache__/
+*.pyc
+frontend/node_modules/
+frontend/dist/
+
+# Secrets / certs / encrypted data
+certs/
+encrypted_docs/
 
 # OS
 .DS_Store
 Thumbs.db
-.coverage
