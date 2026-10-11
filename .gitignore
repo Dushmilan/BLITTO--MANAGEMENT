@@ -35,3 +35,6 @@ encrypted_docs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Git worktrees (superpowers SDD)
+.worktrees/
