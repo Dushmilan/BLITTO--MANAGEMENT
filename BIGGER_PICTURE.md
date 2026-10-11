@@ -99,7 +99,7 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 
 | Layer | Issue | Deliverable | New tests (TDD) |
 |---|---|---|---|
-| L0 Foundation | [#68](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/68) | PHP 8.3 + Composer (`scripts/setup-php.sh`), Laravel 13 skeleton, `BLITTODB_` prefix, SQLite, full 12-table schema, `backend-laravel` CI job | scaffold + health check |
+| L0 Foundation | [#68](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/68) | PHP 8.3 + Composer (installed system-wide; CI uses `shivammathur/setup-php`), Laravel 13 skeleton, `BLITTODB_` prefix, SQLite, full 12-table schema, `backend-laravel` CI job | scaffold + health check |
 | L1 Domain | [#73](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/73) | Eloquent models, lifecycle transition table, `app/Domain/*`, 6 invariants | lifecycle/model |
 | L2 Auth & RBAC | [#72](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/72) | Session auth, 3 roles, gates from RBAC matrix, email-domain policy, throttling, bootstrap admin | auth + RBAC + security |
 | L3 Core flows | [#67](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/67) | Applications CRUD, history, status changes, docketing, office actions, filing workflow | feature tests covering journeys J1–J6 |
@@ -136,6 +136,13 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 ## 9. Current status / next move
 
 - Decision made, issues updated to the rewrite framing (2026-10-09).
-- **Next: L0 (#68)** — `scripts/setup-php.sh` (PHP 8.3 + Composer install),
-  Laravel 13 skeleton in `backend/`, `BLITTODB_` config prefix, SQLite + the
-  full 12-table schema, health-check Pest test, `backend-laravel` CI job.
+- **Done: L0 (#68)** — Laravel 13 skeleton in `backend/`, `BLITTODB_` config
+  prefix, SQLite + full 12-table schema, health-check Pest test,
+  `backend-laravel` CI job. PHP 8.3.6 + Composer 2.7.1 installed
+  system-wide (CI provisions its own via `shivammathur/setup-php`).
+- **Done: L1 (#73)** — 12 persistence-only Eloquent models, lifecycle
+  transition table, `app/Domain/*`, all 6 CONTEXT.md invariants tested
+  (suite 131/131 green).
+- **Next: L2 (#72)** — session auth, gates from the RBAC matrix,
+  email-domain policy, throttling, bootstrap admin; plus L1 carry-overs:
+  upload-flow immutability test, non-empty `reason` validation.
