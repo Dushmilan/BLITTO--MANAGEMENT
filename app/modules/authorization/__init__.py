@@ -1,1 +1,0 @@
-"""Authorization module package."""

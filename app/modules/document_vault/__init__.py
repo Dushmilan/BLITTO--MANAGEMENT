@@ -1,1 +1,0 @@
-"""Document Vault module package."""
