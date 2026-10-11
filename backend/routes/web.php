@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApplicationStatusController;
+use App\Http\Controllers\Auth\MeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -16,3 +17,5 @@ Route::get('/health', function () {
 
 Route::post('/applications/{application}/status', [ApplicationStatusController::class, 'store'])
     ->name('applications.status');
+
+Route::get('/auth/me', MeController::class)->middleware('auth')->name('auth.me');

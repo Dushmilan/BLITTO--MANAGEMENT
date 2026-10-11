@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Lifecycle\IllegalTransition;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -25,5 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (IllegalTransition $e, Request $request) => response()->json([
                 'message' => $e->getMessage(),
             ], 422),
+        );
+
+        $exceptions->render(
+            fn (AuthenticationException $e, Request $request) => response()->json([
+                'message' => 'Unauthenticated.',
+            ], 401),
         );
     })->create();
