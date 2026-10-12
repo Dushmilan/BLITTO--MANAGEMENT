@@ -9,8 +9,7 @@ it('provides app settings with parity defaults', function () {
         ->and(config('blitto.vault_storage_dir'))->toBe('encrypted_docs')
         ->and(config('blitto.vault_ttl_hours'))->toBe(12)
         ->and(config('blitto.storage'))->toBe('memory')
-        ->and(config('blitto.sqlite_path'))->toBe('dev-data/state.sqlite3')
-        ->and(config('blitto.auth_secret'))->toBe('change-me-in-production-32byte-minimum!');
+        ->and(config('blitto.sqlite_path'))->toBe('dev-data/state.sqlite3');
 });
 
 it('reads settings from BLITTODB_-prefixed env vars', function () {

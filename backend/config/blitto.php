@@ -14,14 +14,6 @@ return [
     'service_name' => env('BLITTODB_SERVICE_NAME', 'blitto-patent-database'),
     'environment' => env('BLITTODB_ENVIRONMENT', 'local'),
 
-    // better-auth production adapter (JWT/JWKS verification). Unused locally.
-    'better_auth_jwks_url' => env('BLITTODB_BETTER_AUTH_JWKS_URL', ''),
-    'better_auth_issuer' => env('BLITTODB_BETTER_AUTH_ISSUER', ''),
-    'better_auth_audience' => env('BLITTODB_BETTER_AUTH_AUDIENCE', ''),
-
-    // Secret for the local-stub auth adapter (better-auth handles secrets in prod).
-    'auth_secret' => env('BLITTODB_AUTH_SECRET', 'change-me-in-production-32byte-minimum!'),
-
     // Institution-mail gate: only these domains may register/log in.
     // Env: BLITTODB_ALLOWED_EMAIL_DOMAINS="pdn.ac.lk,sci.pdn.ac.lk" (comma-separated).
     'allowed_email_domains' => env('BLITTODB_ALLOWED_EMAIL_DOMAINS', 'pdn.ac.lk'),
