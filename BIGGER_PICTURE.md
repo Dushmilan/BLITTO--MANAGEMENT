@@ -143,6 +143,10 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 - **Done: L1 (#73)** — 12 persistence-only Eloquent models, lifecycle
   transition table, `app/Domain/*`, all 6 CONTEXT.md invariants tested
   (suite 131/131 green).
-- **Next: L2 (#72)** — session auth, gates from the RBAC matrix,
-  email-domain policy, throttling, bootstrap admin; plus L1 carry-overs:
-  upload-flow immutability test, non-empty `reason` validation.
+- **Done: L2 (#72)** — session auth (login/logout, guarded `APP_KEY`),
+  3-role RBAC gates from the matrix, email-domain policy, throttling
+  (failed logins per account + vault-unlock per IP), idempotent bootstrap
+  admin. The L1 non-empty `reason` carry-over is resolved here; upload-flow
+  immutability remains deferred to L4. Suite 194/194 green.
+- **Next: L3 (#67)** — applications CRUD, history, status changes, docketing,
+  office actions, filing workflow; feature tests covering journeys J1–J6.
