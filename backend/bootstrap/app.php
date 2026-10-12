@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Authorization\DuplicateEmail;
+use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Domain\Lifecycle\IllegalTransition;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -32,5 +34,17 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (AuthenticationException $e, Request $request) => response()->json([
                 'message' => 'Unauthenticated.',
             ], 401),
+        );
+
+        $exceptions->render(
+            fn (InvalidInstitutionEmail $e, Request $request) => response()->json([
+                'message' => $e->getMessage(),
+            ], 422),
+        );
+
+        $exceptions->render(
+            fn (DuplicateEmail $e, Request $request) => response()->json([
+                'message' => $e->getMessage(),
+            ], 409),
         );
     })->create();

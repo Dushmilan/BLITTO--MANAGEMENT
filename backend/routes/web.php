@@ -4,6 +4,7 @@ use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
+use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -25,3 +26,5 @@ Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login'
 Route::get('/auth/me', MeController::class)->middleware('auth')->name('auth.me');
 
 Route::post('/auth/logout', [LogoutController::class, 'store'])->middleware('auth')->name('auth.logout');
+
+Route::post('/auth/register', [RegisterController::class, 'store'])->middleware('auth')->name('auth.register');
