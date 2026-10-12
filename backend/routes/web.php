@@ -20,6 +20,7 @@ Route::get('/health', function () {
 })->name('health');
 
 Route::post('/applications/{application}/status', [ApplicationStatusController::class, 'store'])
+    ->middleware(['auth', 'role:director,md'])
     ->name('applications.status');
 
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login');
