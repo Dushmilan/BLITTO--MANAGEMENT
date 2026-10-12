@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,3 +23,5 @@ Route::post('/applications/{application}/status', [ApplicationStatusController::
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login');
 
 Route::get('/auth/me', MeController::class)->middleware('auth')->name('auth.me');
+
+Route::post('/auth/logout', [LogoutController::class, 'store'])->middleware('auth')->name('auth.logout');
