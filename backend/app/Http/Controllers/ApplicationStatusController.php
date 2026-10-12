@@ -20,7 +20,7 @@ class ApplicationStatusController extends Controller
     {
         $validated = $request->validate([
             'new_status' => ['required', 'string'],
-            'reason' => ['required', 'string', 'min:1'],
+            'reason' => ['required', 'string', 'min:1', 'not_regex:/^\s*$/'],
         ]);
 
         $this->lifecycle->changeStatus(

@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Domain\Authorization\BootstrapAdmin;
+use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Support\ProductionReadiness;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,15 +23,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        (new ProductionReadiness(
-            (string) config('blitto.environment', 'local'),
-            config('app.key'),
-        ))->assert();
+        // Fail closed: only trust BLITTODB_ENVIRONMENT as "local" when the app
+        // itself is local/testing (APP_ENV). A production deploy with the
+        // BLITTO var unset must not resolve to local and skip the readiness guard.
+        $environment = app()->environment(['local', 'testing'])
+            ? (string) config('blitto.environment', 'local')
+            : 'production';
+
+        (new ProductionReadiness($environment, config('app.key')))->assert();
 
         // Web requests only: console runs (migrate, tests) skip the bootstrap so
         // no query hits `users` before it exists. BootstrapAdmin is tested directly.
         if (! app()->runningInConsole()) {
-            app(BootstrapAdmin::class)->ensure();
+            try {
+                app(BootstrapAdmin::class)->ensure();
+            } catch (InvalidInstitutionEmail $e) {
+                throw new RuntimeException(
+                    'BLITTODB_BOOTSTRAP_ADMIN_EMAIL must be an institution address: '.$e->getMessage(),
+                    previous: $e,
+                );
+            }
         }
     }
 }

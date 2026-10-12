@@ -33,6 +33,14 @@ it('forbids users and directors from minting staff roles', function (string $sta
     ])->assertForbidden();
 })->with(['user', 'director']);
 
+it('checks staff-role privilege before the password length limit', function () {
+    $actor = User::factory()->create();
+
+    $this->actingAs($actor)->postJson('/auth/register', [
+        'email' => 'staff@pdn.ac.lk', 'role' => 'director', 'password' => str_repeat('x', 73),
+    ])->assertForbidden();
+});
+
 it('lets the MD mint director and md roles', function () {
     $md = User::factory()->md()->create();
 
@@ -43,6 +51,14 @@ it('lets the MD mint director and md roles', function () {
     $this->actingAs($md)->postJson('/auth/register', [
         'email' => 'md2@pdn.ac.lk', 'role' => 'md', 'password' => 'pw',
     ])->assertOk();
+});
+
+it('rejects an unknown role with 422', function () {
+    $md = User::factory()->md()->create();
+
+    $this->actingAs($md)->postJson('/auth/register', [
+        'email' => 'bogus@pdn.ac.lk', 'role' => 'bogus', 'password' => 'pw',
+    ])->assertStatus(422);
 });
 
 it('rejects a non-institution email with 422', function () {

@@ -28,8 +28,7 @@ final class BootstrapAdmin
             return;
         }
 
-        if (strtolower((string) config('blitto.environment', 'local')) !== 'local'
-            && in_array($password, self::PLACEHOLDER_PASSWORDS, true)) {
+        if (! $this->isLocal() && in_array($password, self::PLACEHOLDER_PASSWORDS, true)) {
             throw new InvalidArgumentException('Bootstrap admin password must not be a placeholder outside local.');
         }
 
@@ -38,5 +37,16 @@ final class BootstrapAdmin
         }
 
         $this->directory->register($email, Role::MD, $password);
+    }
+
+    /**
+     * Fail closed: treat the environment as local only when both the app
+     * (APP_ENV) and the BLITTO config agree. A production deploy with
+     * BLITTODB_ENVIRONMENT unset must not accept a placeholder password.
+     */
+    private function isLocal(): bool
+    {
+        return app()->environment(['local', 'testing'])
+            && strtolower((string) config('blitto.environment', 'local')) === 'local';
     }
 }
