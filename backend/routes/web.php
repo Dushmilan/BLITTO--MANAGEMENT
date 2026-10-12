@@ -33,3 +33,7 @@ Route::post('/auth/register', [RegisterController::class, 'store'])->middleware(
 Route::get('/users', [UserController::class, 'index'])
     ->middleware(['auth', 'role:md'])
     ->name('users.index');
+
+if (app()->environment(['local', 'testing'])) {
+    require __DIR__.'/testing.php';
+}
