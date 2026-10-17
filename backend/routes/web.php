@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -18,6 +19,10 @@ Route::get('/health', function () {
         'service' => config('app.name'),
     ]);
 })->name('health');
+
+Route::post('/applications', [ApplicationController::class, 'store'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('applications.store');
 
 Route::post('/applications/{application}/status', [ApplicationStatusController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])
