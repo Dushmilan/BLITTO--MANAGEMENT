@@ -4,6 +4,16 @@ use App\Models\Application;
 use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\TrimStrings;
 
+it('rejects an unknown status with 422', function () {
+    $application = Application::query()->create(['title' => 'Bogus']);
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->postJson("/applications/{$application->id}/status", [
+        'new_status' => 'SOMEDAY',
+        'reason' => 'typo',
+    ])->assertStatus(422);
+});
+
 it('returns 422 when an illegal status transition is requested over HTTP', function () {
     $application = Application::query()->create(['title' => 'Illegal jump']);
     $director = User::factory()->director()->create();
