@@ -12,4 +12,11 @@ class Deadline extends Model
     use HasUuids;
 
     public const UPDATED_AT = null;
+
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'due_date' => 'datetime',
+    ];
 }

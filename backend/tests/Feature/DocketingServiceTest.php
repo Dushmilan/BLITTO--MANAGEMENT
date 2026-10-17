@@ -14,7 +14,7 @@ it('rejects softening a missed deadline back to met', function () {
         'status' => 'MISSED',
     ]);
 
-    (new DocketingService)->markMet($deadline);
+    app(DocketingService::class)->markMet($deadline);
 })->throws(IllegalDeadlineChange::class);
 
 it('marks an open deadline as met', function () {
@@ -26,7 +26,7 @@ it('marks an open deadline as met', function () {
         'status' => 'OPEN',
     ]);
 
-    $result = (new DocketingService)->markMet($deadline);
+    $result = app(DocketingService::class)->markMet($deadline);
 
     expect($result->status)->toBe('MET')
         ->and($deadline->refresh()->status)->toBe('MET');
