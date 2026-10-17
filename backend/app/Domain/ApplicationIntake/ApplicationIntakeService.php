@@ -56,7 +56,7 @@ final class ApplicationIntakeService
         return $application;
     }
 
-    public function updateFields(Application $application, ?string $title, ?string $technologyArea): Application
+    public function updateFields(Application $application, ?string $title, ?string $technologyArea, ?User $actor = null, ?string $ipAddress = null): Application
     {
         if ($title !== null) {
             $application->title = $title;
@@ -67,6 +67,8 @@ final class ApplicationIntakeService
         }
 
         $application->save();
+
+        $this->audit->record('update_application', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }

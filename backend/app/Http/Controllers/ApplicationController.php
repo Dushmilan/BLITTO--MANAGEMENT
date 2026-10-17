@@ -52,6 +52,8 @@ final class ApplicationController extends Controller
             $this->intake->findOrFail($applicationId),
             $validated['title'] ?? null,
             $validated['technology_area'] ?? null,
+            $request->user(),
+            $request->ip(),
         ));
     }
 

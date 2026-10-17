@@ -55,6 +55,19 @@ it('rejects a patch that carries no editable field', function () {
         ->assertJsonPath('message', 'No editable fields provided');
 });
 
+it('audits a field edit with the actor', function () {
+    $director = User::factory()->director()->create();
+    $application = Application::query()->create(['title' => 'Old']);
+
+    $this->actingAs($director)->patchJson("/applications/{$application->id}", ['title' => 'New'])->assertOk();
+
+    $this->assertDatabaseHas('audit_logs', [
+        'action' => 'update_application',
+        'user_id' => $director->id,
+        'application_id' => $application->id,
+    ]);
+});
+
 it('returns 404 for a patch against an unknown application', function () {
     $director = User::factory()->director()->create();
 
