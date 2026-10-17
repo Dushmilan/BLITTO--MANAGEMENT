@@ -102,7 +102,7 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 | L0 Foundation | [#68](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/68) | PHP 8.3 + Composer (installed system-wide; CI uses `shivammathur/setup-php`), Laravel 13 skeleton, `BLITTODB_` prefix, SQLite, full 12-table schema, `backend-laravel` CI job | scaffold + health check |
 | L1 Domain | [#73](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/73) | Eloquent models, lifecycle transition table, `app/Domain/*`, 6 invariants | lifecycle/model |
 | L2 Auth & RBAC | [#72](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/72) | Session auth, 3 roles, gates from RBAC matrix, email-domain policy, throttling, bootstrap admin | auth + RBAC + security |
-| L3 Core flows | [#67](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/67) | Applications CRUD, history, status changes, docketing, office actions, filing workflow | feature tests covering journeys J1–J6 |
+| L3 Core flows | [#67](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/67) | Applications CRUD, history, status changes, docketing, office actions, filing workflow | applications/docketing/prosecution/filing feature tests + RBAC matrix (document journeys J1/J2/J4 land in L4) |
 | L4 Document vault | [#71](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/71) | Master-key unlock + TTL, encrypted store, upload/download rules, missing-documents worklist | vault + upload security |
 | L5 Cross-cutting | [#69](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/69) | Notifications, audit trail, analytics, NIPO follow-up scheduler, demo seeder | notification/analytics/seed |
 | L6 UI | [#70](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/70) | Blade/Livewire screens replacing all React pages | Pest feature + Dusk smoke |
@@ -148,5 +148,11 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
   (failed logins per account + vault-unlock per IP), idempotent bootstrap
   admin. The L1 non-empty `reason` carry-over is resolved here; upload-flow
   immutability remains deferred to L4. Suite 194/194 green.
-- **Next: L3 (#67)** — applications CRUD, history, status changes, docketing,
-  office actions, filing workflow; feature tests covering journeys J1–J6.
+- **Done: L3 (#67)** — applications create/list/patch/history with own-only
+  visibility, status changes (notify + audit), docketing (deadlines),
+  office actions with auto-docketed response deadlines, and the filing
+  workflow (file → acknowledge → defect sheets → grant/reject), plus the
+  notification and audit seams. Document journeys J1/J2/J4 land in L4.
+  Suite 298/298 green (739 assertions after Tasks 1–16).
+- **Next: L4 (#71)** — master-key vault, encrypted document store, upload
+  and download rules, missing-documents worklist, request-document.

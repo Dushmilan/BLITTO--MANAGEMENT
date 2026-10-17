@@ -68,7 +68,7 @@ The input classes most likely to bite a person using this software; the task nam
 - Consumes: `App\Models\{Application,Inventor,Notification}`, `App\Domain\Lifecycle\ApplicationStatus`.
 - Produces: `NotificationService::send(string $recipientEmail, string $subject, string $body, string $kind = 'status_change'): Notification`, `->notifyStatusChange(Application $application, ApplicationStatus $status): int` (fans out, returns rows written), `->notifyInventors(Application $application, string $subject, string $body, string $kind = 'filing'): int`, and `->recipients(Application $application): list<string>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -141,12 +141,12 @@ it('falls back to the denormalised inventor email when no inventor rows exist', 
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/NotificationServiceTest.php`
 Expected: FAIL — `Class "App\Domain\Notification\NotificationService" not found`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Notification/NotificationService.php`:
 
@@ -259,12 +259,12 @@ final class NotificationService
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/NotificationServiceTest.php`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Notification/NotificationService.php backend/tests/Feature/NotificationServiceTest.php
@@ -283,7 +283,7 @@ git commit -m "feat(l3): add notification writer with reference templates"
 - Consumes: `App\Models\{Application,AuditLog,User}`.
 - Produces: `AuditRecorder::record(string $action, ?User $actor = null, ?Application $application = null, ?string $ipAddress = null): AuditLog` and `->forApplication(Application $application): Collection<int, AuditLog>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -330,12 +330,12 @@ it('scopes audit entries to one application', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/AuditRecorderTest.php`
 Expected: FAIL — `Class "App\Domain\Audit\AuditRecorder" not found`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Audit/AuditRecorder.php`:
 
@@ -383,12 +383,12 @@ final class AuditRecorder
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/AuditRecorderTest.php`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Audit/AuditRecorder.php backend/tests/Feature/AuditRecorderTest.php
@@ -409,7 +409,7 @@ git commit -m "feat(l3): add audit recorder for domain state changes"
 - Consumes: `App\Models\{Application,Inventor,StatusHistory,User}`, `App\Domain\Audit\AuditRecorder`, `App\Domain\Authorization\{ApplicationVisibility,EmailPolicy}`, `App\Domain\Lifecycle\{ApplicationStatus,LifecycleService}`.
 - Produces: `ApplicationNotFound` (`RuntimeException`, public readonly `$applicationId`, message `Application {id} not found`); `Disclosure` with public `$title`, `$inventorName`, `$inventorEmail`, `$inventors`, `$technologyArea`, static `fromArray(array $data): self` and `resolvedInventors(): list<array{inventor_name: string, inventor_email: string}>`; `ApplicationIntakeService::findOrFail(string $applicationId): Application`, `->createShell(Disclosure $disclosure, User $actor, ?string $ipAddress = null): Application`, `->updateFields(Application $application, ?string $title, ?string $technologyArea): Application`, `->listVisibleTo(User $viewer): Collection<int, Application>`, `->history(Application $application): Collection<int, StatusHistory>`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -533,12 +533,12 @@ it('throws a not-found exception for an unknown application', function () {
 })->throws(ApplicationNotFound::class, 'Application missing-id not found');
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/ApplicationIntakeServiceTest.php`
 Expected: FAIL — `Class "App\Domain\ApplicationIntake\ApplicationIntakeService" not found`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/ApplicationIntake/ApplicationNotFound.php`:
 
@@ -732,12 +732,12 @@ final class ApplicationIntakeService
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/ApplicationIntakeServiceTest.php`
 Expected: PASS (8 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/ApplicationIntake backend/tests/Feature/ApplicationIntakeServiceTest.php
@@ -757,7 +757,7 @@ git commit -m "feat(l3): add application intake domain service"
 - Consumes: `ApplicationIntakeService`, `Disclosure`, `EmailPolicy`, routes/middleware `auth` + `role:director,md`.
 - Produces: `ApplicationController::store(Request): JsonResponse` on `POST /applications` (name `applications.store`), 200 with the application JSON.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -881,12 +881,12 @@ it('gates application creation to staff', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/ApplicationCreateTest.php`
 Expected: FAIL with 404 on `POST /applications` (route not defined).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Http/Controllers/ApplicationController.php`:
 
@@ -964,12 +964,12 @@ Route::post('/applications', [ApplicationController::class, 'store'])
 
 and the matching `use App\Http\Controllers\ApplicationController;` import.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/ApplicationCreateTest.php`
 Expected: PASS (8 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Http/Controllers/ApplicationController.php backend/routes/web.php backend/tests/Feature/ApplicationCreateTest.php
@@ -990,7 +990,7 @@ git commit -m "feat(l3): add staff-only application creation endpoint"
 - Consumes: `ApplicationIntakeService`, `ApplicationNotFound`, `App\Domain\Authorization\Role`, routes/middleware `auth` and `auth` + `role:director,md`.
 - Produces: `ApplicationController::index(Request): JsonResponse` (`GET /applications`), `->update(Request, string $applicationId): JsonResponse` (`PATCH /applications/{applicationId}`), `->history(Request, string $applicationId): JsonResponse` (`GET /applications/{applicationId}/history`); `ApplicationNotFound` renders as 404 `{"message": "Application {id} not found"}`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -1103,12 +1103,12 @@ it('gates history to authenticated users', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/ApplicationReadUpdateTest.php`
 Expected: FAIL with 404 on `GET /applications` (route not defined).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Http/Controllers/ApplicationController.php` (full final file):
 
@@ -1241,12 +1241,12 @@ $exceptions->render(
 
 and the matching `use App\Domain\ApplicationIntake\ApplicationNotFound;` import.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/ApplicationReadUpdateTest.php`
 Expected: PASS (12 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Http/Controllers/ApplicationController.php backend/routes/web.php backend/bootstrap/app.php backend/tests/Feature/ApplicationReadUpdateTest.php
@@ -1267,7 +1267,7 @@ git commit -m "feat(l3): add application list, patch and history with own-only v
 - Consumes: `App\Domain\Lifecycle\LifecycleService` (stays pure), `App\Domain\Notification\NotificationService::notifyStatusChange()`, `App\Domain\Audit\AuditRecorder::record()`.
 - Produces: `StatusChangeService::change(Application $application, ApplicationStatus $newStatus, string $reason, User $actor, ?string $ipAddress = null): Application`; `POST /applications/{application}/status` keeps its body contract (`new_status`, `reason`) and its `204`, but now rejects unknown statuses with `422` and notifies + audits.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/Feature/StatusChangeTest.php`:
 
@@ -1366,12 +1366,12 @@ it('rejects an unknown status with 422', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/StatusChangeTest.php tests/Feature/StatusEndpointTest.php`
 Expected: FAIL — the first test finds 0 notifications (only history is written today); the unknown-status test gets a 500, not a 422.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Lifecycle/StatusChangeService.php`:
 
@@ -1469,12 +1469,12 @@ class ApplicationStatusController extends Controller
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/StatusChangeTest.php tests/Feature/StatusEndpointTest.php`
 Expected: PASS (4 + 6 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Lifecycle/StatusChangeService.php backend/app/Http/Controllers/ApplicationStatusController.php backend/tests/Feature/StatusChangeTest.php backend/tests/Feature/StatusEndpointTest.php
@@ -1498,7 +1498,7 @@ git commit -m "feat(l3): notify inventors and audit on status change"
 
 > **Ruling:** `DocketingService` gains an `AuditRecorder` dependency because invariant 5 (audit trail) belongs to the domain service that owns the mutation, not to the controller. The only legacy construction sites are two `new DocketingService` calls in `tests/Feature/DocketingServiceTest.php`, which this task rewrites to `app(DocketingService::class)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/Feature/DocketingDomainTest.php`:
 
@@ -1572,12 +1572,12 @@ it('allows several deadlines of the same type on one application', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocketingDomainTest.php`
 Expected: FAIL — `Class "App\Domain\Docketing\DeadlineType" not found`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Docketing/DeadlineType.php`:
 
@@ -1695,12 +1695,12 @@ class DocketingService
     $result = app(DocketingService::class)->markMet($deadline);
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocketingDomainTest.php tests/Feature/DocketingServiceTest.php tests/Unit/DocketingSoleAuthorityTest.php`
 Expected: PASS (4 + 2 + 1 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Docketing backend/tests/Feature/DocketingDomainTest.php backend/tests/Feature/DocketingServiceTest.php
@@ -1720,7 +1720,7 @@ git commit -m "feat(l3): add deadline types, creation and listing to the docketi
 - Consumes: `DocketingService`, `ApplicationIntakeService::findOrFail()`, `DeadlineType`.
 - Produces: `DocketingController::store(Request, string $applicationId): JsonResponse` (`POST /applications/{applicationId}/deadlines`), `->index(Request): JsonResponse` (`GET /deadlines`, optional `application_id` filter); both staff-only.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -1804,12 +1804,12 @@ it('gates the deadline endpoints to staff', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DeadlineEndpointTest.php`
 Expected: FAIL with 404 on `POST /applications/{id}/deadlines` (route not defined).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Http/Controllers/DocketingController.php`:
 
@@ -1879,12 +1879,12 @@ Route::get('/deadlines', [DocketingController::class, 'index'])
 
 and the `use App\Http\Controllers\DocketingController;` import.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DeadlineEndpointTest.php`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Http/Controllers/DocketingController.php backend/routes/web.php backend/tests/Feature/DeadlineEndpointTest.php
@@ -1905,7 +1905,7 @@ git commit -m "feat(l3): add staff-only deadline endpoints"
 - Consumes: `DocketingService::addDeadline()`, `AuditRecorder::record()`, `App\Models\{Application,OfficeAction,Response,User}`.
 - Produces: `OfficeActionKind` enum (`REJECTION`/`OBJECTION`/`ALLOWANCE`); `UnknownOfficeAction` (`RuntimeException`, message `unknown office_action_id: {id}`); `ProsecutionService::receiveOfficeAction(Application $application, OfficeActionKind $kind, string $body, User $actor, ?string $ipAddress = null): OfficeAction`, `->fileResponse(Application $application, OfficeAction $officeAction, string $body): Response`, and public const `RESPONSE_WINDOW_DAYS = 90`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -1999,12 +1999,12 @@ it('refuses a response filed against another application office action', functio
 })->throws(UnknownOfficeAction::class);
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/ProsecutionDomainTest.php`
 Expected: FAIL — `Class "App\Domain\Prosecution\OfficeActionKind" not found`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Prosecution/OfficeActionKind.php`:
 
@@ -2131,12 +2131,12 @@ final class ProsecutionService
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/ProsecutionDomainTest.php`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Prosecution backend/tests/Feature/ProsecutionDomainTest.php
@@ -2156,7 +2156,7 @@ git commit -m "feat(l3): add prosecution domain with auto-docketed response dead
 - Consumes: `ProsecutionService`, `ApplicationIntakeService::findOrFail()`, `OfficeActionKind`.
 - Produces: `OfficeActionController::store(Request, string $applicationId): JsonResponse` (`POST /applications/{applicationId}/office-actions`, staff-only), 200 with the office-action JSON.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -2228,12 +2228,12 @@ it('gates office actions to staff', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/OfficeActionEndpointTest.php`
 Expected: FAIL with 404 on `POST /applications/{id}/office-actions` (route not defined).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Http/Controllers/OfficeActionController.php`:
 
@@ -2288,12 +2288,12 @@ Route::post('/applications/{applicationId}/office-actions', [OfficeActionControl
 
 and the `use App\Http\Controllers\OfficeActionController;` import.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/OfficeActionEndpointTest.php`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Http/Controllers/OfficeActionController.php backend/routes/web.php backend/tests/Feature/OfficeActionEndpointTest.php
@@ -2313,7 +2313,7 @@ git commit -m "feat(l3): add staff-only office-action endpoint"
 - Consumes: `App\Domain\Lifecycle\{ApplicationStatus,LifecycleService}`, `App\Domain\Notification\NotificationService::notifyInventors()`, `App\Domain\Audit\AuditRecorder::record()`, `App\Models\{Application,FilingRecord,User}`.
 - Produces: `AcknowledgementWithoutFiling` (`RuntimeException`, message `No filing record found for {id} - mark filed first`); `FilingWorkflowService::__construct(LifecycleService, NotificationService, AuditRecorder)`, `->filingRecord(Application $application): ?FilingRecord`, `->markFiled(Application $application, User $actor): Application`, `->acknowledgeNipo(Application $application, User $actor): Application`, and the private `->reference(Application $application): string` used in notification bodies.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -2435,12 +2435,12 @@ it('leaves the lifecycle service pure', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/FilingWorkflowTest.php`
 Expected: FAIL — `Class "App\Domain\Filing\FilingWorkflowService" not found`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Filing/AcknowledgementWithoutFiling.php`:
 
@@ -2561,12 +2561,12 @@ final class FilingWorkflowService
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/FilingWorkflowTest.php`
 Expected: PASS (7 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Filing backend/tests/Feature/FilingWorkflowTest.php
@@ -2588,7 +2588,7 @@ git commit -m "feat(l3): add filing workflow filing and acknowledgement steps"
 
 > The reference's third guard (`Maximum 3 defect sheets allowed for {id}`) is kept verbatim for parity, but is unreachable once the 1–3 and duplicate-number guards pass; only the number and duplicate guards get tests.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -2693,11 +2693,11 @@ it('lists the defect sheets of an application in sheet order', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DefectSheetTest.php`
 Expected: FAIL — `Class "App\Domain\Filing\DefectSheetRejected" not found`.
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Domain/Filing/DefectSheetRejected.php`:
 
@@ -2781,12 +2781,12 @@ final class DefectSheetRejected extends RuntimeException {}
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DefectSheetTest.php`
 Expected: PASS (6 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Filing backend/tests/Feature/DefectSheetTest.php
@@ -2804,7 +2804,7 @@ git commit -m "feat(l3): record defect sheets with number, duplicate and lifecyc
 **Interfaces:**
 - Produces: `FilingWorkflowService::markGranted(Application $application, string $patentNumber, User $actor): Application` and `->markRejected(Application $application, User $actor): Application`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -2908,12 +2908,12 @@ it('refuses to reject straight from DRAFT', function () {
 })->throws(IllegalTransition::class);
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/FilingOutcomeTest.php`
 Expected: FAIL — `Call to undefined method App\Domain\Filing\FilingWorkflowService::markGranted()`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add to `backend/app/Domain/Filing/FilingWorkflowService.php`:
 
@@ -2976,12 +2976,12 @@ Add to `backend/app/Domain/Filing/FilingWorkflowService.php`:
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/FilingOutcomeTest.php`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Domain/Filing/FilingWorkflowService.php backend/tests/Feature/FilingOutcomeTest.php
@@ -3002,7 +3002,7 @@ git commit -m "feat(l3): grant and reject filing outcomes"
 - Consumes: `FilingWorkflowService`, `ApplicationIntakeService::findOrFail()`, the existing renders for `IllegalTransition` (422) and `ApplicationNotFound` (404).
 - Produces: `FilingController::file`, `->acknowledge`, `->storeDefectSheet`, `->defectSheets`, `->grant`, `->reject`, `->status` on the staff-only group `admin/filing/{applicationId}` → routes `filing.file`, `filing.acknowledge`, `filing.defect-sheets.store`, `filing.defect-sheets.index`, `filing.grant`, `filing.reject`, `filing.status`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```php
 <?php
@@ -3143,12 +3143,12 @@ it('gates every filing step to staff', function () {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/FilingEndpointTest.php`
 Expected: FAIL with 404 on `POST /admin/filing/{id}/file` (route not defined).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 `backend/app/Http/Controllers/FilingController.php`:
 
@@ -3275,12 +3275,12 @@ $exceptions->render(
 );
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/FilingEndpointTest.php`
 Expected: PASS (8 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/Http/Controllers/FilingController.php backend/routes/web.php backend/bootstrap/app.php backend/tests/Feature/FilingEndpointTest.php
@@ -3298,7 +3298,7 @@ git commit -m "feat(l3): add staff-only filing workflow endpoints"
 **Interfaces:**
 - Consumes: every route added by Tasks 4–14. No production code changes.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/Feature/FlowJourneyTest.php`:
 
@@ -3473,12 +3473,12 @@ it('lets director and MD drive the whole application surface', function (string 
 })->with(['director', 'md']);
 ```
 
-- [ ] **Step 2: Run the tests**
+- [x] **Step 2: Run the tests**
 
 Run: `php artisan test --compact tests/Feature/FlowJourneyTest.php tests/Feature/L3RbacMatrixTest.php`
 Expected: PASS (4 + 2 tests) — these are integration tests over endpoints already built in Tasks 4–14, so they should be green on the first run. A failure means a real gap in an earlier task (a wrong status code, a missing notification): fix the production code. Only if the *plan* was wrong do you change the assertion, and then you write a `Ruling:` into the ledger.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/tests/Feature/FlowJourneyTest.php backend/tests/Feature/L3RbacMatrixTest.php
@@ -3498,22 +3498,22 @@ git commit -m "test(l3): cover rejection and isolation journeys plus the endpoin
 - Consumes: everything above.
 - Produces: a green full suite, Pint-clean code, a refreshed knowledge graph and the roadmap marked L3-done.
 
-- [ ] **Step 1: Run the whole suite**
+- [x] **Step 1: Run the whole suite**
 
 Run: `php artisan test --compact`
 Expected: PASS with no failures — the L2 baseline of 198 tests plus the ~91 added here.
 
-- [ ] **Step 2: Format**
+- [x] **Step 2: Format**
 
 Run: `vendor/bin/pint --dirty --format agent`
 Expected: no style violations (it rewrites files in place if it finds any; re-run the affected tests if it did).
 
-- [ ] **Step 3: Refresh the knowledge graph**
+- [x] **Step 3: Refresh the knowledge graph**
 
 Run (from the repository root, not `backend/`): `graphify update .`
 Expected: the graph refreshes from the new `app/Domain/{Audit,Filing,Notification,Prosecution}` classes. `graphify-out/` is git-ignored, so nothing is committed from it.
 
-- [ ] **Step 4: Mark L3 done in the roadmap**
+- [x] **Step 4: Mark L3 done in the roadmap**
 
 In `BIGGER_PICTURE.md`:
 
@@ -3532,7 +3532,7 @@ In `BIGGER_PICTURE.md`:
 
 - Tick every `- [ ]` step box in this plan file.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add BIGGER_PICTURE.md docs/superpowers/plans/2026-10-17-l3-core-flows.md
