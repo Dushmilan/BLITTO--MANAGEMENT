@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocketingController;
+use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,10 @@ Route::get('/applications/{applicationId}/history', [ApplicationController::clas
 Route::post('/applications/{application}/status', [ApplicationStatusController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])
     ->name('applications.status');
+
+Route::post('/applications/{applicationId}/office-actions', [OfficeActionController::class, 'store'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('office-actions.store');
 
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login');
 
