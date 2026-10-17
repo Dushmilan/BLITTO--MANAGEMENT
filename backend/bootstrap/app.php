@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\ApplicationIntake\ApplicationNotFound;
 use App\Domain\Authorization\DuplicateEmail;
 use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Domain\Lifecycle\IllegalTransition;
@@ -49,5 +50,11 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (DuplicateEmail $e, Request $request) => response()->json([
                 'message' => $e->getMessage(),
             ], 409),
+        );
+
+        $exceptions->render(
+            fn (ApplicationNotFound $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 404),
         );
     })->create();

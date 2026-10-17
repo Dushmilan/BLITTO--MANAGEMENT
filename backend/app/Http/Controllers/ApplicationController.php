@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
 use App\Domain\ApplicationIntake\Disclosure;
 use App\Domain\Authorization\EmailPolicy;
+use App\Domain\Authorization\Role;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,11 @@ use Illuminate\Http\Request;
 final class ApplicationController extends Controller
 {
     public function __construct(private readonly ApplicationIntakeService $intake) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        return response()->json($this->intake->listVisibleTo($request->user()));
+    }
 
     public function store(Request $request): JsonResponse
     {
@@ -29,6 +35,37 @@ final class ApplicationController extends Controller
             $request->user(),
             $request->ip(),
         ));
+    }
+
+    public function update(Request $request, string $applicationId): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => ['sometimes', 'string', 'max:255'],
+            'technology_area' => ['sometimes', 'string', 'max:255'],
+        ]);
+
+        if ($validated === []) {
+            return response()->json(['message' => 'No editable fields provided'], 422);
+        }
+
+        return response()->json($this->intake->updateFields(
+            $this->intake->findOrFail($applicationId),
+            $validated['title'] ?? null,
+            $validated['technology_area'] ?? null,
+        ));
+    }
+
+    public function history(Request $request, string $applicationId): JsonResponse
+    {
+        $application = $this->intake->findOrFail($applicationId);
+        $viewer = $request->user();
+
+        // Confidentiality (CONTEXT.md invariant 6): a user sees only their own.
+        if (Role::from($viewer->role) === Role::USER && $application->inventor_email !== $viewer->email) {
+            abort(403, 'Forbidden.');
+        }
+
+        return response()->json($this->intake->history($application));
     }
 
     /**

@@ -24,6 +24,18 @@ Route::post('/applications', [ApplicationController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])
     ->name('applications.store');
 
+Route::get('/applications', [ApplicationController::class, 'index'])
+    ->middleware('auth')
+    ->name('applications.index');
+
+Route::patch('/applications/{applicationId}', [ApplicationController::class, 'update'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('applications.update');
+
+Route::get('/applications/{applicationId}/history', [ApplicationController::class, 'history'])
+    ->middleware('auth')
+    ->name('applications.history');
+
 Route::post('/applications/{application}/status', [ApplicationStatusController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])
     ->name('applications.status');
