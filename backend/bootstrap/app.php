@@ -3,6 +3,8 @@
 use App\Domain\ApplicationIntake\ApplicationNotFound;
 use App\Domain\Authorization\DuplicateEmail;
 use App\Domain\Authorization\InvalidInstitutionEmail;
+use App\Domain\Filing\AcknowledgementWithoutFiling;
+use App\Domain\Filing\DefectSheetRejected;
 use App\Domain\Lifecycle\IllegalTransition;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Auth\AuthenticationException;
@@ -54,6 +56,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(
             fn (ApplicationNotFound $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 404),
+        );
+
+        $exceptions->render(
+            fn (DefectSheetRejected $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 422),
+        );
+
+        $exceptions->render(
+            fn (AcknowledgementWithoutFiling $e) => response()->json([
                 'message' => $e->getMessage(),
             ], 404),
         );

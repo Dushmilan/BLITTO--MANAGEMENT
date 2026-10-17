@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocketingController;
+use App\Http\Controllers\FilingController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,18 @@ Route::post('/applications/{applicationId}/deadlines', [DocketingController::cla
 Route::get('/deadlines', [DocketingController::class, 'index'])
     ->middleware(['auth', 'role:director,md'])
     ->name('deadlines.index');
+
+Route::middleware(['auth', 'role:director,md'])
+    ->prefix('admin/filing/{applicationId}')
+    ->group(function () {
+        Route::post('/file', [FilingController::class, 'file'])->name('filing.file');
+        Route::post('/acknowledge', [FilingController::class, 'acknowledge'])->name('filing.acknowledge');
+        Route::post('/defect-sheets', [FilingController::class, 'storeDefectSheet'])->name('filing.defect-sheets.store');
+        Route::get('/defect-sheets', [FilingController::class, 'defectSheets'])->name('filing.defect-sheets.index');
+        Route::post('/grant', [FilingController::class, 'grant'])->name('filing.grant');
+        Route::post('/reject', [FilingController::class, 'reject'])->name('filing.reject');
+        Route::get('/status', [FilingController::class, 'status'])->name('filing.status');
+    });
 
 if (app()->environment(['local', 'testing'])) {
     require __DIR__.'/testing.php';
