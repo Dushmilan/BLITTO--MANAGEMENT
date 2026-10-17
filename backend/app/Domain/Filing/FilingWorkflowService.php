@@ -87,6 +87,63 @@ final class FilingWorkflowService
         return $application;
     }
 
+    public function markGranted(Application $application, string $patentNumber, User $actor): Application
+    {
+        $this->lifecycle->changeStatus(
+            $application,
+            ApplicationStatus::GRANTED,
+            changedBy: (string) $actor->email,
+            reason: "Patent granted ({$patentNumber})",
+        );
+
+        $record = $this->filingRecord($application);
+
+        if ($record !== null) {
+            $record->granted_at = Carbon::now();
+            $record->granted_by = (string) $actor->email;
+            $record->patent_number = $patentNumber;
+            $record->save();
+        }
+
+        $this->notifications->notifyInventors(
+            $application,
+            'Patent Received',
+            "Your patent {$application->title} has been granted with patent number {$patentNumber}.",
+        );
+
+        $this->audit->record('filing:granted', actor: $actor, application: $application);
+
+        return $application;
+    }
+
+    public function markRejected(Application $application, User $actor): Application
+    {
+        $this->lifecycle->changeStatus(
+            $application,
+            ApplicationStatus::REJECTED,
+            changedBy: (string) $actor->email,
+            reason: 'Application rejected',
+        );
+
+        $record = $this->filingRecord($application);
+
+        if ($record !== null) {
+            $record->rejected_at = Carbon::now();
+            $record->rejected_by = (string) $actor->email;
+            $record->save();
+        }
+
+        $this->notifications->notifyInventors(
+            $application,
+            'Rejected',
+            "Your patent application {$application->title} ({$this->reference($application)}) has been rejected.",
+        );
+
+        $this->audit->record('filing:rejected', actor: $actor, application: $application);
+
+        return $application;
+    }
+
     private function reference(Application $application): string
     {
         return substr($application->id, 0, 8);
