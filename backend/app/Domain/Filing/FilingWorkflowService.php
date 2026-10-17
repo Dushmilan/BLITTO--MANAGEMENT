@@ -4,6 +4,7 @@ namespace App\Domain\Filing;
 
 use App\Domain\Audit\AuditRecorder;
 use App\Domain\Lifecycle\ApplicationStatus;
+use App\Domain\Lifecycle\IllegalTransition;
 use App\Domain\Lifecycle\LifecycleService;
 use App\Domain\Notification\NotificationService;
 use App\Models\Application;
@@ -34,6 +35,10 @@ final class FilingWorkflowService
 
     public function markFiled(Application $application, User $actor): Application
     {
+        if ($application->status === ApplicationStatus::FILED->value) {
+            return $application;
+        }
+
         $this->lifecycle->changeStatus(
             $application,
             ApplicationStatus::FILED,
@@ -64,6 +69,10 @@ final class FilingWorkflowService
     {
         $record = $this->filingRecord($application)
             ?? throw new AcknowledgementWithoutFiling($application->id);
+
+        if ($application->status === ApplicationStatus::ACKNOWLEDGED->value) {
+            return $application;
+        }
 
         $this->lifecycle->changeStatus(
             $application,

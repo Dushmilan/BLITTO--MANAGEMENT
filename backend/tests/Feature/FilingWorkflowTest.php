@@ -6,6 +6,7 @@ use App\Domain\Lifecycle\ApplicationStatus;
 use App\Domain\Lifecycle\IllegalTransition;
 use App\Domain\Lifecycle\LifecycleService;
 use App\Models\Application;
+use App\Models\AuditLog;
 use App\Models\FilingRecord;
 use App\Models\Inventor;
 use App\Models\Notification;
@@ -48,15 +49,40 @@ it('marks an application filed, records the filing and notifies every inventor',
     $this->assertDatabaseHas('status_history', ['application_id' => $application->id, 'new_status' => 'FILED']);
 });
 
-it('keeps a single filing record when filed twice', function () {
+it('ignores a repeated filing instead of rewriting the record', function () {
     $director = User::factory()->director()->create();
     $application = filingReadyApplication();
-
     $service = app(FilingWorkflowService::class);
+
     $service->markFiled($application, $director);
+    $filedDate = FilingRecord::query()->sole()->filed_date;
+    Notification::query()->delete();
+    AuditLog::query()->delete();
+
     $service->markFiled($application, $director);
 
-    expect(FilingRecord::query()->count())->toBe(1);
+    expect(FilingRecord::query()->count())->toBe(1)
+        ->and(FilingRecord::query()->sole()->filed_date)->toBe($filedDate)
+        ->and(Notification::query()->count())->toBe(0)
+        ->and(AuditLog::query()->where('action', 'filing:mark_filed')->count())->toBe(0);
+});
+
+it('ignores a repeated acknowledgement', function () {
+    $md = User::factory()->md()->create();
+    $application = filingReadyApplication();
+    $service = app(FilingWorkflowService::class);
+
+    $service->markFiled($application, $md);
+    $service->acknowledgeNipo($application->refresh(), $md);
+    $acknowledgedAt = FilingRecord::query()->sole()->nipo_acknowledged_at;
+    Notification::query()->delete();
+    AuditLog::query()->delete();
+
+    $service->acknowledgeNipo($application->refresh(), $md);
+
+    expect(FilingRecord::query()->sole()->nipo_acknowledged_at)->toBe($acknowledgedAt)
+        ->and(Notification::query()->count())->toBe(0)
+        ->and(AuditLog::query()->where('action', 'filing:acknowledge_nipo')->count())->toBe(0);
 });
 
 it('refuses to file an application whose status cannot reach FILED', function () {

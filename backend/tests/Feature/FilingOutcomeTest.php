@@ -62,8 +62,12 @@ it('grants without a filing record and still notifies', function () {
 it('refuses to grant straight from DRAFT and writes nothing', function () {
     $application = Application::query()->create(['title' => 'Jump', 'inventor_email' => 'ada@pdn.ac.lk']);
 
-    app(FilingWorkflowService::class)->markGranted($application, 'LK/PAT/2026/2', User::factory()->director()->create());
-})->throws(IllegalTransition::class);
+    expect(fn () => app(FilingWorkflowService::class)->markGranted($application, 'LK/PAT/2026/2', User::factory()->director()->create()))
+        ->toThrow(IllegalTransition::class);
+
+    $this->assertDatabaseCount('notifications', 0);
+    $this->assertDatabaseCount('audit_logs', 0);
+});
 
 it('rejects a filed application and stamps the filing record', function () {
     $director = User::factory()->director()->create(['email' => 'director@pdn.ac.lk']);
@@ -95,5 +99,9 @@ it('rejects a filed application and stamps the filing record', function () {
 it('refuses to reject straight from DRAFT', function () {
     $application = Application::query()->create(['title' => 'Jump', 'inventor_email' => 'ada@pdn.ac.lk']);
 
-    app(FilingWorkflowService::class)->markRejected($application, User::factory()->director()->create());
-})->throws(IllegalTransition::class);
+    expect(fn () => app(FilingWorkflowService::class)->markRejected($application, User::factory()->director()->create()))
+        ->toThrow(IllegalTransition::class);
+
+    $this->assertDatabaseCount('notifications', 0);
+    $this->assertDatabaseCount('audit_logs', 0);
+});
