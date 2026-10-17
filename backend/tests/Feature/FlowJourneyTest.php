@@ -77,7 +77,8 @@ it('runs the multi-user staff interplay journey', function () {
     $this->actingAs($md)->postJson("/admin/filing/{$granted->id}/grant?patent_number=LK/PAT/2026/1")
         ->assertOk()->assertJsonPath('status', 'GRANTED');
 
-    // The MD rejects another, and the office action on the third left a deadline.
+    // The MD rejects another; the OBJECTION office action was recorded against the
+    // granted application, so the single docketed deadline belongs to it.
     $this->actingAs($md)->postJson("/applications/{$rejected->id}/status", ['new_status' => 'FILED', 'reason' => 'Filed'])
         ->assertNoContent();
     $this->actingAs($md)->postJson("/admin/filing/{$rejected->id}/reject")->assertOk();
@@ -104,4 +105,20 @@ it('notifies a co-inventor on every filing step', function () {
 
     $this->assertDatabaseHas('notifications', ['recipient_email' => 'bob@pdn.ac.lk', 'subject' => 'Patent Filed']);
     expect(Notification::query()->count())->toBe(2);
+});
+
+it('refuses to grant straight from a defect sheet', function () {
+    $director = User::factory()->director()->create();
+    $application = Application::query()->create(['title' => 'Sheet Jump']);
+
+    $this->actingAs($director)->postJson("/admin/filing/{$application->id}/file")->assertOk();
+    $this->actingAs($director)
+        ->postJson("/admin/filing/{$application->id}/defect-sheets?sheet_number=1&description=x")
+        ->assertOk();
+
+    $this->actingAs($director)
+        ->postJson("/admin/filing/{$application->id}/grant?patent_number=LK/PAT/2026/4")
+        ->assertStatus(422);
+
+    expect($application->refresh()->status)->toBe('DEFECT_SHEET_1');
 });

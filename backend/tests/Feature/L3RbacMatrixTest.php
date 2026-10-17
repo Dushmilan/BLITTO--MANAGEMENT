@@ -22,6 +22,7 @@ it('gates every L3 endpoint against guests and plain users', function () {
         ['POST', "/admin/filing/{$application->id}/grant?patent_number=X", []],
         ['POST', "/admin/filing/{$application->id}/reject", []],
         ['GET', "/admin/filing/{$application->id}/status", []],
+        ['POST', "/applications/{$application->id}/status", ['new_status' => 'FILED', 'reason' => 'Matrix']],
     ];
 
     foreach ($endpoints as [$method, $uri, $body]) {
