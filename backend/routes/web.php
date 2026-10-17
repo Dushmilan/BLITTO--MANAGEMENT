@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\DocketingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,14 @@ Route::post('/auth/register', [RegisterController::class, 'store'])->middleware(
 Route::get('/users', [UserController::class, 'index'])
     ->middleware(['auth', 'role:md'])
     ->name('users.index');
+
+Route::post('/applications/{applicationId}/deadlines', [DocketingController::class, 'store'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('deadlines.store');
+
+Route::get('/deadlines', [DocketingController::class, 'index'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('deadlines.index');
 
 if (app()->environment(['local', 'testing'])) {
     require __DIR__.'/testing.php';
