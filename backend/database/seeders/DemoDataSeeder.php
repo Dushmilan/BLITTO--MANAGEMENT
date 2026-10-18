@@ -26,6 +26,14 @@ final class DemoDataSeeder extends Seeder
 
     public function run(): void
     {
+        // dev-data/seed_snapshot.json ships with the repository and carries
+        // public demo credentials, so its presence cannot be the safety signal.
+        if (! app()->environment(['local', 'testing'])) {
+            throw new RuntimeException(
+                'DemoDataSeeder refuses to seed demo data outside local and testing.',
+            );
+        }
+
         $this->import($this->loadSnapshot());
     }
 

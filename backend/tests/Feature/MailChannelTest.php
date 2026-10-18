@@ -27,3 +27,8 @@ it('fails loudly for an unknown mail channel', function () {
 
     expect(fn () => app(MailChannel::class))->toThrow(UnsupportedMailChannel::class);
 });
+
+it('binds the in-memory adapter by default in the test environment', function () {
+    expect(config('blitto.mail_channel'))->toBe('array')
+        ->and(app(MailChannel::class))->toBeInstanceOf(ArrayMailChannel::class);
+});

@@ -314,10 +314,11 @@ stop condition.
 `blitto.demo_snapshot_path` (`BLITTODB_DEMO_SNAPSHOT_PATH`, default
 `../dev-data/seed_snapshot.json`, i.e. the repo's file from inside `backend/`)
 points at the reference snapshot. `database/seeders/DemoDataSeeder.php` imports
-it; `DatabaseSeeder` calls it instead of creating the `Test User` that throws
-today. A missing or unreadable snapshot aborts with a clear message — the file's
-presence is the "this is a development box" signal, so there is no separate
-opt-in flag.
+it; `DatabaseSeeder` calls it. A missing or unreadable snapshot aborts with a
+clear message, and the seeder refuses to run outside `local`/`testing`
+(`DatabaseSeeder` skips with a warning) — the shipped `dev-data/seed_snapshot.json`
+carries public demo credentials, so the file's presence cannot be the safety
+signal; the environment is. (Added in the final review pass.)
 
 Mapping (the snapshot's collections are dicts keyed by uuid, except
 `notification.sent`, which is a list, and `application_intake.history`, a dict of

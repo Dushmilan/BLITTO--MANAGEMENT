@@ -228,3 +228,19 @@ it('imports the shipped dev-data snapshot', function () {
         // 2 restored from the snapshot plus one create_user row per account.
         ->and(AuditLog::query()->count())->toBe(6);
 });
+
+it('refuses to seed demo data outside local and testing', function () {
+    $this->app['env'] = 'production';
+
+    expect(fn () => app(DemoDataSeeder::class)->run())
+        ->toThrow(RuntimeException::class, 'refuses to seed demo data');
+});
+
+it('leaves the database untouched through the default seeder outside local and testing', function () {
+    $this->app['env'] = 'production';
+
+    app(DatabaseSeeder::class)->run();
+
+    expect(User::query()->count())->toBe(0)
+        ->and(Application::query()->count())->toBe(0);
+});

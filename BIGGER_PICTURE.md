@@ -172,6 +172,6 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
   `GET /analytics/deadlines` for `director`/`md`; the `nipo:follow-up` command
   scheduled at `BLITTODB_NIPO_FOLLOW_UP_INTERVAL_HOURS`; and a
   snapshot-driven, idempotent demo seeder that bcrypts the reference plaintext
-  passwords and writes document bytes through the store. Suite 396/396 green
-  (1168 assertions). Decisions recorded in ADR 0005.
+  passwords and writes document bytes through the store. Suite 399/399 green
+  (1174 assertions). Decisions recorded in ADR 0005.
 - **Next: L6 (#70)** — Blade/Livewire screens replacing the React pages.
