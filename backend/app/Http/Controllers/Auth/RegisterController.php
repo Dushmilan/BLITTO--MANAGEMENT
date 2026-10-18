@@ -36,6 +36,8 @@ final class RegisterController extends Controller
             role: $role,
             password: $request->filled('password') ? (string) $request->input('password') : null,
             userCode: $request->filled('user_code') ? (string) $request->input('user_code') : null,
+            actor: $actor,
+            ipAddress: $request->ip(),
         );
 
         return response()->json($user, 200);
