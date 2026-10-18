@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Audit\AuditRecorder;
 use App\Domain\Authorization\AttemptThrottle;
 use App\Domain\Authorization\EmailPolicy;
 use App\Http\Controllers\Controller;
@@ -11,7 +12,10 @@ use Illuminate\Support\Facades\Auth;
 
 final class LoginController extends Controller
 {
-    public function __construct(private readonly AttemptThrottle $throttle) {}
+    public function __construct(
+        private readonly AttemptThrottle $throttle,
+        private readonly AuditRecorder $audit,
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -35,6 +39,8 @@ final class LoginController extends Controller
 
         $this->throttle->clear(AttemptThrottle::LOGIN, $email);
         $request->session()->regenerate();
+
+        $this->audit->record('auth:login', actor: Auth::user(), ipAddress: $request->ip());
 
         return response()->json(Auth::user(), 200);
     }
