@@ -93,6 +93,10 @@ Route::get('/applications/{applicationId}/download', [GrantedPatentController::c
     ->middleware('auth')
     ->name('documents.granted-download');
 
+Route::post('/applications/{applicationId}/request-document', [GrantedPatentController::class, 'requestDocument'])
+    ->middleware('auth')
+    ->name('documents.request');
+
 Route::middleware(['auth', 'role:director,md'])
     ->prefix('admin/filing/{applicationId}')
     ->group(function () {

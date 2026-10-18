@@ -6,10 +6,12 @@ use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Domain\Filing\AcknowledgementWithoutFiling;
 use App\Domain\Filing\DefectSheetRejected;
 use App\Domain\Lifecycle\IllegalTransition;
+use App\Domain\Vault\DocumentAlreadyRequested;
 use App\Domain\Vault\DocumentContentMissing;
 use App\Domain\Vault\DocumentIsImmutable;
 use App\Domain\Vault\DocumentNotFound;
 use App\Domain\Vault\DocumentPending;
+use App\Domain\Vault\DocumentRequestRefused;
 use App\Domain\Vault\DocumentTooLarge;
 use App\Domain\Vault\InvalidDocumentFilename;
 use App\Domain\Vault\NotYourPatent;
@@ -133,6 +135,18 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (DocumentPending $e) => response()->json([
                 'message' => $e->getMessage(),
                 'code' => 'document_pending',
+            ], 409),
+        );
+
+        $exceptions->render(
+            fn (DocumentAlreadyRequested $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 429),
+        );
+
+        $exceptions->render(
+            fn (DocumentRequestRefused $e) => response()->json([
+                'message' => $e->getMessage(),
             ], 409),
         );
     })->create();

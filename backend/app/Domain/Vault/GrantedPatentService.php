@@ -5,7 +5,9 @@ namespace App\Domain\Vault;
 use App\Domain\Audit\AuditRecorder;
 use App\Domain\Authorization\Role;
 use App\Domain\Lifecycle\ApplicationStatus;
+use App\Domain\Notification\NotificationService;
 use App\Models\Application;
+use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -22,6 +24,7 @@ final class GrantedPatentService
     public function __construct(
         private readonly DocumentService $documents,
         private readonly AuditRecorder $audit,
+        private readonly NotificationService $notifications,
     ) {}
 
     /**
@@ -92,6 +95,58 @@ final class GrantedPatentService
         $zip->close();
 
         return $path;
+    }
+
+    /**
+     * @throws NotYourPatent
+     * @throws DocumentRequestRefused
+     * @throws DocumentAlreadyRequested
+     */
+    public function requestDocument(Application $application, User $viewer, ?string $ipAddress = null): void
+    {
+        if (Role::from($viewer->role) === Role::USER && $application->inventor_email !== $viewer->email) {
+            throw new NotYourPatent('Not your patent');
+        }
+
+        if (ApplicationStatus::from($application->status) !== ApplicationStatus::GRANTED) {
+            throw new DocumentRequestRefused('Patent is not GRANTED');
+        }
+
+        if ($this->documents->hasDocuments($application)) {
+            throw new DocumentRequestRefused('Document already available');
+        }
+
+        if ($this->alreadyRequested($application, $viewer)) {
+            throw new DocumentAlreadyRequested('Document already requested');
+        }
+
+        $this->audit->record('document_requested', actor: $viewer, application: $application, ipAddress: $ipAddress);
+
+        $this->notifications->send(
+            $this->adminRecipient(),
+            "Document requested for {$application->id}",
+            "{$viewer->email} requested the granted patent document for application {$application->id} ({$application->title}).",
+            'document_request',
+        );
+    }
+
+    /**
+     * The bootstrap admin inbox, or the fallback the accessor guarantees.
+     */
+    private function adminRecipient(): string
+    {
+        $configured = (string) config('blitto.bootstrap_admin_email');
+
+        return $configured !== '' ? $configured : 'md@pdn.ac.lk';
+    }
+
+    private function alreadyRequested(Application $application, User $viewer): bool
+    {
+        return AuditLog::query()
+            ->where('action', 'document_requested')
+            ->where('user_id', $viewer->id)
+            ->where('application_id', $application->id)
+            ->exists();
     }
 
     /**
