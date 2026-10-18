@@ -6,6 +6,8 @@ use App\Domain\Lifecycle\ApplicationStatus;
 use App\Models\Application;
 use App\Models\Inventor;
 use App\Models\Notification;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Notification writer — port of pre-laravel-final-state
@@ -36,14 +38,33 @@ final class NotificationService
         'MAINTENANCE' => 'The patent {ref} is now in maintenance. Watch for fee deadlines.',
     ];
 
+    public function __construct(private readonly MailChannel $channel) {}
+
     public function send(string $recipientEmail, string $subject, string $body, string $kind = 'status_change'): Notification
     {
-        return Notification::query()->create([
+        // The row is the durable record; it is written before delivery so a
+        // mail failure can never lose the notification.
+        $notification = Notification::query()->create([
             'recipient_email' => $recipientEmail,
             'subject' => $subject,
             'body' => $body,
             'kind' => $kind,
         ]);
+
+        // Best effort by design: a broken mailer must not fail the action that
+        // produced the notification.
+        try {
+            $this->channel->send($recipientEmail, $subject, $body);
+        } catch (Throwable $exception) {
+            Log::warning('Notification mail delivery failed', [
+                'notification_id' => $notification->id,
+                'recipient_email' => $recipientEmail,
+                'kind' => $kind,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        return $notification;
     }
 
     /**

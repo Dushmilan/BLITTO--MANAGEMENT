@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Lifecycle\ApplicationStatus;
+use App\Domain\Notification\ArrayMailChannel;
 use App\Domain\Notification\NotificationService;
 use App\Models\Application;
 use App\Models\Inventor;
@@ -12,7 +13,7 @@ it('writes a status-change notification using the reference template', function 
         'inventor_email' => 'ada@pdn.ac.lk',
     ]);
 
-    (new NotificationService)->notifyStatusChange($application, ApplicationStatus::FILED);
+    (new NotificationService(new ArrayMailChannel))->notifyStatusChange($application, ApplicationStatus::FILED);
 
     $notification = Notification::query()->sole();
 
@@ -28,7 +29,7 @@ it('falls back to a generic template for statuses with no wording of their own',
         'inventor_email' => 'ada@pdn.ac.lk',
     ]);
 
-    (new NotificationService)->notifyStatusChange($application, ApplicationStatus::ACKNOWLEDGED);
+    (new NotificationService(new ArrayMailChannel))->notifyStatusChange($application, ApplicationStatus::ACKNOWLEDGED);
 
     $notification = Notification::query()->sole();
 
@@ -50,7 +51,7 @@ it('notifies every distinct inventor and skips blanks', function () {
         ]);
     }
 
-    $sent = (new NotificationService)->notifyInventors($application, 'Patent Filed', 'Filed.');
+    $sent = (new NotificationService(new ArrayMailChannel))->notifyInventors($application, 'Patent Filed', 'Filed.');
 
     expect($sent)->toBe(2)
         ->and(Notification::query()->orderBy('recipient_email')->pluck('recipient_email')->all())
@@ -64,5 +65,5 @@ it('falls back to the denormalised inventor email when no inventor rows exist', 
         'inventor_email' => 'solo@pdn.ac.lk',
     ]);
 
-    expect((new NotificationService)->recipients($application))->toBe(['solo@pdn.ac.lk']);
+    expect((new NotificationService(new ArrayMailChannel))->recipients($application))->toBe(['solo@pdn.ac.lk']);
 });
