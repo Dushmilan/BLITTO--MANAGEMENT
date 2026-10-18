@@ -37,8 +37,8 @@ it('grants a patent and stamps the filing record', function () {
         ->and($record->patent_number)->toBe('LK/PAT/2026/999')
         ->and($record->granted_by)->toBe('director@pdn.ac.lk')
         ->and($record->granted_at)->not->toBeNull()
-        ->and(Notification::query()->sole()->subject)->toBe('Patent Received')
-        ->and(Notification::query()->sole()->body)
+        ->and(Notification::query()->where('kind', 'filing')->sole()->subject)->toBe('Patent Received')
+        ->and(Notification::query()->where('kind', 'filing')->sole()->body)
         ->toBe('Your patent Grant Flow has been granted with patent number LK/PAT/2026/999.');
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'filing:granted', 'user_id' => $director->id]);
@@ -56,7 +56,7 @@ it('grants without a filing record and still notifies', function () {
 
     expect($application->refresh()->status)->toBe('GRANTED')
         ->and(FilingRecord::query()->count())->toBe(0)
-        ->and(Notification::query()->sole()->subject)->toBe('Patent Received');
+        ->and(Notification::query()->where('kind', 'filing')->sole()->subject)->toBe('Patent Received');
 });
 
 it('refuses to grant straight from DRAFT and writes nothing', function () {
