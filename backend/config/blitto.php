@@ -33,12 +33,9 @@ return [
     // How often (in hours) to check for unacknowledged filings and notify admin.
     'nipo_follow_up_interval_hours' => (int) env('BLITTODB_NIPO_FOLLOW_UP_INTERVAL_HOURS', 24),
 
-    // Vault master key (provided via env/secret manager; never persisted by the app).
-    'vault_master_key' => env('BLITTODB_VAULT_MASTER_KEY', ''),
-    'document_store' => env('BLITTODB_DOCUMENT_STORE', 'local'),   // "local" | "pki"
-    'vault_cert_dir' => env('BLITTODB_VAULT_CERT_DIR', 'certs'),
-    'vault_storage_dir' => env('BLITTODB_VAULT_STORAGE_DIR', 'encrypted_docs'),
-    'vault_ttl_hours' => (int) env('BLITTODB_VAULT_TTL_HOURS', 12),
+    // Document storage adapter: "local" (plaintext, this version).
+    // "pki" (encrypted) is not implemented — see docs/adr/0004.
+    'document_store' => env('BLITTODB_DOCUMENT_STORE', 'local'),
 
     // Persistence seam — Laravel/SQLite supersedes this at L1; kept for parity.
     'storage' => env('BLITTODB_STORAGE', 'memory'),

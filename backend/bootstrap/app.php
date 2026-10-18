@@ -6,6 +6,17 @@ use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Domain\Filing\AcknowledgementWithoutFiling;
 use App\Domain\Filing\DefectSheetRejected;
 use App\Domain\Lifecycle\IllegalTransition;
+use App\Domain\Vault\DocumentAlreadyRequested;
+use App\Domain\Vault\DocumentContentMissing;
+use App\Domain\Vault\DocumentIsImmutable;
+use App\Domain\Vault\DocumentNotFound;
+use App\Domain\Vault\DocumentPending;
+use App\Domain\Vault\DocumentRequestRefused;
+use App\Domain\Vault\DocumentTooLarge;
+use App\Domain\Vault\InvalidDocumentFilename;
+use App\Domain\Vault\NotYourPatent;
+use App\Domain\Vault\PatentNotGranted;
+use App\Domain\Vault\UnsupportedFileType;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -70,5 +81,72 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (AcknowledgementWithoutFiling $e) => response()->json([
                 'message' => $e->getMessage(),
             ], 404),
+        );
+
+        $exceptions->render(
+            fn (UnsupportedFileType $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 422),
+        );
+
+        $exceptions->render(
+            fn (InvalidDocumentFilename $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 422),
+        );
+
+        $exceptions->render(
+            fn (DocumentTooLarge $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 413),
+        );
+
+        $exceptions->render(
+            fn (DocumentContentMissing $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 404),
+        );
+
+        $exceptions->render(
+            fn (DocumentNotFound $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 404),
+        );
+
+        $exceptions->render(
+            fn (DocumentIsImmutable $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 409),
+        );
+
+        $exceptions->render(
+            fn (NotYourPatent $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 403),
+        );
+
+        $exceptions->render(
+            fn (PatentNotGranted $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 403),
+        );
+
+        $exceptions->render(
+            fn (DocumentPending $e) => response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'document_pending',
+            ], 409),
+        );
+
+        $exceptions->render(
+            fn (DocumentAlreadyRequested $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 429),
+        );
+
+        $exceptions->render(
+            fn (DocumentRequestRefused $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 409),
         );
     })->create();

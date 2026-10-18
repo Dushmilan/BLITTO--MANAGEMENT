@@ -7,7 +7,9 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocketingController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FilingController;
+use App\Http\Controllers\GrantedPatentController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +68,34 @@ Route::post('/applications/{applicationId}/deadlines', [DocketingController::cla
 Route::get('/deadlines', [DocketingController::class, 'index'])
     ->middleware(['auth', 'role:director,md'])
     ->name('deadlines.index');
+
+Route::post('/applications/{applicationId}/documents', [DocumentController::class, 'store'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.store');
+
+Route::get('/applications/{applicationId}/documents', [DocumentController::class, 'index'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.index');
+
+Route::get('/applications/missing-documents', [DocumentController::class, 'missing'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.missing');
+
+Route::get('/applications/{applicationId}/documents/{documentId}/download', [DocumentController::class, 'download'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.download');
+
+Route::delete('/applications/{applicationId}/documents/{documentId}', [DocumentController::class, 'destroy'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.destroy');
+
+Route::get('/applications/{applicationId}/download', [GrantedPatentController::class, 'download'])
+    ->middleware('auth')
+    ->name('documents.granted-download');
+
+Route::post('/applications/{applicationId}/request-document', [GrantedPatentController::class, 'requestDocument'])
+    ->middleware('auth')
+    ->name('documents.request');
 
 Route::middleware(['auth', 'role:director,md'])
     ->prefix('admin/filing/{applicationId}')

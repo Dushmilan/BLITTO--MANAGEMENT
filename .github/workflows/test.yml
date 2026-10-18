@@ -32,6 +32,7 @@ jobs:
           php-version: "8.3"
           extensions: sqlite3, mbstring, openssl, pdo_sqlite, curl, dom, fileinfo, tokenizer, xml
           coverage: none
+          ini-values: post_max_size=12M, upload_max_filesize=12M
       - name: Validate composer.json
         run: composer validate --no-check-publish
       - name: Install Composer dependencies

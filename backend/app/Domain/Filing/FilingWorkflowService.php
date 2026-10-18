@@ -7,6 +7,7 @@ use App\Domain\Lifecycle\ApplicationStatus;
 use App\Domain\Lifecycle\IllegalTransition;
 use App\Domain\Lifecycle\LifecycleService;
 use App\Domain\Notification\NotificationService;
+use App\Domain\Vault\DocumentService;
 use App\Models\Application;
 use App\Models\DefectSheet;
 use App\Models\FilingRecord;
@@ -26,6 +27,7 @@ final class FilingWorkflowService
         private readonly LifecycleService $lifecycle,
         private readonly NotificationService $notifications,
         private readonly AuditRecorder $audit,
+        private readonly DocumentService $documents,
     ) {}
 
     public function filingRecord(Application $application): ?FilingRecord
@@ -122,7 +124,42 @@ final class FilingWorkflowService
 
         $this->audit->record('filing:granted', actor: $actor, application: $application);
 
+        $this->warnWhenGrantedWithoutDocument($application);
+
         return $application;
+    }
+
+    /**
+     * A granted patent with no document cannot be downloaded yet. Returns the
+     * warning a caller should surface, or null when the download will work.
+     */
+    public function grantWarning(Application $application): ?string
+    {
+        if (ApplicationStatus::from($application->status) !== ApplicationStatus::GRANTED) {
+            return null;
+        }
+
+        if ($this->documents->hasDocuments($application)) {
+            return null;
+        }
+
+        return "Patent {$application->id} was granted but has no document yet; the inventor cannot download it until one is uploaded.";
+    }
+
+    private function warnWhenGrantedWithoutDocument(Application $application): void
+    {
+        $warning = $this->grantWarning($application);
+
+        if ($warning === null) {
+            return;
+        }
+
+        $this->notifications->send(
+            (string) (config('blitto.bootstrap_admin_email') ?: 'md@pdn.ac.lk'),
+            "Patent {$application->id} granted without a document",
+            $warning,
+            'grant_without_document',
+        );
     }
 
     public function markRejected(Application $application, User $actor): Application

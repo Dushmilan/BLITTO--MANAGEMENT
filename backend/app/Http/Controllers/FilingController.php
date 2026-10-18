@@ -60,11 +60,19 @@ final class FilingController extends Controller
             'patent_number' => ['required', 'string', 'max:255'],
         ]);
 
-        return response()->json($this->filing->markGranted(
+        $application = $this->filing->markGranted(
             $this->intake->findOrFail($applicationId),
             (string) $validated['patent_number'],
             $request->user(),
-        ));
+        );
+
+        $payload = $application->toArray();
+
+        if (($warning = $this->filing->grantWarning($application)) !== null) {
+            $payload['warning'] = $warning;
+        }
+
+        return response()->json($payload);
     }
 
     public function reject(Request $request, string $applicationId): JsonResponse
