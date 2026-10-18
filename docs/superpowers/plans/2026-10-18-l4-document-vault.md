@@ -103,7 +103,7 @@ The input classes and failure modes most likely to bite a person using this soft
 - Consumes: nothing (first task).
 - Produces: `App\Domain\Vault\DocumentStore` with `put(string $contents): string`, `get(string $ref): ?string`, `delete(string $ref): bool`; `LocalDocumentStore::__construct(private readonly Filesystem $disk)`; the `vault` disk; `UnsupportedDocumentStore extends RuntimeException`.
 
-- [ ] **Step 1: Add the `vault` disk**
+- [x] **Step 1: Add the `vault` disk**
 
 In `config/filesystems.php`, inside `'disks' => [`, after the `'local'` entry:
 
@@ -119,7 +119,7 @@ In `config/filesystems.php`, inside `'disks' => [`, after the `'local'` entry:
         ],
 ```
 
-- [ ] **Step 2: Remove the dead crypto/gate config**
+- [x] **Step 2: Remove the dead crypto/gate config**
 
 In `config/blitto.php`, replace the four vault lines and their comment with:
 
@@ -135,7 +135,7 @@ In `.env.example`, replace lines 76-80 with:
 # BLITTODB_DOCUMENT_STORE=local
 ```
 
-- [ ] **Step 3: Write the failing store test**
+- [x] **Step 3: Write the failing store test**
 
 Create `tests/Feature/DocumentStoreTest.php`:
 
@@ -179,12 +179,12 @@ it('fails loudly when the encrypted store is requested', function () {
 });
 ```
 
-- [ ] **Step 4: Run the test to verify it fails**
+- [x] **Step 4: Run the test to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocumentStoreTest.php`
 Expected: FAIL — `Target class [App\Domain\Vault\DocumentStore] does not exist` (and the config test from the next step has not been touched yet).
 
-- [ ] **Step 5: Write the port, the adapter and the binding**
+- [x] **Step 5: Write the port, the adapter and the binding**
 
 `app/Domain/Vault/DocumentStore.php`:
 
@@ -306,12 +306,12 @@ In `app/Providers/AppServiceProvider.php`, add `register()`:
 
 with imports `App\Domain\Vault\DocumentStore`, `App\Domain\Vault\LocalDocumentStore`, `App\Domain\Vault\UnsupportedDocumentStore`, `Illuminate\Support\Facades\Storage`. Keep the existing `boot()` untouched.
 
-- [ ] **Step 6: Run the store test to verify it passes**
+- [x] **Step 6: Run the store test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentStoreTest.php`
 Expected: PASS (3 tests).
 
-- [ ] **Step 7: Update the config test for the removed keys**
+- [x] **Step 7: Update the config test for the removed keys**
 
 `tests/Feature/BlittoConfigTest.php` currently asserts `vault_cert_dir`, `vault_storage_dir`, `vault_ttl_hours` and drives its env-prefix case through `BLITTODB_VAULT_TTL_HOURS`. Replace the first test's vault block with a single assertion and re-point the env case:
 
@@ -335,12 +335,12 @@ afterEach(function () {
 });
 ```
 
-- [ ] **Step 8: Run the config test**
+- [x] **Step 8: Run the config test**
 
 Run: `php artisan test --compact tests/Feature/BlittoConfigTest.php tests/Feature/SchemaTest.php`
 Expected: PASS. (`SchemaTest` guards the table list, which is unchanged.)
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add app/Domain/Vault/DocumentStore.php app/Domain/Vault/LocalDocumentStore.php app/Domain/Vault/UnsupportedDocumentStore.php app/Providers/AppServiceProvider.php config/filesystems.php config/blitto.php .env.example tests/Feature/DocumentStoreTest.php tests/Feature/BlittoConfigTest.php
@@ -369,7 +369,7 @@ git commit -m "feat(l4): add plaintext document store port and vault disk"
   - `DocumentService::store(Application $application, UploadedFile $file, User $actor, ?string $ipAddress = null): Document`, `DocumentService::listFor(Application $application): Collection<int, Document>`, `DocumentService::hasDocuments(Application $application): bool`.
   - Exceptions `UnsupportedFileType`, `DocumentTooLarge`, `InvalidDocumentFilename` mapped to `422`, `413`, `422`.
 
-- [ ] **Step 1: Write the failing rules test**
+- [x] **Step 1: Write the failing rules test**
 
 Create `tests/Feature/DocumentServiceTest.php`:
 
@@ -412,12 +412,12 @@ it('accepts the allow-listed extensions case-insensitively', function (string $f
 })->with(['specification.pdf', 'TEST.PDF', 'notes.docx', 'sheet.XLSX', 'photo.jpeg']);
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocumentServiceTest.php`
 Expected: FAIL — `Class "App\Domain\Vault\DocumentService" not found`.
 
-- [ ] **Step 3: Write `DocumentRules` and `DocumentFilename`**
+- [x] **Step 3: Write `DocumentRules` and `DocumentFilename`**
 
 `app/Domain/Vault/DocumentRules.php`:
 
@@ -513,12 +513,12 @@ final class DocumentFilename
 }
 ```
 
-- [ ] **Step 4: Run the rules test to verify it passes**
+- [x] **Step 4: Run the rules test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentServiceTest.php`
 Expected: FAIL with `Class "App\Domain\Vault\DocumentService" not found` — the rules compile but the service that calls them does not exist yet.
 
-- [ ] **Step 5: Write `DocumentService::store`**
+- [x] **Step 5: Write `DocumentService::store`**
 
 `app/Domain/Vault/DocumentService.php`:
 
@@ -659,7 +659,7 @@ use RuntimeException;
 final class UnsupportedFileType extends RuntimeException {}
 ```
 
-- [ ] **Step 6: Map the three exceptions in `bootstrap/app.php`**
+- [x] **Step 6: Map the three exceptions in `bootstrap/app.php`**
 
 Add alongside the existing renders:
 
@@ -679,12 +679,12 @@ Add alongside the existing renders:
 
 with the matching `use` statements.
 
-- [ ] **Step 7: Run the service test to verify it passes**
+- [x] **Step 7: Run the service test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentServiceTest.php`
 Expected: PASS (5 dataset cases).
 
-- [ ] **Step 8: Add the rejection and notification tests**
+- [x] **Step 8: Add the rejection and notification tests**
 
 Append to `tests/Feature/DocumentServiceTest.php`:
 
@@ -768,12 +768,12 @@ it('audits every stored document', function () {
 });
 ```
 
-- [ ] **Step 9: Run the whole service test**
+- [x] **Step 9: Run the whole service test**
 
 Run: `php artisan test --compact tests/Feature/DocumentServiceTest.php`
 Expected: PASS. If the `UploadedFile::fake()->createWithContent('spec.pdf', ...)` size assertion is off, `assertSame` the byte length instead — `Document::query()->sole()->file_size` must equal `strlen('bytes')`.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add app/Domain/Vault app/Providers bootstrap/app.php tests/Feature/DocumentServiceTest.php
@@ -794,7 +794,7 @@ git commit -m "feat(l4): add document storage rules with extension, size and fil
 - Consumes: `DocumentService` (Task 2), `DocumentImmutability::assertModifiable(Document)` and `DocumentIsImmutable` (L1).
 - Produces: `DocumentService::findForApplication(Application $application, string $documentId): Document`, `DocumentService::delete(Document $document, User $actor, ?string $ipAddress = null): void`.
 
-- [ ] **Step 1: Write the failing delete test**
+- [x] **Step 1: Write the failing delete test**
 
 Create `tests/Feature/DocumentDeleteTest.php`:
 
@@ -873,12 +873,12 @@ it('refuses to delete a document once the application is filed', function () {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocumentDeleteTest.php`
 Expected: FAIL — `Call to undefined method App\Domain\Vault\DocumentService::findForApplication()`.
 
-- [ ] **Step 3: Write `DocumentNotFound` and the two methods**
+- [x] **Step 3: Write `DocumentNotFound` and the two methods**
 
 `app/Domain/Vault/DocumentNotFound.php`:
 
@@ -933,7 +933,7 @@ In `DocumentService`, add `use App\Models\User;`-adjacent imports for the new cl
 
 Add `private readonly DocumentImmutability $immutability` to the constructor (inject the class directly; it is stateless).
 
-- [ ] **Step 4: Map the two exceptions in `bootstrap/app.php`**
+- [x] **Step 4: Map the two exceptions in `bootstrap/app.php`**
 
 ```php
         $exceptions->render(
@@ -945,12 +945,12 @@ Add `private readonly DocumentImmutability $immutability` to the constructor (in
         );
 ```
 
-- [ ] **Step 5: Run the delete test to verify it passes**
+- [x] **Step 5: Run the delete test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentDeleteTest.php tests/Feature/DocumentImmutabilityTest.php`
 Expected: PASS (3 + 2 tests). The L1 immutability test must stay green — it calls `assertModifiable` directly.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Domain/Vault/DocumentNotFound.php app/Domain/Vault/DocumentService.php bootstrap/app.php tests/Feature/DocumentDeleteTest.php
@@ -970,7 +970,7 @@ git commit -m "feat(l4): scope document lookup to its application and gate delet
 - Consumes: `DocumentService` (Task 2), `ApplicationIntakeService::findOrFail` (L3).
 - Produces: `POST /applications/{applicationId}/documents` → `200` document JSON; `GET /applications/{applicationId}/documents` → `200` list; route names `documents.store`, `documents.index`.
 
-- [ ] **Step 1: Write the failing endpoint test**
+- [x] **Step 1: Write the failing endpoint test**
 
 Create `tests/Feature/DocumentUploadEndpointTest.php`:
 
@@ -1057,12 +1057,12 @@ it('lists the documents of one application for staff only', function () {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocumentUploadEndpointTest.php`
 Expected: FAIL — `404` on the upload route (route not defined).
 
-- [ ] **Step 3: Write the controller and routes**
+- [x] **Step 3: Write the controller and routes**
 
 `app/Http/Controllers/DocumentController.php`:
 
@@ -1122,12 +1122,12 @@ Route::get('/applications/{applicationId}/documents', [DocumentController::class
 
 with `use App\Http\Controllers\DocumentController;` added to the imports.
 
-- [ ] **Step 4: Run the endpoint test to verify it passes**
+- [x] **Step 4: Run the endpoint test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentUploadEndpointTest.php`
 Expected: PASS (2 dataset cases + 2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/Http/Controllers/DocumentController.php routes/web.php tests/Feature/DocumentUploadEndpointTest.php
@@ -1147,7 +1147,7 @@ git commit -m "feat(l4): add staff document upload and listing endpoints"
 - Consumes: `DocumentService::findForApplication`, `delete` (Task 3), `DocumentFilename` (Task 2).
 - Produces: `GET /applications/missing-documents` → `200` application list; `GET /applications/{applicationId}/documents/{documentId}/download` → `200` bytes with `Content-Disposition`; `DELETE /applications/{applicationId}/documents/{documentId}` → `204`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/Feature/DocumentStaffEndpointsTest.php`:
 
@@ -1273,12 +1273,12 @@ it('gates the staff document routes', function () {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocumentStaffEndpointsTest.php`
 Expected: FAIL — missing route `/applications/missing-documents` (404).
 
-- [ ] **Step 3: Add the three controller methods**
+- [x] **Step 3: Add the three controller methods**
 
 In `DocumentController`:
 
@@ -1364,7 +1364,7 @@ Create `app/Domain/Vault/DocumentContentMissing.php` (`final class DocumentConte
         );
 ```
 
-- [ ] **Step 4: Add the routes**
+- [x] **Step 4: Add the routes**
 
 ```php
 Route::get('/applications/missing-documents', [DocumentController::class, 'missing'])
@@ -1382,12 +1382,12 @@ Route::delete('/applications/{applicationId}/documents/{documentId}', [DocumentC
 
 `missing-documents` must be declared **before** `documents.index` is declared? No — `/applications/missing-documents` has two segments and `/applications/{applicationId}/documents` has three, so they cannot collide. Keep the group together for readability.
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentStaffEndpointsTest.php`
 Expected: PASS (5 tests). The 409 assertion expects the message from `DocumentImmutability`; if that message differs, assert only the status code and adjust this step's expectation (do not change the domain message to fit the test).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Http/Controllers/DocumentController.php app/Domain/Vault app/Models/Application.php routes/web.php bootstrap/app.php tests/Feature/DocumentStaffEndpointsTest.php
@@ -1414,7 +1414,7 @@ git commit -m "feat(l4): add missing-documents worklist and staff document downl
 
 Deliberate design note: the ZIP must be built on disk (`ZipArchive` cannot write to memory), so `downloadPayload` returns a temp file path for the multi-document case and the controller streams it with `deleteFileAfterSend()`. Exceptions carry the HTTP mapping.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/Feature/GrantedDownloadTest.php`:
 
@@ -1556,12 +1556,12 @@ it('still returns a zip when one document has lost its bytes', function () {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/GrantedDownloadTest.php`
 Expected: FAIL — the route does not exist (`404`).
 
-- [ ] **Step 3: Write the domain service and its result type**
+- [x] **Step 3: Write the domain service and its result type**
 
 `app/Domain/Vault/GrantedDownload.php`:
 
@@ -1735,7 +1735,7 @@ and `bytesFor` becomes:
     }
 ```
 
-- [ ] **Step 4: Write the three exceptions and map them**
+- [x] **Step 4: Write the three exceptions and map them**
 
 ```php
 <?php
@@ -1798,7 +1798,7 @@ In `bootstrap/app.php`:
         );
 ```
 
-- [ ] **Step 5: Write the controller and route**
+- [x] **Step 5: Write the controller and route**
 
 `app/Http/Controllers/GrantedPatentController.php`:
 
@@ -1857,12 +1857,12 @@ Route::get('/applications/{applicationId}/download', [GrantedPatentController::c
 
 (`BinaryFileResponse` is imported for the `response()->download()` return type in the docblock; drop the import if Pint flags it as unused.)
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/GrantedDownloadTest.php`
 Expected: PASS (5 tests).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/Domain/Vault app/Http/Controllers/GrantedPatentController.php routes/web.php bootstrap/app.php tests/Feature/GrantedDownloadTest.php
@@ -1884,7 +1884,7 @@ git commit -m "feat(l4): add granted-patent download with single-file and zip de
 - Consumes: `GrantedPatentService`, `NotificationService::send`, `AuditRecorder`, `config('blitto.bootstrap_admin_email')`.
 - Produces: `GrantedPatentService::requestDocument(Application $application, User $viewer, ?string $ipAddress = null): void`; `POST /applications/{applicationId}/request-document` → `200 {"status":"requested","application_id":...}`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/Feature/DocumentRequestTest.php`:
 
@@ -1989,12 +1989,12 @@ it('refuses requests for patents that are not granted or already documented', fu
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/DocumentRequestTest.php`
 Expected: FAIL — route not defined (`404`).
 
-- [ ] **Step 3: Write the two exceptions and the service method**
+- [x] **Step 3: Write the two exceptions and the service method**
 
 ```php
 <?php
@@ -2073,7 +2073,7 @@ In `GrantedPatentService` (add `NotificationService`, `AuditLog` and `config()` 
 
 Add `private readonly NotificationService $notifications` to the constructor and the `AuditLog` import.
 
-- [ ] **Step 4: Add the controller method, route and mappings**
+- [x] **Step 4: Add the controller method, route and mappings**
 
 In `GrantedPatentController`:
 
@@ -2111,12 +2111,12 @@ and the renders:
         );
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 Run: `php artisan test --compact tests/Feature/DocumentRequestTest.php`
 Expected: PASS (3 tests). Confirm `config('blitto.bootstrap_admin_email')` is the real key name in `config/blitto.php`; if it differs, use the real one in the service and the test together.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Domain/Vault app/Http/Controllers/GrantedPatentController.php routes/web.php bootstrap/app.php tests/Feature/DocumentRequestTest.php
@@ -2136,7 +2136,7 @@ git commit -m "feat(l4): add rate-limited document request flow for granted pate
 - Consumes: `DocumentService::hasDocuments`, `NotificationService::send` (Tasks 2, 7).
 - Produces: `FilingWorkflowService::grantWarning(Application $application): ?string`; the `POST /admin/filing/{id}/grant` body gains a top-level `warning` key **only** when the granted patent has no documents.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/Feature/GrantWithoutDocumentTest.php`:
 
@@ -2195,12 +2195,12 @@ it('grants without a warning once a document exists', function () {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `php artisan test --compact tests/Feature/GrantWithoutDocumentTest.php`
 Expected: FAIL — `warning` is null in the first test.
 
-- [ ] **Step 3: Add the domain warning**
+- [x] **Step 3: Add the domain warning**
 
 In `FilingWorkflowService`, inject `private readonly DocumentService $documents` (import `App\Domain\Vault\DocumentService`), and in `markGranted` after the `notifyInventors` call:
 
@@ -2238,7 +2238,7 @@ and the public query:
     }
 ```
 
-- [ ] **Step 4: Surface it in the grant response**
+- [x] **Step 4: Surface it in the grant response**
 
 In `FilingController::grant`:
 
@@ -2258,12 +2258,12 @@ In `FilingController::grant`:
         return response()->json($payload);
 ```
 
-- [ ] **Step 5: Run the grant tests**
+- [x] **Step 5: Run the grant tests**
 
 Run: `php artisan test --compact tests/Feature/GrantWithoutDocumentTest.php tests/Feature/FilingEndpointTest.php tests/Feature/FilingOutcomeTest.php tests/Feature/FilingWorkflowTest.php`
 Expected: PASS. The L3 grant assertions read top-level keys, so the added `warning` key does not disturb them.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Domain/Filing/FilingWorkflowService.php app/Http/Controllers/FilingController.php tests/Feature/GrantWithoutDocumentTest.php
@@ -2286,7 +2286,7 @@ git commit -m "feat(l4): warn and notify admins when a patent is granted without
 - Consumes: everything above.
 - Produces: end-to-end proof for journeys J1 (grant → inventor download), J2 (pending request), J4 (multi-document ZIP), an endpoint matrix for every L4 route, and a roadmap marked L4-done.
 
-- [ ] **Step 1: Write the journey test**
+- [x] **Step 1: Write the journey test**
 
 Create `tests/Feature/DocumentJourneyTest.php`:
 
@@ -2411,12 +2411,12 @@ it('runs the J4 multi-document zip journey', function () {
 });
 ```
 
-- [ ] **Step 2: Run the journeys**
+- [x] **Step 2: Run the journeys**
 
 Run: `php artisan test --compact tests/Feature/DocumentJourneyTest.php`
 Expected: PASS (3 tests). If the J1 filing chain reports a lifecycle violation, compare it with `tests/Feature/FilingEndpointTest.php`'s known-good chain (`file` → `acknowledge` → `grant`) — that is the authoritative sequence, not a hand-rolled combination.
 
-- [ ] **Step 3: Write the L4 endpoint matrix**
+- [x] **Step 3: Write the L4 endpoint matrix**
 
 Create `tests/Feature/L4RbacMatrixTest.php`:
 
@@ -2484,7 +2484,7 @@ it('lets staff drive every L4 staff endpoint', function (string $state) {
 
 The plain-user `403` expectation for `GET /applications/{id}/download` and `POST .../request-document` holds because the stranger owns neither application.
 
-- [ ] **Step 4: Run the matrix and the whole suite**
+- [x] **Step 4: Run the matrix and the whole suite**
 
 Run: `php artisan test --compact tests/Feature/L4RbacMatrixTest.php`
 Expected: PASS (2 dataset cases + 1).
@@ -2492,12 +2492,12 @@ Expected: PASS (2 dataset cases + 1).
 Run: `php artisan test --compact`
 Expected: PASS — the L3 baseline of 298 plus the ~55 tests added here, no failures.
 
-- [ ] **Step 5: Format**
+- [x] **Step 5: Format**
 
 Run: `vendor/bin/pint --dirty --format agent`
 Expected: no violations. If Pint rewrites files, re-run the tests it touched.
 
-- [ ] **Step 6: Write ADR-0004**
+- [x] **Step 6: Write ADR-0004**
 
 Create `docs/adr/0004-documents-stored-in-the-clear.md` following the shape of `docs/adr/0001-graphify-architecture-management.md` through `0003`:
 
@@ -2534,7 +2534,7 @@ only `local`; `pki` fails loudly.
   adapter exists.
 ```
 
-- [ ] **Step 7: Update the roadmap**
+- [x] **Step 7: Update the roadmap**
 
 In `BIGGER_PICTURE.md`:
 
@@ -2559,7 +2559,7 @@ In `BIGGER_PICTURE.md`:
 
 - Tick every `- [ ]` box in this plan file.
 
-- [ ] **Step 8: Pin the upload limits in CI**
+- [x] **Step 8: Pin the upload limits in CI**
 
 In `.github/workflows/test.yml`, extend the `shivammathur/setup-php@v2` step (currently `php-version`, `extensions`, `coverage`):
 
@@ -2573,12 +2573,12 @@ In `.github/workflows/test.yml`, extend the `shivammathur/setup-php@v2` step (cu
 
 This makes CI match the documented 10 MiB contract; without it, any future test that drives a real multipart upload over 2 MB would fail in CI only.
 
-- [ ] **Step 9: Refresh the knowledge graph**
+- [x] **Step 9: Refresh the knowledge graph**
 
 Run (from the repository root, not `backend/`): `graphify update .`
 Expected: the graph picks up `app/Domain/Vault/*` and the two new controllers. `graphify-out/` is git-ignored, so nothing is committed from it.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add tests/Feature/DocumentJourneyTest.php tests/Feature/L4RbacMatrixTest.php docs/adr/0004-documents-stored-in-the-clear.md BIGGER_PICTURE.md .github/workflows docs/superpowers/plans/2026-10-18-l4-document-vault.md

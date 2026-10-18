@@ -103,7 +103,7 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 | L1 Domain | [#73](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/73) | Eloquent models, lifecycle transition table, `app/Domain/*`, 6 invariants | lifecycle/model |
 | L2 Auth & RBAC | [#72](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/72) | Session auth, 3 roles, gates from RBAC matrix, email-domain policy, throttling, bootstrap admin | auth + RBAC + security |
 | L3 Core flows | [#67](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/67) | Applications CRUD, history, status changes, docketing, office actions, filing workflow | applications/docketing/prosecution/filing feature tests + RBAC matrix (document journeys J1/J2/J4 land in L4) |
-| L4 Document vault | [#71](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/71) | Master-key unlock + TTL, encrypted store, upload/download rules, missing-documents worklist | vault + upload security |
+| L4 Document vault | [#71](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/71) | Plaintext document store seam (`DocumentStore`/`local`), upload rules, staff upload/list/download/delete, inventor granted download (file or ZIP) + request-document, missing-documents worklist, grant-without-document warning. Encryption and the vault unlock gate are deferred — ADR 0004. | document upload/download/request feature tests + journeys J1/J2/J4 |
 | L5 Cross-cutting | [#69](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/69) | Notifications, audit trail, analytics, NIPO follow-up scheduler, demo seeder | notification/analytics/seed |
 | L6 UI | [#70](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/70) | Blade/Livewire screens replacing all React pages | Pest feature + Dusk smoke |
 | L7 Cutover | [#66](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/66) | Delete `app/`, `frontend/`, Python tests, `pyproject.toml`; rename GitHub repo + folder; rewrite docs | full suite green |
@@ -154,5 +154,12 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
   workflow (file → acknowledge → defect sheets → grant/reject), plus the
   notification and audit seams. Document journeys J1/J2/J4 land in L4.
   Suite 298/298 green (739 assertions after Tasks 1–16).
-- **Next: L4 (#71)** — master-key vault, encrypted document store, upload
-  and download rules, missing-documents worklist, request-document.
+- **Done: L4 (#71, reduced scope)** — plaintext document vault: the
+  `DocumentStore` port with a `local` adapter on a private disk, upload
+  extension/size/filename guards, staff upload/list/download/delete with
+  filing immutability, the inventor granted download (single file or ZIP)
+  with `request-document`, the missing-documents worklist and the
+  grant-without-document warning. **No encryption and no vault unlock gate**
+  — deferred and recorded in ADR 0004. Suite 346/346 green (997 assertions).
+- **Next: L5 (#69)** — notifications, audit trail, analytics, NIPO follow-up
+  scheduler, demo seeder.
