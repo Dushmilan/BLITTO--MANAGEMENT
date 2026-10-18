@@ -35,7 +35,7 @@ final class FilingWorkflowService
         return FilingRecord::query()->where('application_id', $application->id)->first();
     }
 
-    public function markFiled(Application $application, User $actor): Application
+    public function markFiled(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         if ($application->status === ApplicationStatus::FILED->value) {
             return $application;
@@ -59,7 +59,7 @@ final class FilingWorkflowService
             "Your patent application {$application->title} ({$this->reference($application)}) has been filed with NIPO.",
         );
 
-        $this->audit->record('filing:mark_filed', actor: $actor, application: $application);
+        $this->audit->record('filing:mark_filed', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }
@@ -67,7 +67,7 @@ final class FilingWorkflowService
     /**
      * @throws AcknowledgementWithoutFiling when the application was never filed
      */
-    public function acknowledgeNipo(Application $application, User $actor): Application
+    public function acknowledgeNipo(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         $record = $this->filingRecord($application)
             ?? throw new AcknowledgementWithoutFiling($application->id);
@@ -93,12 +93,12 @@ final class FilingWorkflowService
             "NIPO has acknowledged receipt of your patent application {$application->title} ({$this->reference($application)}).",
         );
 
-        $this->audit->record('filing:acknowledge_nipo', actor: $actor, application: $application);
+        $this->audit->record('filing:acknowledge_nipo', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }
 
-    public function markGranted(Application $application, string $patentNumber, User $actor): Application
+    public function markGranted(Application $application, string $patentNumber, User $actor, ?string $ipAddress = null): Application
     {
         $this->lifecycle->changeStatus(
             $application,
@@ -122,7 +122,7 @@ final class FilingWorkflowService
             "Your patent {$application->title} has been granted with patent number {$patentNumber}.",
         );
 
-        $this->audit->record('filing:granted', actor: $actor, application: $application);
+        $this->audit->record('filing:granted', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         $this->warnWhenGrantedWithoutDocument($application);
 
@@ -162,7 +162,7 @@ final class FilingWorkflowService
         );
     }
 
-    public function markRejected(Application $application, User $actor): Application
+    public function markRejected(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         $this->lifecycle->changeStatus(
             $application,
@@ -185,7 +185,7 @@ final class FilingWorkflowService
             "Your patent application {$application->title} ({$this->reference($application)}) has been rejected.",
         );
 
-        $this->audit->record('filing:rejected', actor: $actor, application: $application);
+        $this->audit->record('filing:rejected', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }
@@ -210,7 +210,7 @@ final class FilingWorkflowService
      * @throws DefectSheetRejected
      * @throws IllegalTransition when the current status may not reach DEFECT_SHEET_{n}
      */
-    public function recordDefectSheet(Application $application, int $sheetNumber, string $description, User $actor): DefectSheet
+    public function recordDefectSheet(Application $application, int $sheetNumber, string $description, User $actor, ?string $ipAddress = null): DefectSheet
     {
         if (! in_array($sheetNumber, [1, 2, 3], true)) {
             throw new DefectSheetRejected("Invalid defect sheet number: {$sheetNumber} (must be 1-3)");
@@ -252,7 +252,7 @@ final class FilingWorkflowService
             "Defect sheet #{$sheetNumber} has been received for your patent application {$application->title} ({$this->reference($application)}): {$description}",
         );
 
-        $this->audit->record('filing:defect_sheet', actor: $actor, application: $application);
+        $this->audit->record('filing:defect_sheet', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $sheet;
     }

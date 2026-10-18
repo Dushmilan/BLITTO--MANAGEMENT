@@ -23,6 +23,7 @@ final class FilingController extends Controller
         return response()->json($this->filing->markFiled(
             $this->intake->findOrFail($applicationId),
             $request->user(),
+            $request->ip(),
         ));
     }
 
@@ -31,6 +32,7 @@ final class FilingController extends Controller
         return response()->json($this->filing->acknowledgeNipo(
             $this->intake->findOrFail($applicationId),
             $request->user(),
+            $request->ip(),
         ));
     }
 
@@ -46,6 +48,7 @@ final class FilingController extends Controller
             (int) $validated['sheet_number'],
             (string) $validated['description'],
             $request->user(),
+            $request->ip(),
         ));
     }
 
@@ -64,6 +67,7 @@ final class FilingController extends Controller
             $this->intake->findOrFail($applicationId),
             (string) $validated['patent_number'],
             $request->user(),
+            $request->ip(),
         );
 
         $payload = $application->toArray();
@@ -80,6 +84,7 @@ final class FilingController extends Controller
         return response()->json($this->filing->markRejected(
             $this->intake->findOrFail($applicationId),
             $request->user(),
+            $request->ip(),
         ));
     }
 
