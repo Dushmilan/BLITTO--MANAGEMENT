@@ -18,6 +18,13 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      # The app fails closed without APP_KEY outside local/testing
+      # (app/Support/ProductionReadiness.php via AppServiceProvider::boot).
+      # Composer's post-autoload `artisan package:discover` boots the app before
+      # the "Prepare environment" step has created .env — without an explicit
+      # APP_ENV it resolves to production and the install step dies.
+      APP_ENV: testing
     steps:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
