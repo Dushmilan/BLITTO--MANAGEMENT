@@ -4,7 +4,11 @@ namespace App\Providers;
 
 use App\Domain\Authorization\BootstrapAdmin;
 use App\Domain\Authorization\InvalidInstitutionEmail;
+use App\Domain\Vault\DocumentStore;
+use App\Domain\Vault\LocalDocumentStore;
+use App\Domain\Vault\UnsupportedDocumentStore;
 use App\Support\ProductionReadiness;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
 
@@ -15,7 +19,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(DocumentStore::class, static function (): DocumentStore {
+            $configured = (string) config('blitto.document_store');
+
+            return match ($configured) {
+                'local' => new LocalDocumentStore(Storage::disk('vault')),
+                default => throw new UnsupportedDocumentStore(
+                    "Document store [{$configured}] is not available; only \"local\" is implemented.",
+                ),
+            };
+        });
     }
 
     /**

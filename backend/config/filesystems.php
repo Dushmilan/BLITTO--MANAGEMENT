@@ -38,6 +38,16 @@ return [
             'report' => false,
         ],
 
+        // Plaintext document bytes for the vault. Never served by the web
+        // server; every read goes through App\Domain\Vault\DocumentStore.
+        'vault' => [
+            'driver' => 'local',
+            'root' => storage_path('app/vault'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
