@@ -6,6 +6,9 @@ use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Domain\Filing\AcknowledgementWithoutFiling;
 use App\Domain\Filing\DefectSheetRejected;
 use App\Domain\Lifecycle\IllegalTransition;
+use App\Domain\Vault\DocumentContentMissing;
+use App\Domain\Vault\DocumentIsImmutable;
+use App\Domain\Vault\DocumentNotFound;
 use App\Domain\Vault\DocumentTooLarge;
 use App\Domain\Vault\InvalidDocumentFilename;
 use App\Domain\Vault\UnsupportedFileType;
@@ -91,5 +94,23 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (DocumentTooLarge $e) => response()->json([
                 'message' => $e->getMessage(),
             ], 413),
+        );
+
+        $exceptions->render(
+            fn (DocumentContentMissing $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 404),
+        );
+
+        $exceptions->render(
+            fn (DocumentNotFound $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 404),
+        );
+
+        $exceptions->render(
+            fn (DocumentIsImmutable $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 409),
         );
     })->create();

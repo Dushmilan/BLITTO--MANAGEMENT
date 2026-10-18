@@ -76,6 +76,18 @@ Route::get('/applications/{applicationId}/documents', [DocumentController::class
     ->middleware(['auth', 'role:director,md'])
     ->name('documents.index');
 
+Route::get('/applications/missing-documents', [DocumentController::class, 'missing'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.missing');
+
+Route::get('/applications/{applicationId}/documents/{documentId}/download', [DocumentController::class, 'download'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.download');
+
+Route::delete('/applications/{applicationId}/documents/{documentId}', [DocumentController::class, 'destroy'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.destroy');
+
 Route::middleware(['auth', 'role:director,md'])
     ->prefix('admin/filing/{applicationId}')
     ->group(function () {

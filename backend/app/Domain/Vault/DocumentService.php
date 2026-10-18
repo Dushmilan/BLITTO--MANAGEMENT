@@ -161,4 +161,30 @@ final class DocumentService
     {
         return Document::query()->where('application_id', $application->id)->exists();
     }
+
+    /**
+     * Bytes for delivery.
+     *
+     * @throws DocumentContentMissing when the store no longer holds them
+     */
+    public function bytesFor(Document $document): string
+    {
+        return $this->store->get($document->content_ref)
+            ?? throw new DocumentContentMissing("Document content missing for {$document->id}");
+    }
+
+    /**
+     * GRANTED applications with no document at all (staff worklist).
+     *
+     * @return Collection<int, Application>
+     */
+    public function missingGrantedDocuments(): Collection
+    {
+        return Application::query()
+            ->where('status', ApplicationStatus::GRANTED->value)
+            ->whereDoesntHave('documents')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+    }
 }
