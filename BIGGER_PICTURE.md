@@ -104,7 +104,7 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 | L2 Auth & RBAC | [#72](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/72) | Session auth, 3 roles, gates from RBAC matrix, email-domain policy, throttling, bootstrap admin | auth + RBAC + security |
 | L3 Core flows | [#67](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/67) | Applications CRUD, history, status changes, docketing, office actions, filing workflow | applications/docketing/prosecution/filing feature tests + RBAC matrix (document journeys J1/J2/J4 land in L4) |
 | L4 Document vault | [#71](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/71) | Plaintext document store seam (`DocumentStore`/`local`), upload rules, staff upload/list/download/delete, inventor granted download (file or ZIP) + request-document, missing-documents worklist, grant-without-document warning. Encryption and the vault unlock gate are deferred — ADR 0004. | document upload/download/request feature tests + journeys J1/J2/J4 |
-| L5 Cross-cutting | [#69](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/69) | Notifications, audit trail, analytics, NIPO follow-up scheduler, demo seeder | notification/analytics/seed |
+| L5 Cross-cutting | [#69](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/69) | Mail seam (`MailChannel` + Laravel-backed and in-memory adapters) with best-effort delivery, audit write gaps closed (filing IP, `create_user`, `auth:login|logout`), `GET /analytics/portfolio` + `/analytics/deadlines`, `nipo:follow-up` scheduled task, snapshot-driven idempotent demo seeder. `by_type` counts OPEN deadlines only and the reminder is deliberately not deduplicated — ADR 0005. | notification/analytics/seed |
 | L6 UI | [#70](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/70) | Blade/Livewire screens replacing all React pages | Pest feature + Dusk smoke |
 | L7 Cutover | [#66](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/66) | Delete `app/`, `frontend/`, Python tests, `pyproject.toml`; rename GitHub repo + folder; rewrite docs | full suite green |
 
@@ -161,5 +161,17 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
   with `request-document`, the missing-documents worklist and the
   grant-without-document warning. **No encryption and no vault unlock gate**
   — deferred and recorded in ADR 0004. Suite 346/346 green (997 assertions).
-- **Next: L5 (#69)** — notifications, audit trail, analytics, NIPO follow-up
-  scheduler, demo seeder.
+- **Done: L5 (#69)** — the cross-cutting layer: a `MailChannel` seam
+  (`laravel` transport adapter + in-memory test adapter) that every
+  notification now goes through, with the row persisted first and mail
+  delivered best-effort; the audit write gaps closed (the five filing steps
+  capture the client IP, and `create_user`, `auth:login`, `auth:logout` are
+  recorded); the GRANTED-without-document defect fixed on the generic status
+  route (the inventor is told the document is pending, the admin warned and the
+  event audited — one shared `GrantWarning`); `GET /analytics/portfolio` and
+  `GET /analytics/deadlines` for `director`/`md`; the `nipo:follow-up` command
+  scheduled at `BLITTODB_NIPO_FOLLOW_UP_INTERVAL_HOURS`; and a
+  snapshot-driven, idempotent demo seeder that bcrypts the reference plaintext
+  passwords and writes document bytes through the store. Suite 396/396 green
+  (1168 assertions). Decisions recorded in ADR 0005.
+- **Next: L6 (#70)** — Blade/Livewire screens replacing the React pages.

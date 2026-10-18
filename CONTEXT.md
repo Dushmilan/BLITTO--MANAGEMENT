@@ -55,8 +55,8 @@
 | Dependency | Category | Notes |
 |------------|----------|-------|
 | In-memory stores (+ optional `dev-data/state.json` snapshot) | Local (no external DB) | Primary data store; snapshot is local-dev only |
-| Document storage seam (`app/adapters/document_storage/`) | Ports & adapters | Default is the local plaintext adapter; `PKIEncryptedStore` (RSA/AES) exists but is not the default (issue #49) |
-| Email provider seam (`app/adapters/email/`) | True external (mock adapter) | Notifications -- tests use mock adapter |
+| Document storage seam (`App\Domain\Vault\DocumentStore`) | Ports & adapters | Default is the local **plaintext** adapter (`LocalDocumentStore`, private `vault` disk); encryption is deferred (ADR 0004) and `BLITTODB_DOCUMENT_STORE=pki` fails loudly |
+| Mail seam (`App\Domain\Notification\MailChannel`) | True external (mock adapter) | Notifications — production adapter delegates to Laravel's mailer (`MAIL_MAILER`), tests bind the in-memory `ArrayMailChannel` via `BLITTODB_MAIL_CHANNEL=array` (ADR 0005) |
 | NIPO (manual updates) | True external (no API) | Status updates are entered manually; no office API integration |
 | Local auth stub (email + password, Bearer tokens) | Local-substitutable (better-auth JWT/JWKS for prod) | Authentication -- institution mail (`pdn.ac.lk`) enforced |
 

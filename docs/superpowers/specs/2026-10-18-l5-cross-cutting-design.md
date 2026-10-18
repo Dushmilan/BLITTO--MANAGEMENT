@@ -332,7 +332,7 @@ lists):
 | `notification.sent` | `notifications` | **not** re-delivered by mail: they are history, not new events |
 | `audit.log` | `audit_logs` | `user_id` is the snapshot's short value (`"md"`), stored as-is in the string column |
 | `document_vault.documents` + `contents` | `documents` + vault disk | base64 decoded and written through the `DocumentStore` port; the snapshot's `mem:<uuid>` refs cannot be reused (the store only accepts a bare uuid), so real refs are minted; skipped when the row exists and its bytes still resolve |
-| `filing_workflow.records`, `prosecution.*` | `filing_records`, `office_actions`, `responses` | empty in the snapshot; imported generically when present |
+| `filing_workflow.records`, `prosecution.*` | `filing_records`, `office_actions`, `responses` | empty in the shipped snapshot, so the seeder deliberately has **no** import code for them and ignores sections it does not know — restore them only when a demo dataset actually contains filings |
 | `version` | ignored | must equal `1`; anything else aborts |
 
 Restored rows keep their snapshot timestamps. The models do not expose
