@@ -1,13 +1,18 @@
 <?php
 
+use App\Domain\Vault\DocumentService;
 use App\Models\Application;
+use App\Models\AuditLog;
 use App\Models\Deadline;
+use App\Models\Document;
+use App\Models\Inventor;
 use App\Models\Notification;
 use App\Models\StatusHistory;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoDataSeeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
     config(['blitto.demo_snapshot_path' => base_path('tests/Fixtures/demo-snapshot.json')]);
@@ -137,4 +142,89 @@ it('imports a snapshot that omits optional sections', function () {
     } finally {
         unlink(base_path('tests/Fixtures/demo-snapshot-minimal.json'));
     }
+});
+
+it('writes document bytes through the document store', function () {
+    Storage::fake('vault');
+
+    $this->seed(DemoDataSeeder::class);
+
+    $document = Document::query()->find('99999999-9999-4999-8999-999999999999');
+
+    expect($document)->not->toBeNull()
+        ->and($document->filename)->toBe('spec.pdf')
+        ->and($document->file_size)->toBe(14)
+        ->and($document->content_ref)->toMatch('/^[0-9a-f-]{36}$/')
+        ->and(app(DocumentService::class)->tryBytesFor($document))->toBe('demo-pdf-bytes');
+});
+
+it('skips a document whose content is missing instead of writing a row without bytes', function () {
+    Storage::fake('vault');
+
+    $this->seed(DemoDataSeeder::class);
+
+    expect(Document::query()->find('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'))->toBeNull()
+        ->and(Document::query()->count())->toBe(1);
+});
+
+it('is idempotent across runs', function () {
+    Storage::fake('vault');
+
+    $this->seed(DemoDataSeeder::class);
+    $counts = [
+        'users' => User::query()->count(),
+        'applications' => Application::query()->count(),
+        'inventors' => Inventor::query()->count(),
+        'status_history' => StatusHistory::query()->count(),
+        'deadlines' => Deadline::query()->count(),
+        'notifications' => Notification::query()->count(),
+        'documents' => Document::query()->count(),
+        'audit_logs' => AuditLog::query()->count(),
+    ];
+
+    $this->seed(DemoDataSeeder::class);
+
+    expect([
+        'users' => User::query()->count(),
+        'applications' => Application::query()->count(),
+        'inventors' => Inventor::query()->count(),
+        'status_history' => StatusHistory::query()->count(),
+        'deadlines' => Deadline::query()->count(),
+        'notifications' => Notification::query()->count(),
+        'documents' => Document::query()->count(),
+        'audit_logs' => AuditLog::query()->count(),
+    ])->toBe($counts);
+});
+
+it('relocates the inventor accounts when the demo inventor is configured', function () {
+    config([
+        'blitto.demo_inventor1_email' => 'seed-a@pdn.ac.lk',
+        'blitto.demo_inventor1_password' => 'demo-password',
+        'blitto.demo_inventor1_name' => 'Demo Inventor',
+    ]);
+
+    $this->seed(DemoDataSeeder::class);
+
+    expect(User::query()->where('email', 'user-a@pdn.ac.lk')->exists())->toBeFalse();
+
+    $inventor = User::query()->where('email', 'seed-a@pdn.ac.lk')->sole();
+
+    expect(Hash::check('demo-password', $inventor->password_hash))->toBeTrue()
+        ->and(Application::query()->sole()->inventor_email)->toBe('seed-a@pdn.ac.lk')
+        ->and(Application::query()->sole()->inventor_name)->toBe('Demo Inventor');
+});
+
+it('imports the shipped dev-data snapshot', function () {
+    Storage::fake('vault');
+    config(['blitto.demo_snapshot_path' => '../dev-data/seed_snapshot.json']);
+
+    $this->seed(DemoDataSeeder::class);
+
+    expect(User::query()->count())->toBe(4)
+        ->and(Application::query()->count())->toBe(3)
+        ->and(Deadline::query()->count())->toBe(2)
+        ->and(Notification::query()->count())->toBe(5)
+        ->and(Document::query()->count())->toBe(2)
+        // 2 restored from the snapshot plus one create_user row per account.
+        ->and(AuditLog::query()->count())->toBe(6);
 });

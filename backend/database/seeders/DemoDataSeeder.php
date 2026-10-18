@@ -4,9 +4,12 @@ namespace Database\Seeders;
 
 use App\Domain\Authorization\Role;
 use App\Domain\Authorization\UserDirectory;
+use App\Domain\Vault\DocumentService;
+use App\Domain\Vault\DocumentStore;
 use App\Models\Application;
 use App\Models\AuditLog;
 use App\Models\Deadline;
+use App\Models\Document;
 use App\Models\Inventor;
 use App\Models\Notification;
 use App\Models\StatusHistory;
@@ -33,18 +36,58 @@ final class DemoDataSeeder extends Seeder
             throw new RuntimeException('Unsupported demo snapshot version: '.json_encode($snapshot['version'] ?? null));
         }
 
-        $emails = $this->importUsers((array) ($snapshot['authorization'] ?? []));
-        $applications = $this->importApplications((array) ($snapshot['application_intake'] ?? []), $emails);
+        $authorization = (array) ($snapshot['authorization'] ?? []);
+        $overrides = $this->demoOverrides((array) ($authorization['users'] ?? []));
+
+        $emails = $this->importUsers($authorization, $overrides);
+        $applications = $this->importApplications((array) ($snapshot['application_intake'] ?? []), $emails, $overrides);
 
         $this->importDeadlines((array) ($snapshot['docketing'] ?? []));
         $this->importNotifications((array) ($snapshot['notification'] ?? []));
         $this->importAuditRows((array) ($snapshot['audit'] ?? []));
+        $this->importDocuments((array) ($snapshot['document_vault'] ?? []));
 
         $this->command?->info(sprintf(
             'Demo data: %d user(s), %d application(s).',
             count($emails),
             $applications,
         ));
+    }
+
+    /**
+     * The configured demo inventors displace the snapshot's user-role accounts
+     * in order, so seeded applications follow the demo configuration.
+     *
+     * @param  array<string, mixed>  $rows
+     * @return array<string, array{email: string, password: ?string, name: string}>
+     */
+    private function demoOverrides(array $rows): array
+    {
+        $inventorIds = [];
+
+        foreach ($rows as $id => $row) {
+            if (($row['role'] ?? null) === Role::USER->value) {
+                $inventorIds[] = (string) $id;
+            }
+        }
+
+        $overrides = [];
+
+        foreach ([[1, 'demo_inventor1_'], [2, 'demo_inventor2_']] as [$index, $prefix]) {
+            $email = (string) config("blitto.{$prefix}email", '');
+
+            if ($email === '' || ! isset($inventorIds[$index - 1])) {
+                continue;
+            }
+
+            $overrides[$inventorIds[$index - 1]] = [
+                'email' => $email,
+                'password' => (string) config("blitto.{$prefix}password", '') ?: null,
+                'name' => (string) config("blitto.{$prefix}name", ''),
+            ];
+        }
+
+        return $overrides;
     }
 
     /** @return array<string, mixed> */
@@ -68,9 +111,10 @@ final class DemoDataSeeder extends Seeder
 
     /**
      * @param  array<string, mixed>  $authorization
-     * @return array<string, string> snapshot id => stored email
+     * @param  array<string, array{email: string, password: ?string, name: string}>  $overrides
+     * @return array<string, string> snapshot id => the email recorded in the snapshot
      */
-    private function importUsers(array $authorization): array
+    private function importUsers(array $authorization, array $overrides): array
     {
         $rows = (array) ($authorization['users'] ?? []);
         $passwords = (array) ($authorization['passwords'] ?? []);
@@ -78,18 +122,23 @@ final class DemoDataSeeder extends Seeder
         $emails = [];
 
         foreach ($rows as $id => $row) {
-            $email = (string) ($row['email'] ?? '');
+            $override = $overrides[(string) $id] ?? null;
+            $snapshotEmail = (string) ($row['email'] ?? '');
+            $email = $override['email'] ?? $snapshotEmail;
+            $password = $override['password'] ?? (isset($passwords[$id]) ? (string) $passwords[$id] : null);
 
             if ($directory->findByEmail($email) === null) {
                 $directory->register(
                     email: $email,
                     role: Role::from((string) ($row['role'] ?? 'user')),
-                    password: isset($passwords[$id]) ? (string) $passwords[$id] : null,
+                    password: $password,
                     userCode: isset($row['user_code']) ? (string) $row['user_code'] : null,
                 );
             }
 
-            $emails[(string) $id] = $email;
+            // Keyed by the snapshot's own email: the application rows in the
+            // file carry that address, so this is what the caller can match on.
+            $emails[(string) $id] = $snapshotEmail;
         }
 
         return $emails;
@@ -99,21 +148,38 @@ final class DemoDataSeeder extends Seeder
      * @param  array<string, mixed>  $intake
      * @param  array<string, string>  $emails
      */
-    private function importApplications(array $intake, array $emails): int
+    /**
+     * @param  array<string, mixed>  $intake
+     * @param  array<string, string>  $emails  snapshot id => the email recorded in the snapshot
+     * @param  array<string, array{email: string, password: ?string, name: string}>  $overrides
+     */
+    private function importApplications(array $intake, array $emails, array $overrides): int
     {
         $store = (array) ($intake['store'] ?? []);
         $history = (array) ($intake['history'] ?? []);
+        $emailMap = [];
+        $nameMap = [];
+
+        foreach ($emails as $id => $snapshotEmail) {
+            $emailMap[$snapshotEmail] = $overrides[$id]['email'] ?? $snapshotEmail;
+
+            if (($overrides[$id]['name'] ?? '') !== '') {
+                $nameMap[$snapshotEmail] = $overrides[$id]['name'];
+            }
+        }
+
         $count = 0;
 
         foreach ($store as $id => $row) {
             $id = (string) $id;
+            $owner = (string) ($row['inventor_email'] ?? '');
 
             $application = Application::query()->find($id) ?? new Application;
             $application->id = $id;
             $application->fill([
                 'title' => (string) ($row['title'] ?? ''),
-                'inventor_name' => (string) ($row['inventor_name'] ?? ''),
-                'inventor_email' => (string) ($row['inventor_email'] ?? ''),
+                'inventor_name' => $nameMap[$owner] ?? (string) ($row['inventor_name'] ?? ''),
+                'inventor_email' => $emailMap[$owner] ?? $owner,
                 'status' => (string) ($row['status'] ?? 'DRAFT'),
                 'application_number' => $row['application_number'] ?? null,
                 'nipo_reference' => $row['nipo_reference'] ?? null,
@@ -124,9 +190,11 @@ final class DemoDataSeeder extends Seeder
             $application->save();
 
             foreach ((array) ($row['inventors'] ?? []) as $inventor) {
+                $nested = (string) ($inventor['inventor_email'] ?? '');
+
                 Inventor::query()->updateOrCreate(
-                    ['application_id' => $id, 'inventor_email' => (string) ($inventor['inventor_email'] ?? '')],
-                    ['inventor_name' => (string) ($inventor['inventor_name'] ?? '')],
+                    ['application_id' => $id, 'inventor_email' => $emailMap[$nested] ?? $nested],
+                    ['inventor_name' => $nameMap[$nested] ?? (string) ($inventor['inventor_name'] ?? '')],
                 );
             }
 
@@ -200,6 +268,44 @@ final class DemoDataSeeder extends Seeder
             ]);
             $log->timestamp = $row['timestamp'] ?? null;
             $log->save();
+        }
+    }
+
+    /** @param array<string, mixed> $vault */
+    private function importDocuments(array $vault): void
+    {
+        $contents = (array) ($vault['contents'] ?? []);
+        $documents = app(DocumentService::class);
+        $store = app(DocumentStore::class);
+
+        foreach ((array) ($vault['documents'] ?? []) as $id => $row) {
+            $id = (string) $id;
+            $existing = Document::query()->find($id);
+
+            if ($existing !== null && $documents->tryBytesFor($existing) !== null) {
+                continue;
+            }
+
+            $encoded = $contents[(string) ($row['content_ref'] ?? '')] ?? null;
+            $bytes = is_string($encoded) ? base64_decode($encoded, true) : false;
+
+            if ($bytes === false || $bytes === '') {
+                $this->command?->warn("Demo data: skipping document {$id} (no readable content).");
+
+                continue;
+            }
+
+            $document = $existing ?? new Document;
+            $document->id = $id;
+            $document->fill([
+                'application_id' => (string) $row['application_id'],
+                'filename' => (string) $row['filename'],
+                'file_size' => strlen($bytes),
+                'content_ref' => $store->put($bytes),
+                'uploaded_by' => (string) ($row['uploaded_by'] ?? ''),
+            ]);
+            $document->uploaded_at = $row['uploaded_at'] ?? null;
+            $document->save();
         }
     }
 }
