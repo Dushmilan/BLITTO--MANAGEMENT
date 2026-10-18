@@ -7,7 +7,7 @@ use App\Domain\Lifecycle\ApplicationStatus;
 use App\Domain\Lifecycle\IllegalTransition;
 use App\Domain\Lifecycle\LifecycleService;
 use App\Domain\Notification\NotificationService;
-use App\Domain\Vault\DocumentService;
+use App\Domain\Vault\GrantWarning;
 use App\Models\Application;
 use App\Models\DefectSheet;
 use App\Models\FilingRecord;
@@ -27,7 +27,7 @@ final class FilingWorkflowService
         private readonly LifecycleService $lifecycle,
         private readonly NotificationService $notifications,
         private readonly AuditRecorder $audit,
-        private readonly DocumentService $documents,
+        private readonly GrantWarning $grantWarning,
     ) {}
 
     public function filingRecord(Application $application): ?FilingRecord
@@ -124,7 +124,7 @@ final class FilingWorkflowService
 
         $this->audit->record('filing:granted', actor: $actor, application: $application, ipAddress: $ipAddress);
 
-        $this->warnWhenGrantedWithoutDocument($application);
+        $this->grantWarning->announce($application, $actor, $ipAddress);
 
         return $application;
     }
@@ -135,31 +135,7 @@ final class FilingWorkflowService
      */
     public function grantWarning(Application $application): ?string
     {
-        if (ApplicationStatus::from($application->status) !== ApplicationStatus::GRANTED) {
-            return null;
-        }
-
-        if ($this->documents->hasDocuments($application)) {
-            return null;
-        }
-
-        return "Patent {$application->id} was granted but has no document yet; the inventor cannot download it until one is uploaded.";
-    }
-
-    private function warnWhenGrantedWithoutDocument(Application $application): void
-    {
-        $warning = $this->grantWarning($application);
-
-        if ($warning === null) {
-            return;
-        }
-
-        $this->notifications->send(
-            (string) (config('blitto.bootstrap_admin_email') ?: 'md@pdn.ac.lk'),
-            "Patent {$application->id} granted without a document",
-            $warning,
-            'grant_without_document',
-        );
+        return $this->grantWarning->warning($application);
     }
 
     public function markRejected(Application $application, User $actor, ?string $ipAddress = null): Application
