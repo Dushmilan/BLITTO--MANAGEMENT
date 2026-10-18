@@ -1,0 +1,135 @@
+<?php
+
+namespace App\Domain\Vault;
+
+use App\Domain\Audit\AuditRecorder;
+use App\Domain\Lifecycle\ApplicationStatus;
+use App\Domain\Notification\NotificationService;
+use App\Models\Application;
+use App\Models\Document;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
+
+/**
+ * Document storage rules — port of pre-laravel-final-state
+ * `app/modules/document_vault/local/__init__.py` plus the upload route's
+ * extension/size gates. Bytes live behind the DocumentStore port.
+ */
+final class DocumentService
+{
+    public function __construct(
+        private readonly DocumentStore $store,
+        private readonly AuditRecorder $audit,
+        private readonly NotificationService $notifications,
+    ) {}
+
+    public function store(
+        Application $application,
+        UploadedFile $file,
+        User $actor,
+        ?string $ipAddress = null,
+    ): Document {
+        $filename = (string) $file->getClientOriginalName();
+
+        $this->assertFilenameLength($filename);
+        $this->assertExtensionAllowed($filename);
+        $this->assertWithinSizeCap((int) $file->getSize());
+
+        $document = Document::query()->create([
+            'application_id' => $application->id,
+            'filename' => $filename,
+            'file_size' => (int) $file->getSize(),
+            'content_ref' => $this->store->put((string) $file->get()),
+            'uploaded_by' => (string) $actor->email,
+        ]);
+
+        $this->audit->record('store_document', actor: $actor, application: $application, ipAddress: $ipAddress);
+
+        $this->announceFirstGrantedDocument($application, $document);
+
+        return $document;
+    }
+
+    /**
+     * A GRANTED application that receives its first document tells the
+     * inventors the patent is downloadable (reference: `send_download_ready`).
+     */
+    private function announceFirstGrantedDocument(Application $application, Document $document): void
+    {
+        if (ApplicationStatus::from($application->status) !== ApplicationStatus::GRANTED) {
+            return;
+        }
+
+        $isFirst = Document::query()
+            ->where('application_id', $application->id)
+            ->whereKeyNot($document->id)
+            ->doesntExist();
+
+        if (! $isFirst) {
+            return;
+        }
+
+        $this->notifications->notifyInventors(
+            $application,
+            'Patent document ready',
+            "The granted patent document for application {$application->id} is now available to download.",
+            'download_ready',
+        );
+    }
+
+    /**
+     * @throws InvalidDocumentFilename
+     */
+    private function assertFilenameLength(string $filename): void
+    {
+        if ($filename === '' || mb_strlen($filename) > DocumentRules::MAX_FILENAME_LENGTH) {
+            throw new InvalidDocumentFilename(
+                'Document filename must be between 1 and '.DocumentRules::MAX_FILENAME_LENGTH.' characters',
+            );
+        }
+    }
+
+    /**
+     * @throws UnsupportedFileType
+     */
+    private function assertExtensionAllowed(string $filename): void
+    {
+        if (DocumentRules::isAllowed($filename)) {
+            return;
+        }
+
+        $extension = DocumentRules::extensionOf($filename);
+
+        throw new UnsupportedFileType(
+            "File type '.{$extension}' not allowed. Accepted: ".DocumentRules::acceptedList(),
+        );
+    }
+
+    /**
+     * @throws DocumentTooLarge
+     */
+    private function assertWithinSizeCap(int $size): void
+    {
+        if ($size > DocumentRules::MAX_BYTES) {
+            throw new DocumentTooLarge('Document too large (max 10 MB)');
+        }
+    }
+
+    /**
+     * @return Collection<int, Document>
+     */
+    public function listFor(Application $application): Collection
+    {
+        return Document::query()
+            ->where('application_id', $application->id)
+            ->orderBy('uploaded_at')
+            ->orderBy('id')
+            ->get();
+    }
+
+    public function hasDocuments(Application $application): bool
+    {
+        return Document::query()->where('application_id', $application->id)->exists();
+    }
+}
