@@ -22,6 +22,7 @@ final class DocumentService
         private readonly DocumentStore $store,
         private readonly AuditRecorder $audit,
         private readonly NotificationService $notifications,
+        private readonly DocumentImmutability $immutability,
     ) {}
 
     public function store(
@@ -114,6 +115,34 @@ final class DocumentService
         if ($size > DocumentRules::MAX_BYTES) {
             throw new DocumentTooLarge('Document too large (max 10 MB)');
         }
+    }
+
+    /**
+     * @throws DocumentNotFound when the document does not belong to this application
+     */
+    public function findForApplication(Application $application, string $documentId): Document
+    {
+        return Document::query()
+            ->where('application_id', $application->id)
+            ->whereKey($documentId)
+            ->first()
+            ?? throw DocumentNotFound::forApplication($documentId, $application->id);
+    }
+
+    /**
+     * @throws DocumentIsImmutable when the application is already filed
+     */
+    public function delete(Document $document, User $actor, ?string $ipAddress = null): void
+    {
+        $this->immutability->assertModifiable($document);
+
+        $application = Application::query()->find($document->application_id);
+
+        $this->store->delete($document->content_ref);
+
+        $document->delete();
+
+        $this->audit->record('delete_document', actor: $actor, application: $application, ipAddress: $ipAddress);
     }
 
     /**
