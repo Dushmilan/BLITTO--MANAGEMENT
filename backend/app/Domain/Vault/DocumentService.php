@@ -163,13 +163,21 @@ final class DocumentService
     }
 
     /**
+     * Bytes for delivery, or null when the store no longer holds them.
+     */
+    public function tryBytesFor(Document $document): ?string
+    {
+        return $this->store->get($document->content_ref);
+    }
+
+    /**
      * Bytes for delivery.
      *
      * @throws DocumentContentMissing when the store no longer holds them
      */
     public function bytesFor(Document $document): string
     {
-        return $this->store->get($document->content_ref)
+        return $this->tryBytesFor($document)
             ?? throw new DocumentContentMissing("Document content missing for {$document->id}");
     }
 

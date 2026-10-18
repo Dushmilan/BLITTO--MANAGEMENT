@@ -9,8 +9,11 @@ use App\Domain\Lifecycle\IllegalTransition;
 use App\Domain\Vault\DocumentContentMissing;
 use App\Domain\Vault\DocumentIsImmutable;
 use App\Domain\Vault\DocumentNotFound;
+use App\Domain\Vault\DocumentPending;
 use App\Domain\Vault\DocumentTooLarge;
 use App\Domain\Vault\InvalidDocumentFilename;
+use App\Domain\Vault\NotYourPatent;
+use App\Domain\Vault\PatentNotGranted;
 use App\Domain\Vault\UnsupportedFileType;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Auth\AuthenticationException;
@@ -111,6 +114,25 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(
             fn (DocumentIsImmutable $e) => response()->json([
                 'message' => $e->getMessage(),
+            ], 409),
+        );
+
+        $exceptions->render(
+            fn (NotYourPatent $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 403),
+        );
+
+        $exceptions->render(
+            fn (PatentNotGranted $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 403),
+        );
+
+        $exceptions->render(
+            fn (DocumentPending $e) => response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'document_pending',
             ], 409),
         );
     })->create();
