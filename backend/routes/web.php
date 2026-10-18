@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DocketingController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FilingController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\UserController;
@@ -66,6 +67,14 @@ Route::post('/applications/{applicationId}/deadlines', [DocketingController::cla
 Route::get('/deadlines', [DocketingController::class, 'index'])
     ->middleware(['auth', 'role:director,md'])
     ->name('deadlines.index');
+
+Route::post('/applications/{applicationId}/documents', [DocumentController::class, 'store'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.store');
+
+Route::get('/applications/{applicationId}/documents', [DocumentController::class, 'index'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('documents.index');
 
 Route::middleware(['auth', 'role:director,md'])
     ->prefix('admin/filing/{applicationId}')

@@ -6,6 +6,9 @@ use App\Domain\Authorization\InvalidInstitutionEmail;
 use App\Domain\Filing\AcknowledgementWithoutFiling;
 use App\Domain\Filing\DefectSheetRejected;
 use App\Domain\Lifecycle\IllegalTransition;
+use App\Domain\Vault\DocumentTooLarge;
+use App\Domain\Vault\InvalidDocumentFilename;
+use App\Domain\Vault\UnsupportedFileType;
 use App\Http\Middleware\EnsureRole;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -70,5 +73,23 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (AcknowledgementWithoutFiling $e) => response()->json([
                 'message' => $e->getMessage(),
             ], 404),
+        );
+
+        $exceptions->render(
+            fn (UnsupportedFileType $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 422),
+        );
+
+        $exceptions->render(
+            fn (InvalidDocumentFilename $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 422),
+        );
+
+        $exceptions->render(
+            fn (DocumentTooLarge $e) => response()->json([
+                'message' => $e->getMessage(),
+            ], 413),
         );
     })->create();
