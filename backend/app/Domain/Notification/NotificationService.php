@@ -38,6 +38,11 @@ final class NotificationService
         'MAINTENANCE' => 'The patent {ref} is now in maintenance. Watch for fee deadlines.',
     ];
 
+    /** GRANTED with no document uploaded yet (reference `document_available=False`). */
+    private const string GRANTED_PENDING_SUBJECT = 'Patent {ref} GRANTED — document pending';
+
+    private const string GRANTED_PENDING_BODY = 'Good news — patent {ref} is now GRANTED. The document is pending upload by BLITTO; you can request it from your portal and we will notify you when it is ready to download.';
+
     public function __construct(private readonly MailChannel $channel) {}
 
     public function send(string $recipientEmail, string $subject, string $body, string $kind = 'status_change'): Notification
@@ -72,10 +77,18 @@ final class NotificationService
      *
      * @return int the number of notifications written
      */
-    public function notifyStatusChange(Application $application, ApplicationStatus $status): int
-    {
-        $subject = str_replace('{ref}', $application->id, self::STATUS_SUBJECTS[$status->value] ?? 'Patent {ref} status changed');
-        $body = str_replace('{ref}', $application->id, self::STATUS_BODIES[$status->value] ?? 'The patent application {ref} is now: '.$status->value.'.');
+    public function notifyStatusChange(
+        Application $application,
+        ApplicationStatus $status,
+        bool $documentAvailable = true,
+    ): int {
+        if ($status === ApplicationStatus::GRANTED && ! $documentAvailable) {
+            $subject = str_replace('{ref}', $application->id, self::GRANTED_PENDING_SUBJECT);
+            $body = str_replace('{ref}', $application->id, self::GRANTED_PENDING_BODY);
+        } else {
+            $subject = str_replace('{ref}', $application->id, self::STATUS_SUBJECTS[$status->value] ?? 'Patent {ref} status changed');
+            $body = str_replace('{ref}', $application->id, self::STATUS_BODIES[$status->value] ?? 'The patent application {ref} is now: '.$status->value.'.');
+        }
 
         $sent = 0;
 
