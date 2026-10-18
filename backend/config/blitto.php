@@ -37,6 +37,11 @@ return [
     // "pki" (encrypted) is not implemented — see docs/adr/0004.
     'document_store' => env('BLITTODB_DOCUMENT_STORE', 'local'),
 
+    // Mail delivery adapter: "laravel" delegates to Laravel's mailer (MAIL_MAILER
+    // picks the transport: log locally, smtp in production); "array" keeps
+    // messages in memory for tests.
+    'mail_channel' => env('BLITTODB_MAIL_CHANNEL', 'laravel'),
+
     // Persistence seam — Laravel/SQLite supersedes this at L1; kept for parity.
     'storage' => env('BLITTODB_STORAGE', 'memory'),
     'sqlite_path' => env('BLITTODB_SQLITE_PATH', 'dev-data/state.sqlite3'),
