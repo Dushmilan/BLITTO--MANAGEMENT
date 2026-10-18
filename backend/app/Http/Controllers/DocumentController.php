@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
 use App\Domain\Vault\DocumentFilename;
 use App\Domain\Vault\DocumentService;
+use App\Domain\Vault\DocumentTooLarge;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +23,12 @@ final class DocumentController extends Controller
 
     public function store(Request $request, string $applicationId): JsonResponse
     {
+        // PHP rejects an upload over upload_max_filesize before Laravel sees
+        // it; report the contract's 413 rather than a validation 422.
+        if ($request->file('file')?->getError() === UPLOAD_ERR_INI_SIZE) {
+            throw DocumentTooLarge::upload();
+        }
+
         $validated = $request->validate([
             'file' => ['required', 'file'],
         ]);

@@ -27,7 +27,7 @@ Issue #71 asks for master-key unlock, an RSA-4096 + AES-256-GCM encrypted store,
 - **`413` stays `413`** for oversized uploads (the reference's code) rather than Laravel's default `422`. Extension, filename-length and empty-file violations are `422`.
 - **Filename length is capped at 255** (the `documents.filename` column width); the reference accepted a 500-character name that would have failed on MySQL.
 - **Config cleanup:** `vault_master_key`, `vault_cert_dir`, `vault_ttl_hours` and `vault_storage_dir` are removed from `config/blitto.php` and `.env.example` — all four only ever existed for the dropped crypto/gate. The storage location now lives once, in `config/filesystems.php`, as the `vault` disk (`storage/app/vault`). `document_store` stays as the adapter seam.
-- **Duplicate `request-document` detection is audit-based** (`audit_logs` has `user_id`, `application_id`, `action`), matching the reference's "one open request per user" rule: a second request by the same user is `429` forever, even after the document arrives.
+- **Duplicate `request-document` detection is audit-based** (`audit_logs` has `user_id`, `application_id`, `action`), matching the reference's "one open request per user" rule: a second request by the same user is `429`. The state guards run first, so once a document exists the same request is `409 Document already available` — the more informative answer. (Final review corrected this line; it previously claimed `429` "forever".)
 - **Staff per-document downloads are not audited** (parity — a download is not a state change); the inventor `GET /applications/{id}/download` is audited (`download_granted_patent`) because the reference did.
 - **`X-Downloaded-At` is set only on the inventor download** (parity).
 

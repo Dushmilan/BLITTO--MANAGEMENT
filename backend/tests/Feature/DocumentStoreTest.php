@@ -1,7 +1,10 @@
 <?php
 
 use App\Domain\Vault\DocumentStore;
+use App\Domain\Vault\DocumentStoreFailure;
+use App\Domain\Vault\LocalDocumentStore;
 use App\Domain\Vault\UnsupportedDocumentStore;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 
 it('stores, retrieves and deletes document bytes', function () {
@@ -34,4 +37,12 @@ it('fails loudly when the encrypted store is requested', function () {
     $this->app->forgetInstance(DocumentStore::class);
 
     expect(fn () => app(DocumentStore::class))->toThrow(UnsupportedDocumentStore::class);
+});
+
+it('fails loudly when the disk refuses the write', function () {
+    $disk = Mockery::mock(Filesystem::class);
+    $disk->shouldReceive('put')->once()->andReturnFalse();
+
+    expect(fn () => (new LocalDocumentStore($disk))->put('bytes'))
+        ->toThrow(DocumentStoreFailure::class);
 });

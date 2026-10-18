@@ -19,7 +19,12 @@ final class LocalDocumentStore implements DocumentStore
     public function put(string $contents): string
     {
         $ref = (string) Str::uuid();
-        $this->disk->put($ref, $contents);
+
+        // The disk is configured with throw:false, so a refused write returns
+        // false rather than raising; a row without bytes is worse than a 500.
+        if (! $this->disk->put($ref, $contents)) {
+            throw new DocumentStoreFailure('The vault disk refused the write.');
+        }
 
         return $ref;
     }

@@ -128,3 +128,35 @@ it('still returns a zip when one document has lost its bytes', function () {
 
     $zip->close();
 });
+
+it('keeps both documents when their filenames collide', function () {
+    Storage::fake('vault');
+    $director = User::factory()->director()->create();
+    $owner = User::factory()->create(['email' => 'owner@pdn.ac.lk']);
+    $application = grantedApplication();
+
+    foreach (['FIRST', 'SECOND'] as $contents) {
+        $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+            'file' => UploadedFile::fake()->createWithContent('patent.pdf', $contents),
+        ])->assertOk();
+    }
+
+    $response = $this->actingAs($owner)
+        ->get("/applications/{$application->id}/download")
+        ->assertOk()
+        ->assertHeader('content-type', 'application/zip');
+
+    $zip = new ZipArchive;
+    $zip->open($response->baseResponse->getFile()->getPathname());
+
+    $entries = [];
+
+    for ($index = 0; $index < $zip->numFiles; $index++) {
+        $entries[$zip->getNameIndex($index)] = $zip->getFromIndex($index);
+    }
+
+    $zip->close();
+
+    expect($entries)->toHaveCount(2)
+        ->and(array_values($entries))->toEqualCanonicalizing(['FIRST', 'SECOND']);
+});

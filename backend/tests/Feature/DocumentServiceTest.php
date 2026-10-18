@@ -1,6 +1,8 @@
 <?php
 
 use App\Domain\Vault\DocumentService;
+use App\Domain\Vault\DocumentStore;
+use App\Domain\Vault\DocumentStoreFailure;
 use App\Domain\Vault\DocumentTooLarge;
 use App\Domain\Vault\InvalidDocumentFilename;
 use App\Domain\Vault\UnsupportedFileType;
@@ -117,4 +119,35 @@ it('audits every stored document', function () {
         'application_id' => $application->id,
         'ip_address' => '10.0.0.9',
     ]);
+});
+
+it('writes no document row when the store refuses the bytes', function () {
+    Storage::fake('vault');
+    $application = Application::query()->create(['title' => 'Unwritable']);
+
+    $this->app->instance(DocumentStore::class, new class implements DocumentStore
+    {
+        public function put(string $contents): string
+        {
+            throw new DocumentStoreFailure('The vault disk refused the write.');
+        }
+
+        public function get(string $ref): ?string
+        {
+            return null;
+        }
+
+        public function delete(string $ref): bool
+        {
+            return false;
+        }
+    });
+
+    expect(fn () => app(DocumentService::class)->store(
+        $application,
+        UploadedFile::fake()->createWithContent('spec.pdf', 'bytes'),
+        documentStaff(),
+    ))->toThrow(DocumentStoreFailure::class);
+
+    expect(Document::query()->count())->toBe(0);
 });

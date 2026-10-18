@@ -84,11 +84,14 @@ final class GrantedPatentService
         $zip = new ZipArchive;
         $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
+        /** @var array<string, int> $usedEntryNames */
+        $usedEntryNames = [];
+
         foreach ($documents as $document) {
             $bytes = $this->documents->tryBytesFor($document);
 
             if ($bytes !== null) {
-                $zip->addFromString(DocumentFilename::safe($document->filename), $bytes);
+                $zip->addFromString($this->uniqueEntryName($document->filename, $usedEntryNames), $bytes);
             }
         }
 
@@ -176,5 +179,33 @@ final class GrantedPatentService
         return $extension === ''
             ? "{$stem}_granted_{$stamp}"
             : "{$stem}_granted_{$stamp}.{$extension}";
+    }
+
+    /**
+     * Two documents can sanitize to the same basename; ZipArchive would
+     * silently overwrite the first, so later entries get " (2)", " (3)": the
+     * bundle must carry every document it promises.
+     *
+     * @param  array<string, int>  $used  running tally, keyed by entry name
+     */
+    private function uniqueEntryName(string $filename, array &$used): string
+    {
+        $candidate = DocumentFilename::safe($filename);
+
+        if (isset($used[$candidate])) {
+            $extension = DocumentRules::extensionOf($candidate);
+            $stem = $extension === '' ? $candidate : substr($candidate, 0, -(strlen($extension) + 1));
+
+            do {
+                $used[$candidate]++;
+                $candidate = $extension === ''
+                    ? "{$stem} ({$used[$candidate]})"
+                    : "{$stem} ({$used[$candidate]}).{$extension}";
+            } while (isset($used[$candidate]));
+        }
+
+        $used[$candidate] = 1;
+
+        return $candidate;
     }
 }

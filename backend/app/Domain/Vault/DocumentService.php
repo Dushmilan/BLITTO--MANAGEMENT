@@ -113,7 +113,7 @@ final class DocumentService
     private function assertWithinSizeCap(int $size): void
     {
         if ($size > DocumentRules::MAX_BYTES) {
-            throw new DocumentTooLarge('Document too large (max 10 MB)');
+            throw DocumentTooLarge::upload();
         }
     }
 

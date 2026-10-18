@@ -54,6 +54,26 @@ it('requires a file, resolves the application last and applies the upload rules'
     expect(Document::query()->count())->toBe(0);
 });
 
+it('reports 413 when PHP rejected the upload for exceeding its ini limit', function () {
+    Storage::fake('vault');
+    $director = User::factory()->director()->create();
+    $application = Application::query()->create(['title' => 'Ini limit']);
+
+    $path = (string) tempnam(sys_get_temp_dir(), 'ini-limit');
+    file_put_contents($path, 'x');
+
+    $rejectedByIni = new UploadedFile($path, 'huge.pdf', 'application/pdf', UPLOAD_ERR_INI_SIZE, true);
+
+    $this->actingAs($director)
+        ->post("/applications/{$application->id}/documents", ['file' => $rejectedByIni])
+        ->assertStatus(413)
+        ->assertJsonPath('message', 'Document too large (max 10 MB)');
+
+    @unlink($path);
+
+    expect(Document::query()->count())->toBe(0);
+});
+
 it('lists the documents of one application for staff only', function () {
     Storage::fake('vault');
     $director = User::factory()->director()->create();
