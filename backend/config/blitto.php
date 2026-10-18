@@ -42,6 +42,10 @@ return [
     // messages in memory for tests.
     'mail_channel' => env('BLITTODB_MAIL_CHANNEL', 'laravel'),
 
+    // Reference demo snapshot restored by DemoDataSeeder (relative paths resolve
+    // against backend/).
+    'demo_snapshot_path' => env('BLITTODB_DEMO_SNAPSHOT_PATH', '../dev-data/seed_snapshot.json'),
+
     // Persistence seam — Laravel/SQLite supersedes this at L1; kept for parity.
     'storage' => env('BLITTODB_STORAGE', 'memory'),
     'sqlite_path' => env('BLITTODB_SQLITE_PATH', 'dev-data/state.sqlite3'),
