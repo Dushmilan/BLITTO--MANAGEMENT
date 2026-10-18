@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Application;
+use App\Models\Deadline;
+use App\Models\Notification;
 use App\Models\StatusHistory;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -79,5 +81,60 @@ it('aborts on an unsupported snapshot version', function () {
             ->toThrow(RuntimeException::class, 'Unsupported demo snapshot version');
     } finally {
         unlink(base_path('tests/Fixtures/demo-snapshot-v2.json'));
+    }
+});
+
+it('restores deadlines, notifications and audit rows with their timestamps', function () {
+    $this->seed(DemoDataSeeder::class);
+
+    $deadline = Deadline::query()->sole();
+
+    expect($deadline->id)->toBe('88888888-8888-4888-8888-888888888888')
+        ->and($deadline->type)->toBe('RESPONSE')
+        ->and($deadline->status)->toBe('OPEN')
+        ->and($deadline->due_date->toIso8601ZuluString())->toBe('2026-12-08T08:56:40Z');
+
+    $notification = Notification::query()->sole();
+
+    expect($notification->id)->toBe('66666666-6666-4666-8666-666666666666')
+        ->and($notification->recipient_email)->toBe('user-a@pdn.ac.lk')
+        ->and($notification->subject)->toContain('GRANTED — download ready')
+        ->and($notification->sent_at->toIso8601ZuluString())->toBe('2026-09-09T08:56:40Z');
+
+    $this->assertDatabaseHas('audit_logs', [
+        'id' => '77777777-7777-4777-8777-777777777777',
+        'user_id' => 'md',
+        'application_id' => '33333333-3333-4333-8333-333333333333',
+        'action' => 'store_document',
+        'ip_address' => null,
+    ]);
+});
+
+it('imports a snapshot that omits optional sections', function () {
+    $minimal = [
+        'version' => 1,
+        'authorization' => [
+            'users' => [
+                '11111111-1111-4111-8111-111111111111' => [
+                    'id' => '11111111-1111-4111-8111-111111111111',
+                    'email' => 'md@pdn.ac.lk', 'role' => 'md', 'user_code' => null,
+                ],
+            ],
+            'passwords' => ['11111111-1111-4111-8111-111111111111' => 'mdpw-123'],
+        ],
+        'application_intake' => ['store' => [], 'history' => []],
+    ];
+
+    file_put_contents(base_path('tests/Fixtures/demo-snapshot-minimal.json'), json_encode($minimal));
+    config(['blitto.demo_snapshot_path' => base_path('tests/Fixtures/demo-snapshot-minimal.json')]);
+
+    try {
+        $this->seed(DemoDataSeeder::class);
+
+        expect(User::query()->count())->toBe(1)
+            ->and(Deadline::query()->count())->toBe(0)
+            ->and(Notification::query()->count())->toBe(0);
+    } finally {
+        unlink(base_path('tests/Fixtures/demo-snapshot-minimal.json'));
     }
 });

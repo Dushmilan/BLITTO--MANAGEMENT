@@ -5,7 +5,10 @@ namespace Database\Seeders;
 use App\Domain\Authorization\Role;
 use App\Domain\Authorization\UserDirectory;
 use App\Models\Application;
+use App\Models\AuditLog;
+use App\Models\Deadline;
 use App\Models\Inventor;
+use App\Models\Notification;
 use App\Models\StatusHistory;
 use Illuminate\Database\Seeder;
 use RuntimeException;
@@ -32,6 +35,10 @@ final class DemoDataSeeder extends Seeder
 
         $emails = $this->importUsers((array) ($snapshot['authorization'] ?? []));
         $applications = $this->importApplications((array) ($snapshot['application_intake'] ?? []), $emails);
+
+        $this->importDeadlines((array) ($snapshot['docketing'] ?? []));
+        $this->importNotifications((array) ($snapshot['notification'] ?? []));
+        $this->importAuditRows((array) ($snapshot['audit'] ?? []));
 
         $this->command?->info(sprintf(
             'Demo data: %d user(s), %d application(s).',
@@ -143,5 +150,56 @@ final class DemoDataSeeder extends Seeder
         }
 
         return $count;
+    }
+
+    /** @param array<string, mixed> $docketing */
+    private function importDeadlines(array $docketing): void
+    {
+        foreach ((array) ($docketing['deadlines'] ?? []) as $id => $row) {
+            $deadline = Deadline::query()->find((string) $id) ?? new Deadline;
+            $deadline->id = (string) $id;
+            $deadline->fill([
+                'application_id' => (string) $row['application_id'],
+                'type' => (string) $row['type'],
+                'due_date' => $row['due_date'],
+                'status' => (string) ($row['status'] ?? 'OPEN'),
+            ]);
+            $deadline->created_at = $row['created_at'] ?? null;
+            $deadline->save();
+        }
+    }
+
+    /** @param array<string, mixed> $notification */
+    private function importNotifications(array $notification): void
+    {
+        foreach ((array) ($notification['sent'] ?? []) as $row) {
+            $record = Notification::query()->find((string) $row['id']) ?? new Notification;
+            $record->id = (string) $row['id'];
+            $record->fill([
+                'recipient_email' => (string) $row['recipient_email'],
+                'subject' => (string) $row['subject'],
+                'body' => (string) $row['body'],
+                'kind' => (string) ($row['kind'] ?? 'status_change'),
+            ]);
+            $record->sent_at = $row['sent_at'] ?? null;
+            $record->save();
+        }
+    }
+
+    /** @param array<string, mixed> $audit */
+    private function importAuditRows(array $audit): void
+    {
+        foreach ((array) ($audit['log'] ?? []) as $id => $row) {
+            $log = AuditLog::query()->find((string) $id) ?? new AuditLog;
+            $log->id = (string) $id;
+            $log->fill([
+                'user_id' => $row['user_id'] ?? null,
+                'application_id' => $row['application_id'] ?? null,
+                'action' => (string) $row['action'],
+                'ip_address' => $row['ip_address'] ?? null,
+            ]);
+            $log->timestamp = $row['timestamp'] ?? null;
+            $log->save();
+        }
     }
 }
