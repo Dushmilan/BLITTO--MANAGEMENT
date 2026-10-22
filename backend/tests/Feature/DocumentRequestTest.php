@@ -74,7 +74,7 @@ it('refuses requests for patents that are not granted or already documented', fu
         'inventor_email' => 'owner@pdn.ac.lk',
     ]);
 
-    $this->actingAs($director)->post("/applications/{$granted->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$granted->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'bytes'),
     ])->assertOk();
 

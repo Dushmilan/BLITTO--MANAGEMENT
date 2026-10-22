@@ -11,7 +11,7 @@ it('uploads a document as staff', function (string $state) {
     $staff = User::factory()->{$state}()->create();
     $application = Application::query()->create(['title' => 'Upload']);
 
-    $this->actingAs($staff)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($staff)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('specification.pdf', '%PDF-1.4'),
     ])->assertOk()
         ->assertJsonPath('filename', 'specification.pdf')
@@ -80,7 +80,7 @@ it('lists the documents of one application for staff only', function () {
     $application = Application::query()->create(['title' => 'Listed']);
 
     foreach (['first.pdf', 'second.pdf'] as $name) {
-        $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+        $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
             'file' => UploadedFile::fake()->createWithContent($name, 'bytes'),
         ])->assertOk();
     }

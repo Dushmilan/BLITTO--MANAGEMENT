@@ -155,6 +155,57 @@
             @endif
         </x-ui.card>
 
+        <x-ui.card title="Documents">
+            @if ($documents->isEmpty())
+                <x-ui.empty-state title="No documents uploaded yet." />
+            @else
+                <table class="w-full text-left text-body-sm">
+                    <thead class="text-caption uppercase tracking-wide text-steel">
+                        <tr>
+                            <th scope="col" class="pb-2">Filename</th>
+                            <th scope="col" class="pb-2">Size</th>
+                            <th scope="col" class="pb-2">Uploaded by</th>
+                            <th scope="col" class="pb-2">Date</th>
+                            <th scope="col" class="pb-2 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-hairline-soft">
+                        @foreach ($documents as $document)
+                            <tr>
+                                <td class="py-3 text-ink">{{ $document->filename }}</td>
+                                <td class="py-3 text-steel">{{ number_format($document->file_size / 1024, 1) }} KB</td>
+                                <td class="py-3 text-steel">{{ $document->uploaded_by }}</td>
+                                <td class="py-3 text-steel">{{ $formatDate($document->uploaded_at) }}</td>
+                                <td class="py-3">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <a href="{{ route('documents.download', [$application, $document]) }}" class="text-body-sm text-ink underline">Download</a>
+
+                                        @unless ($documentsLocked)
+                                            <form method="POST" action="{{ route('documents.destroy', [$application, $document]) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-body-sm text-brand-error underline">Delete</button>
+                                            </form>
+                                        @endunless
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+
+            @if ($documentsLocked)
+                <p class="mt-4 text-body-sm text-steel">Documents are locked once the application is filed — new files can still be added, existing ones cannot be deleted.</p>
+            @endif
+
+            <form method="POST" action="{{ route('documents.store', $application) }}" enctype="multipart/form-data" class="mt-6 flex flex-wrap items-center gap-3">
+                @csrf
+                <input type="file" name="file" required class="text-body-sm text-ink">
+                <x-ui.button variant="secondary" type="submit">Upload document</x-ui.button>
+            </form>
+        </x-ui.card>
+
         <x-ui.card title="Status history">
             <x-ui.timeline :entries="$history" />
         </x-ui.card>

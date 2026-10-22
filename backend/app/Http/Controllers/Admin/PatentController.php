@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
 use App\Domain\Filing\FilingWorkflowService;
 use App\Domain\Lifecycle\ApplicationStatus;
+use App\Domain\Vault\DocumentService;
 use App\Http\Controllers\Controller;
 use App\Support\PatentTable;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ final class PatentController extends Controller
     public function __construct(
         private readonly ApplicationIntakeService $intake,
         private readonly FilingWorkflowService $filing,
+        private readonly DocumentService $documents,
     ) {}
 
     public function index(Request $request): View
@@ -55,7 +57,8 @@ final class PatentController extends Controller
             'history' => $this->intake->history($application),
             'filingRecord' => $record,
             'defectSheets' => $this->filing->defectSheets($application),
-            'documents' => collect(),
+            'documents' => $this->documents->listFor($application),
+            'documentsLocked' => $record?->filed_date !== null,
             'warning' => $this->filing->grantWarning($application),
             'statuses' => ApplicationStatus::cases(),
         ]);

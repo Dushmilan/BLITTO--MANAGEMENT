@@ -14,7 +14,7 @@ it('gates every L4 endpoint against guests and plain users', function () {
         'inventor_email' => 'someone-else@pdn.ac.lk',
     ]);
 
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'bytes'),
     ])->assertOk();
 
@@ -46,7 +46,7 @@ it('lets staff drive every L4 staff endpoint', function (string $state) {
     $staff = User::factory()->{$state}()->create();
     $application = Application::query()->create(['title' => 'L4 Staff']);
 
-    $this->actingAs($staff)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($staff)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'bytes'),
     ])->assertOk();
 
@@ -55,5 +55,5 @@ it('lets staff drive every L4 staff endpoint', function (string $state) {
     $this->actingAs($staff)->getJson("/applications/{$application->id}/documents")->assertOk();
     $this->actingAs($staff)->getJson('/applications/missing-documents')->assertOk();
     $this->actingAs($staff)->get("/applications/{$application->id}/documents/{$documentId}/download")->assertOk();
-    $this->actingAs($staff)->delete("/applications/{$application->id}/documents/{$documentId}")->assertNoContent();
+    $this->actingAs($staff)->deleteJson("/applications/{$application->id}/documents/{$documentId}")->assertNoContent();
 })->with(['director', 'md']);

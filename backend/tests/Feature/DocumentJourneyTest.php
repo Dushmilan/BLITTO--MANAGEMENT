@@ -25,7 +25,7 @@ it('runs the J1 grant and download journey', function () {
 
     // A document may be added after filing — this is how the granted patent
     // reaches the vault.
-    $this->actingAs($md)->post("/applications/{$applicationId}/documents", [
+    $this->actingAs($md)->postJson("/applications/{$applicationId}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'PATENT'),
     ])->assertOk();
 
@@ -68,7 +68,7 @@ it('runs the J2 pending document request journey', function () {
     $this->assertDatabaseHas('notifications', ['kind' => 'document_request']);
 
     // Staff answer the request by uploading the patent document.
-    $this->actingAs($md)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($md)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('grant.pdf', 'GRANT'),
     ])->assertOk();
 
@@ -95,7 +95,7 @@ it('runs the J4 multi-document zip journey', function () {
     ]);
 
     foreach (['patent.pdf' => 'ONE', 'drawings.pdf' => 'TWO'] as $name => $contents) {
-        $this->actingAs($md)->post("/applications/{$application->id}/documents", [
+        $this->actingAs($md)->postJson("/applications/{$application->id}/documents", [
             'file' => UploadedFile::fake()->createWithContent($name, $contents),
         ])->assertOk();
     }

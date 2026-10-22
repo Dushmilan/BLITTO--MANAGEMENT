@@ -36,7 +36,7 @@ it('grants without a warning once a document exists', function () {
     $application = Application::query()->create(['title' => 'Documented', 'inventor_email' => 'ada@pdn.ac.lk']);
 
     $this->actingAs($md)->postJson("/admin/filing/{$application->id}/file")->assertOk();
-    $this->actingAs($md)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($md)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'bytes'),
     ])->assertOk();
     $this->actingAs($md)->postJson("/admin/filing/{$application->id}/acknowledge")->assertOk();
