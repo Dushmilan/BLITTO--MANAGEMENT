@@ -69,7 +69,7 @@ it('returns 404 when a document has lost its stored bytes', function () {
     Storage::disk('vault')->delete($document->content_ref);
 
     $this->actingAs($director)
-        ->get("/applications/{$application->id}/documents/{$document->id}/download")
+        ->getJson("/applications/{$application->id}/documents/{$document->id}/download")
         ->assertNotFound();
 });
 
@@ -86,7 +86,7 @@ it('returns 404 for a document scoped to another application', function () {
     $document = Document::query()->sole();
 
     $this->actingAs($director)
-        ->get("/applications/{$other->id}/documents/{$document->id}/download")
+        ->getJson("/applications/{$other->id}/documents/{$document->id}/download")
         ->assertNotFound();
 });
 
@@ -120,7 +120,7 @@ it('deletes an unfiled document as staff and refuses a filed one', function () {
     $filed = Document::query()->sole();
 
     $this->actingAs($director)
-        ->delete("/applications/{$application->id}/documents/{$filed->id}")
+        ->deleteJson("/applications/{$application->id}/documents/{$filed->id}")
         ->assertStatus(409)
         ->assertJsonPath('message', "Document {$filed->id} is immutable: its application has been filed");
 
