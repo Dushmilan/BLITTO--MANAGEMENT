@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FilingController;
 use App\Http\Controllers\GrantedPatentController;
 use App\Http\Controllers\OfficeActionController;
+use App\Http\Controllers\Portal\OverviewController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,6 +32,14 @@ Route::get('/health', function () {
 Route::get('/login', LoginPageController::class)
     ->middleware('guest')
     ->name('login');
+
+Route::get('/admin', DashboardController::class)
+    ->middleware(['auth', 'role:director,md'])
+    ->name('admin.dashboard');
+
+Route::get('/user', OverviewController::class)
+    ->middleware(['auth', 'role:user'])
+    ->name('portal.overview');
 
 Route::post('/applications', [ApplicationController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])

@@ -1,5 +1,7 @@
 @props(['title' => null])
 
+@php($viewer = auth()->user())
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => $theme === 'dark'])>
     <head>
