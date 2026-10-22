@@ -35,6 +35,11 @@ final class PatentController extends Controller
         ]);
     }
 
+    public function create(Request $request): View
+    {
+        return view('admin.patents.create', ['viewer' => $request->user()]);
+    }
+
     public function show(Request $request, string $applicationId): View
     {
         $application = $this->intake->findOrFail($applicationId);

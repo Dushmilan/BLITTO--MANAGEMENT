@@ -46,6 +46,7 @@ Route::post('/theme', ThemeController::class)
 Route::middleware(['auth', 'role:director,md'])->prefix('admin')->group(function () {
     Route::get('/', DashboardController::class)->name('admin.dashboard');
     Route::get('/patents', [PatentController::class, 'index'])->name('admin.patents.index');
+    Route::get('/patents/create', [PatentController::class, 'create'])->name('admin.patents.create');
     Route::get('/patents/{applicationId}', [PatentController::class, 'show'])->name('admin.patents.show');
 });
 

@@ -8,6 +8,7 @@ use App\Domain\Authorization\EmailPolicy;
 use App\Domain\Authorization\Role;
 use Closure;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
@@ -23,18 +24,26 @@ final class ApplicationController extends Controller
         return response()->json($this->intake->listVisibleTo($request->user()));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate($this->createRules(), [
             'inventor_name.not_regex' => 'One main author only: single inventor_name, no lists',
             'inventor_email.not_regex' => 'One main author only: single inventor_email, no lists',
         ]);
 
-        return response()->json($this->intake->createShell(
+        $application = $this->intake->createShell(
             Disclosure::fromArray($validated),
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($application);
+        }
+
+        return redirect()
+            ->route('admin.patents.index')
+            ->with('status', 'Patent application created.');
     }
 
     public function update(Request $request, string $applicationId): JsonResponse
@@ -92,7 +101,14 @@ final class ApplicationController extends Controller
             ],
             'inventors' => ['sometimes', 'array'],
             'inventors.*.inventor_name' => ['required', 'string', 'max:255'],
-            'inventors.*.inventor_email' => ['required', 'string', 'email', 'max:255'],
+            'inventors.*.inventor_email' => [
+                'required', 'string', 'email', 'max:255',
+                static function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! EmailPolicy::isInstitution((string) $value)) {
+                        $fail(EmailPolicy::error());
+                    }
+                },
+            ],
             'technology_area' => ['sometimes', 'string', 'max:255'],
             'summary' => ['sometimes', 'string'],
         ];
