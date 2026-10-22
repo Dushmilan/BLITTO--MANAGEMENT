@@ -15,6 +15,7 @@ use App\Http\Controllers\DocketingController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FilingController;
 use App\Http\Controllers\GrantedPatentController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\Portal\OverviewController;
 use App\Http\Controllers\Portal\PatentController as PortalPatentController;
@@ -29,6 +30,10 @@ Route::get('/', function (Request $request) {
 
     return redirect($user === null ? route('login') : HomeFor::path($user));
 })->name('home');
+
+Route::get('/notifications', NotificationController::class)
+    ->middleware('auth')
+    ->name('notifications.index');
 
 Route::get('/health', function () {
     return response()->json([
