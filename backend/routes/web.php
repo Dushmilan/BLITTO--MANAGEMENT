@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PatentController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
@@ -42,9 +43,11 @@ Route::post('/theme', ThemeController::class)
     ->middleware('auth')
     ->name('theme.update');
 
-Route::get('/admin', DashboardController::class)
-    ->middleware(['auth', 'role:director,md'])
-    ->name('admin.dashboard');
+Route::middleware(['auth', 'role:director,md'])->prefix('admin')->group(function () {
+    Route::get('/', DashboardController::class)->name('admin.dashboard');
+    Route::get('/patents', [PatentController::class, 'index'])->name('admin.patents.index');
+    Route::get('/patents/{applicationId}', [PatentController::class, 'show'])->name('admin.patents.show');
+});
 
 Route::get('/user', OverviewController::class)
     ->middleware(['auth', 'role:user'])

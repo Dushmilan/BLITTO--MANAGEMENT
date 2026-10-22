@@ -41,7 +41,9 @@
                 @else
                     <ul class="divide-y divide-hairline-soft text-body-sm">
                         @foreach ($missing as $application)
-                            <li class="py-3 text-ink">{{ $application->title }}</li>
+                            <li class="py-3">
+                                <a href="{{ route('admin.patents.show', $application) }}" class="text-ink hover:underline">{{ $application->title }}</a>
+                            </li>
                         @endforeach
                     </ul>
                 @endif

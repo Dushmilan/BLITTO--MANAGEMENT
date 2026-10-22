@@ -27,6 +27,7 @@ final class Navigation
 
         return [
             ['label' => 'Overview', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
+            ['label' => 'Patents', 'route' => 'admin.patents.index', 'active' => 'admin.patents.*'],
         ];
     }
 }
