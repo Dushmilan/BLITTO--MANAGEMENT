@@ -26,6 +26,8 @@ final class ApplicationController extends Controller
 
     public function store(Request $request): JsonResponse|RedirectResponse
     {
+        $this->dropBlankInventorRows($request);
+
         $validated = $request->validate($this->createRules(), [
             'inventor_name.not_regex' => 'One main author only: single inventor_name, no lists',
             'inventor_email.not_regex' => 'One main author only: single inventor_email, no lists',
@@ -83,6 +85,32 @@ final class ApplicationController extends Controller
         }
 
         return response()->json($this->intake->history($application));
+    }
+
+    /**
+     * A form renders a fixed set of inventor rows; the empty ones are not input.
+     * Dropping them keeps the single-inventor case valid for HTML and JSON alike.
+     */
+    private function dropBlankInventorRows(Request $request): void
+    {
+        if (! $request->has('inventors') || ! is_array($request->input('inventors'))) {
+            return;
+        }
+
+        $rows = array_values(array_filter(
+            $request->input('inventors'),
+            static fn (mixed $row): bool => is_array($row)
+                && (trim((string) ($row['inventor_name'] ?? '')) !== ''
+                    || trim((string) ($row['inventor_email'] ?? '')) !== ''),
+        ));
+
+        if ($rows === []) {
+            $request->request->remove('inventors');
+
+            return;
+        }
+
+        $request->merge(['inventors' => $rows]);
     }
 
     /**

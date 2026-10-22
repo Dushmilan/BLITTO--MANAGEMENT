@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Application;
+use App\Models\Inventor;
 use App\Models\User;
 
 it('creates a patent from the form and returns to the list', function () {
@@ -64,4 +65,22 @@ it('applies the institution gate to the inventor array on the API too', function
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrors('inventors.0.inventor_email');
+});
+
+it('creates a patent when the second inventor row is left blank', function () {
+    $this->actingAs(User::factory()->director()->create())
+        ->from('/admin/patents/create')
+        ->post('/applications', [
+            'title' => 'Single Inventor',
+            'inventors' => [
+                ['inventor_name' => 'Ada Lovelace', 'inventor_email' => 'ada@pdn.ac.lk'],
+                ['inventor_name' => '', 'inventor_email' => ''],
+            ],
+        ])
+        ->assertRedirectContains('/admin/patents/')
+        ->assertSessionHas('status', 'Patent application created.');
+
+    $application = Application::query()->where('title', 'Single Inventor')->sole();
+
+    expect(Inventor::query()->where('application_id', $application->id)->count())->toBe(1);
 });

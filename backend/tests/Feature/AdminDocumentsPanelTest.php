@@ -100,3 +100,21 @@ it('refuses to delete a document after filing and hides the control', function (
         ->assertSee('Documents are locked once the application is filed')
         ->assertDontSee('Delete</');
 });
+
+it('confirms before deleting a document', function () {
+    Storage::fake('vault');
+    $application = Application::query()->create(['title' => 'Draft One']);
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+        'file' => UploadedFile::fake()->createWithContent('specification.pdf', 'bytes'),
+    ]);
+
+    $document = $application->documents()->sole();
+
+    $this->actingAs($director)
+        ->get("/admin/patents/{$application->id}")
+        ->assertOk()
+        ->assertSee('data-dialog-open="#confirm-delete-'.$document->id.'"', false)
+        ->assertSee('Delete this document?');
+});

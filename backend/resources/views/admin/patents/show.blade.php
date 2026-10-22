@@ -120,7 +120,20 @@
                     <form method="POST" action="{{ route('filing.grant', $application) }}" class="rounded-card border border-hairline p-4">
                         @csrf
                         <x-ui.field label="Patent number" name="patent_number" required />
-                        <x-ui.button variant="accent" type="submit">Grant patent</x-ui.button>
+                        <button
+                            type="button"
+                            data-dialog-open="#confirm-grant"
+                            class="inline-flex items-center rounded-pill bg-brand-green px-5 py-2.5 text-body-sm font-medium text-[#0a0a0a] hover:bg-brand-green-deep"
+                        >Grant patent</button>
+
+                        <dialog id="confirm-grant" class="rounded-card border border-hairline bg-canvas p-6 text-ink">
+                            <p class="text-body-md">Grant this patent?</p>
+                            <p class="mt-2 text-body-sm text-steel">Granting is permanent: the patent number is recorded and the inventors are notified.</p>
+                            <div class="mt-4 flex gap-3">
+                                <x-ui.button variant="accent" type="submit">Grant patent</x-ui.button>
+                                <button type="button" onclick="this.closest('dialog').close()" class="rounded-pill border border-hairline px-5 py-2.5 text-body-sm">Cancel</button>
+                            </div>
+                        </dialog>
                     </form>
 
                     <form method="POST" action="{{ route('filing.reject', $application) }}" class="rounded-card border border-hairline p-4">
@@ -181,11 +194,24 @@
                                         <a href="{{ route('documents.download', [$application, $document]) }}" class="text-body-sm text-ink underline">Download</a>
 
                                         @unless ($documentsLocked)
-                                            <form method="POST" action="{{ route('documents.destroy', [$application, $document]) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-body-sm text-brand-error underline">Delete</button>
-                                            </form>
+                                            <button
+                                                type="button"
+                                                data-dialog-open="#confirm-delete-{{ $document->id }}"
+                                                class="text-body-sm text-brand-error underline"
+                                            >Delete</button>
+
+                                            <dialog id="confirm-delete-{{ $document->id }}" class="rounded-card border border-hairline bg-canvas p-6 text-ink">
+                                                <p class="text-body-md">Delete this document?</p>
+                                                <p class="mt-2 text-body-sm text-steel">The stored file is removed for good.</p>
+                                                <div class="mt-4 flex gap-3">
+                                                    <form method="POST" action="{{ route('documents.destroy', [$application, $document]) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <x-ui.button variant="danger" type="submit">Delete</x-ui.button>
+                                                    </form>
+                                                    <button type="button" onclick="this.closest('dialog').close()" class="rounded-pill border border-hairline px-5 py-2.5 text-body-sm">Cancel</button>
+                                                </div>
+                                            </dialog>
                                         @endunless
                                     </div>
                                 </td>

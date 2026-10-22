@@ -29,3 +29,15 @@ it('rejects an unknown theme value', function () {
         ->post('/theme', ['theme' => 'midnight'])
         ->assertSessionHasErrors('theme');
 });
+
+it('sends a theme cookie the page script can read', function () {
+    $response = $this->actingAs(User::factory()->md()->create())
+        ->from('/admin')
+        ->post('/theme', ['theme' => 'dark']);
+
+    $cookie = collect($response->headers->getCookies())
+        ->first(fn ($cookie) => $cookie->getName() === 'blitto-theme');
+
+    expect($cookie)->not->toBeNull();
+    expect($cookie->isHttpOnly())->toBeFalse();
+});

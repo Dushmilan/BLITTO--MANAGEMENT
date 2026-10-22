@@ -89,3 +89,30 @@ it('shows the Patents nav item to staff after this task', function () {
         ->assertOk()
         ->assertSeeInOrder(['Overview', 'Patents']);
 });
+
+it('links to the create page from the header and the empty state', function () {
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->get('/admin/patents')
+        ->assertOk()
+        ->assertSee('New patent')
+        ->assertSee(route('admin.patents.create'));
+
+    $this->app['auth']->forgetGuards();
+    makeApplication('Only One', 'DRAFT');
+
+    $this->actingAs($director)->get('/admin/patents?q=no-such-patent')
+        ->assertOk()
+        ->assertSee('New patent');
+});
+
+it('keeps the filters in the pagination links', function () {
+    foreach (range(1, 16) as $index) {
+        makeApplication(sprintf('Granted %02d', $index), 'GRANTED', 'a@pdn.ac.lk', sprintf('2026-03-%02d 00:00:00', $index));
+    }
+
+    $this->actingAs(User::factory()->director()->create())
+        ->get('/admin/patents?status=GRANTED')
+        ->assertOk()
+        ->assertSee('status=GRANTED', false);
+});

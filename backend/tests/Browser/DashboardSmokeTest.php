@@ -41,6 +41,7 @@ test('staff nav reaches the patents table', function () {
             ->waitForLocation('/admin')
             ->clickLink('Patents')
             ->waitForLocation('/admin/patents')
+            ->assertSee('New patent')
             ->assertSee('Solar Desalination Membrane')
             ->press('Sign out')
             ->waitForLocation('/login');

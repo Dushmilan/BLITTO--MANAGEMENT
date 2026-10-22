@@ -24,6 +24,7 @@ final class ThemeController extends Controller
             value: $validated['theme'],
             minutes: 60 * 24 * 365,
             sameSite: 'lax',
+            httpOnly: false, // the pre-paint script must see an explicit choice
         ));
     }
 }

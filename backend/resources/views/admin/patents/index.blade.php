@@ -6,7 +6,7 @@
                 <p class="mt-1 text-body-sm text-steel">Manage the patent portfolio and its documents.</p>
             </div>
 
-            {{-- "New patent" is added in Task 7, with its route. --}}
+            <x-ui.button variant="primary" :href="route('admin.patents.create')">New patent</x-ui.button>
         </div>
 
         <form method="GET" action="{{ route('admin.patents.index') }}" class="flex flex-wrap items-end gap-4 rounded-card border border-hairline bg-canvas p-4">
@@ -32,9 +32,12 @@
         <x-ui.card>
             @if ($applications->isEmpty())
                 @if ($total === 0 && $query === '' && $status === 'all')
-                    <x-ui.empty-state title="No patents yet." description="Create the first disclosure to get started." />
+                    <x-ui.empty-state title="No patents yet." description="Create the first disclosure to get started.">
+                        <x-ui.button variant="primary" :href="route('admin.patents.create')">New patent</x-ui.button>
+                    </x-ui.empty-state>
                 @else
                     <x-ui.empty-state title="No patents match these filters." description="Try a different search or clear the filters.">
+                        <x-ui.button variant="primary" :href="route('admin.patents.create')">New patent</x-ui.button>
                         <a href="{{ route('admin.patents.index') }}" class="text-body-sm text-steel underline">Clear filters</a>
                     </x-ui.empty-state>
                 @endif
@@ -68,7 +71,7 @@
                     </table>
                 </div>
 
-                <div class="mt-6">{{ $applications->links() }}</div>
+                <div class="mt-6">{{ $applications->withQueryString()->links() }}</div>
             @endif
         </x-ui.card>
     </div>

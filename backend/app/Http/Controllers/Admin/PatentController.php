@@ -51,6 +51,18 @@ final class PatentController extends Controller
         $application = $this->intake->findOrFail($applicationId);
         $record = $this->filing->filingRecord($application);
 
+        // The domain's grantWarning() describes an application that is already
+        // granted. Before granting, warn from the fact that matters: there is no
+        // document to hand over yet.
+        $warning = $this->filing->grantWarning($application);
+
+        if ($warning === null
+            && $record?->nipo_acknowledged_at !== null
+            && in_array($application->status, [ApplicationStatus::ACKNOWLEDGED->value, ApplicationStatus::EXAMINATION->value], true)
+            && ! $this->documents->hasDocuments($application)) {
+            $warning = 'No document is uploaded yet: granting now will notify the inventor that the document is pending, and the admin inbox will receive a warning.';
+        }
+
         return view('admin.patents.show', [
             'viewer' => $request->user(),
             'application' => $application,
@@ -59,7 +71,7 @@ final class PatentController extends Controller
             'defectSheets' => $this->filing->defectSheets($application),
             'documents' => $this->documents->listFor($application),
             'documentsLocked' => $record?->filed_date !== null,
-            'warning' => $this->filing->grantWarning($application),
+            'warning' => $warning,
             'statuses' => ApplicationStatus::cases(),
         ]);
     }

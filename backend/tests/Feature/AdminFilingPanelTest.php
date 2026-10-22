@@ -1,7 +1,10 @@
 <?php
 
 use App\Models\Application;
+use App\Models\FilingRecord;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 it('offers File on a draft and nothing else', function () {
     $application = Application::query()->create(['title' => 'Draft One', 'status' => 'DRAFT']);
@@ -85,4 +88,74 @@ it('turns a filing step out of state into a form error with no state change', fu
         ->assertSessionHasErrors('form');
 
     expect($application->fresh()->status)->toBe('DRAFT');
+});
+
+it('warns before granting when no document is uploaded', function () {
+    $application = Application::query()->create(['title' => 'No Doc', 'status' => 'DRAFT']);
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->post("/admin/filing/{$application->id}/file");
+    $this->actingAs($director)->post("/admin/filing/{$application->id}/acknowledge");
+
+    $this->app['auth']->forgetGuards();
+
+    $this->actingAs($director)
+        ->get("/admin/patents/{$application->id}")
+        ->assertOk()
+        ->assertSee('No document is uploaded yet');
+});
+
+it('does not warn before granting when a document exists', function () {
+    Storage::fake('vault');
+    $application = Application::query()->create(['title' => 'With Doc', 'status' => 'DRAFT']);
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->post("/admin/filing/{$application->id}/file");
+    $this->actingAs($director)->post("/admin/filing/{$application->id}/acknowledge");
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
+        'file' => UploadedFile::fake()->createWithContent('granted.pdf', 'bytes'),
+    ]);
+
+    $this->app['auth']->forgetGuards();
+
+    $this->actingAs($director)
+        ->get("/admin/patents/{$application->id}")
+        ->assertOk()
+        ->assertDontSee('No document is uploaded yet');
+});
+
+it('confirms before granting', function () {
+    $application = Application::query()->create(['title' => 'Ack One', 'status' => 'DRAFT']);
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->post("/admin/filing/{$application->id}/file");
+    $this->actingAs($director)->post("/admin/filing/{$application->id}/acknowledge");
+
+    $this->app['auth']->forgetGuards();
+
+    $this->actingAs($director)
+        ->get("/admin/patents/{$application->id}")
+        ->assertOk()
+        ->assertSee('data-dialog-open="#confirm-grant"', false)
+        ->assertSee('Granting is permanent');
+});
+
+it('backfills the filing record when a FILED application is filed from the panel', function () {
+    $application = Application::query()->create(['title' => 'Statused', 'status' => 'DRAFT']);
+    $director = User::factory()->director()->create();
+
+    $this->actingAs($director)->post("/applications/{$application->id}/status", [
+        'new_status' => 'FILED',
+        'reason' => 'Set through the generic status form',
+    ]);
+
+    expect(FilingRecord::query()->where('application_id', $application->id)->exists())->toBeFalse();
+
+    $this->actingAs($director)
+        ->from("/admin/patents/{$application->id}")
+        ->post("/admin/filing/{$application->id}/file")
+        ->assertRedirect("/admin/patents/{$application->id}")
+        ->assertSessionHas('status', 'Filing recorded.');
+
+    expect(FilingRecord::query()->where('application_id', $application->id)->exists())->toBeTrue();
 });
