@@ -19,12 +19,10 @@ it('shows the inventor nav', function () {
     $this->actingAs(User::factory()->create())
         ->get('/user')
         ->assertOk()
-        ->assertSeeInOrder(['Overview', 'Sign out'])
-        ->assertDontSee('My Patents');
+        ->assertSeeInOrder(['Overview', 'My Patents', 'Sign out']);
 });
 
-// Tasks 12 and 15 extend this assertion as My Patents and Notifications become
-// real pages (each route must exist before the nav points at it).
+// Task 15 extends this assertion with Notifications once that page exists.
 
 it('refuses staff a portal page', function () {
     $this->actingAs(User::factory()->md()->create())->get('/user')->assertForbidden();

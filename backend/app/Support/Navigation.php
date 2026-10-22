@@ -23,6 +23,7 @@ final class Navigation
         if ($role === Role::USER) {
             return [
                 ['label' => 'Overview', 'route' => 'portal.overview', 'active' => 'portal.overview'],
+                ['label' => 'My Patents', 'route' => 'portal.patents.index', 'active' => 'portal.patents.*'],
             ];
         }
 

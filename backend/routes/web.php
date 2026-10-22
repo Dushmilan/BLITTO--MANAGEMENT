@@ -17,6 +17,7 @@ use App\Http\Controllers\FilingController;
 use App\Http\Controllers\GrantedPatentController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\Portal\OverviewController;
+use App\Http\Controllers\Portal\PatentController as PortalPatentController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
 use App\Support\HomeFor;
@@ -52,9 +53,11 @@ Route::middleware(['auth', 'role:director,md'])->prefix('admin')->group(function
     Route::get('/patents/{applicationId}', [PatentController::class, 'show'])->name('admin.patents.show');
 });
 
-Route::get('/user', OverviewController::class)
-    ->middleware(['auth', 'role:user'])
-    ->name('portal.overview');
+Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
+    Route::get('/', OverviewController::class)->name('portal.overview');
+    Route::get('/patents', [PortalPatentController::class, 'index'])->name('portal.patents.index');
+    Route::get('/patents/{applicationId}', [PortalPatentController::class, 'show'])->name('portal.patents.show');
+});
 
 Route::post('/applications', [ApplicationController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])
