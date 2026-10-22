@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Portal;
 
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
 use App\Domain\Authorization\ApplicationVisibility;
+use App\Domain\Lifecycle\ApplicationStatus;
+use App\Domain\Vault\DocumentService;
+use App\Domain\Vault\GrantedPatentService;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\User;
@@ -12,7 +15,11 @@ use Illuminate\View\View;
 
 final class PatentController extends Controller
 {
-    public function __construct(private readonly ApplicationIntakeService $intake) {}
+    public function __construct(
+        private readonly ApplicationIntakeService $intake,
+        private readonly DocumentService $documents,
+        private readonly GrantedPatentService $granted,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -24,12 +31,22 @@ final class PatentController extends Controller
 
     public function show(Request $request, string $applicationId): View
     {
-        $application = $this->findVisibleOrFail($request->user(), $applicationId);
+        $viewer = $request->user();
+        $application = $this->findVisibleOrFail($viewer, $applicationId);
+        $granted = $application->status === ApplicationStatus::GRANTED->value;
+        $hasDocument = $this->documents->hasDocuments($application);
+        $openRequest = $granted && ! $hasDocument
+            && $this->granted->hasOpenRequest($application, $viewer);
 
         return view('portal.patents.show', [
-            'viewer' => $request->user(),
+            'viewer' => $viewer,
             'application' => $application,
             'history' => $this->intake->history($application),
+            'documents' => $this->documents->listFor($application),
+            'granted' => $granted,
+            'hasDocument' => $hasDocument,
+            'openRequest' => $openRequest,
+            'canRequest' => $granted && ! $hasDocument && ! $openRequest,
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
 use App\Domain\Vault\GrantedPatentService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -49,15 +50,19 @@ final class GrantedPatentController extends Controller
         return response($download->bytes, 200, $headers);
     }
 
-    public function requestDocument(Request $request, string $applicationId): JsonResponse
+    public function requestDocument(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
         $application = $this->intake->findOrFail($applicationId);
 
         $this->granted->requestDocument($application, $request->user(), $request->ip());
 
-        return response()->json([
-            'status' => 'requested',
-            'application_id' => $application->id,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'requested',
+                'application_id' => $application->id,
+            ]);
+        }
+
+        return back()->with('status', 'Request sent. We will notify you when the document is ready.');
     }
 }
