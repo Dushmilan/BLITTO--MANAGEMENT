@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\Authorization\Ability;
 use App\Domain\Authorization\Role;
 use App\Models\User;
 
@@ -25,9 +26,15 @@ final class Navigation
             ];
         }
 
-        return [
+        $items = [
             ['label' => 'Overview', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
             ['label' => 'Patents', 'route' => 'admin.patents.index', 'active' => 'admin.patents.*'],
         ];
+
+        if ($role->can(Ability::MANAGE_USERS)) {
+            $items[] = ['label' => 'Users', 'route' => 'admin.users.index', 'active' => 'admin.users.*'];
+        }
+
+        return $items;
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PatentController;
+use App\Http\Controllers\Admin\UserListController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
@@ -47,6 +48,7 @@ Route::middleware(['auth', 'role:director,md'])->prefix('admin')->group(function
     Route::get('/', DashboardController::class)->name('admin.dashboard');
     Route::get('/patents', [PatentController::class, 'index'])->name('admin.patents.index');
     Route::get('/patents/create', [PatentController::class, 'create'])->name('admin.patents.create');
+    Route::get('/users', UserListController::class)->middleware('role:md')->name('admin.users.index');
     Route::get('/patents/{applicationId}', [PatentController::class, 'show'])->name('admin.patents.show');
 });
 
