@@ -17,6 +17,7 @@ use App\Http\Controllers\FilingController;
 use App\Http\Controllers\GrantedPatentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OfficeActionController;
+use App\Http\Controllers\Portal\NotificationController as PortalNotificationController;
 use App\Http\Controllers\Portal\OverviewController;
 use App\Http\Controllers\Portal\PatentController as PortalPatentController;
 use App\Http\Controllers\ThemeController;
@@ -62,6 +63,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
     Route::get('/', OverviewController::class)->name('portal.overview');
     Route::get('/patents', [PortalPatentController::class, 'index'])->name('portal.patents.index');
     Route::get('/patents/{applicationId}', [PortalPatentController::class, 'show'])->name('portal.patents.show');
+    Route::get('/notifications', PortalNotificationController::class)->name('portal.notifications.index');
 });
 
 Route::post('/applications', [ApplicationController::class, 'store'])

@@ -2,9 +2,11 @@
     <div class="space-y-6">
         <h1 class="text-heading-3 font-semibold text-ink">Welcome back</h1>
 
+        <p data-notification-count class="sr-only">{{ $notificationCount }}</p>
+
         <div class="grid gap-4 sm:grid-cols-2">
             <x-ui.stat-card label="My patents" :value="$applications->count()" />
-            <x-ui.stat-card label="Notifications" :value="0" />
+            <x-ui.stat-card label="Notifications" :value="$notificationCount" />
         </div>
 
         <x-ui.card title="Recent applications">

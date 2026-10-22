@@ -24,6 +24,7 @@ final class Navigation
             return [
                 ['label' => 'Overview', 'route' => 'portal.overview', 'active' => 'portal.overview'],
                 ['label' => 'My Patents', 'route' => 'portal.patents.index', 'active' => 'portal.patents.*'],
+                ['label' => 'Notifications', 'route' => 'portal.notifications.index', 'active' => 'portal.notifications.*'],
             ];
         }
 
