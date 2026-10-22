@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Domain\Audit\AuditRecorder;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -12,7 +13,7 @@ final class LogoutController extends Controller
 {
     public function __construct(private readonly AuditRecorder $audit) {}
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $actor = $request->user();
 
@@ -22,6 +23,10 @@ final class LogoutController extends Controller
 
         $this->audit->record('auth:logout', actor: $actor, ipAddress: $request->ip());
 
-        return response()->json(null, 204);
+        if ($request->expectsJson()) {
+            return response()->json(null, 204);
+        }
+
+        return redirect()->route('login');
     }
 }

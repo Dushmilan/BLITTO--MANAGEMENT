@@ -16,11 +16,15 @@ use App\Http\Controllers\GrantedPatentController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\Portal\OverviewController;
 use App\Http\Controllers\UserController;
+use App\Support\HomeFor;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', function (Request $request) {
+    $user = $request->user();
+
+    return redirect($user === null ? route('login') : HomeFor::path($user));
+})->name('home');
 
 Route::get('/health', function () {
     return response()->json([
