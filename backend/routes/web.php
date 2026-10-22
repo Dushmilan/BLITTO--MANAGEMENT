@@ -15,6 +15,7 @@ use App\Http\Controllers\FilingController;
 use App\Http\Controllers\GrantedPatentController;
 use App\Http\Controllers\OfficeActionController;
 use App\Http\Controllers\Portal\OverviewController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
 use App\Support\HomeFor;
 use Illuminate\Http\Request;
@@ -36,6 +37,10 @@ Route::get('/health', function () {
 Route::get('/login', LoginPageController::class)
     ->middleware('guest')
     ->name('login');
+
+Route::post('/theme', ThemeController::class)
+    ->middleware('auth')
+    ->name('theme.update');
 
 Route::get('/admin', DashboardController::class)
     ->middleware(['auth', 'role:director,md'])

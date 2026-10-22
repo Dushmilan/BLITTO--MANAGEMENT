@@ -53,7 +53,13 @@
                     </div>
 
                     <div class="flex items-center gap-4">
-                        {{-- The theme toggle form is added in Task 5, with its route. --}}
+                        <form method="POST" action="{{ route('theme.update') }}">
+                            @csrf
+                            <input type="hidden" name="theme" value="{{ $theme === 'dark' ? 'light' : 'dark' }}">
+                            <x-ui.button variant="ghost" type="submit">
+                                {{ $theme === 'dark' ? 'Light mode' : 'Dark mode' }}
+                            </x-ui.button>
+                        </form>
 
                         <div class="hidden text-right sm:block">
                             <p class="text-body-sm text-ink">{{ $viewer->email }}</p>
