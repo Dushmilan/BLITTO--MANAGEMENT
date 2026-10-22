@@ -1,9 +1,94 @@
 @import 'tailwindcss';
 
+@source '../views/**/*.blade.php';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+| DESIGN.md tokens. Values are copied from that file's YAML frontmatter; the
+| dark column is defined by L6 because DESIGN.md publishes no dark palette
+| (spec §7.3).
+*/
+:root {
+    --canvas: #ffffff;
+    --surface: #f7f7f7;
+    --surface-soft: #fafafa;
+    --hairline: #e5e5e5;
+    --hairline-soft: #ededed;
+    --ink: #0a0a0a;
+    --charcoal: #1c1c1e;
+    --slate: #3a3a3c;
+    --steel: #5a5a5c;
+    --stone: #888888;
+    --muted: #a8a8aa;
+    --brand-green: #00d4a4;
+    --brand-green-deep: #00b48a;
+    --brand-error: #d45656;
+    --brand-warn: #c37d0d;
+    --brand-tag: #3772cf;
+    --on-dark: #ffffff;
+    --on-dark-muted: #b3b3b3;
+}
+
+.dark {
+    --canvas: #0a0a0a;
+    --surface: #141414;
+    --surface-soft: #1a1a1a;
+    --hairline: #1f1f1f;
+    --hairline-soft: #262626;
+    --ink: #f5f5f5;
+    --charcoal: #ededec;
+    --slate: #d4d4d6;
+    --steel: #b3b3b3;
+    --muted: #7a7a7c;
+    --brand-error: #f08a8a;
+    --brand-warn: #e0a33a;
+}
+
+@theme inline {
+    --color-canvas: var(--canvas);
+    --color-surface: var(--surface);
+    --color-surface-soft: var(--surface-soft);
+    --color-hairline: var(--hairline);
+    --color-hairline-soft: var(--hairline-soft);
+    --color-ink: var(--ink);
+    --color-charcoal: var(--charcoal);
+    --color-slate: var(--slate);
+    --color-steel: var(--steel);
+    --color-stone: var(--stone);
+    --color-muted: var(--muted);
+    --color-brand-green: var(--brand-green);
+    --color-brand-green-deep: var(--brand-green-deep);
+    --color-brand-error: var(--brand-error);
+    --color-brand-warn: var(--brand-warn);
+    --color-brand-tag: var(--brand-tag);
+    --color-on-dark: var(--on-dark);
+    --color-on-dark-muted: var(--on-dark-muted);
+
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+    --radius-input: 8px;
+    --radius-card: 12px;
+    --radius-pill: 9999px;
+
+    --text-heading-1: 48px;
+    --text-heading-1--line-height: 1.10;
+    --text-heading-2: 36px;
+    --text-heading-2--line-height: 1.20;
+    --text-heading-3: 28px;
+    --text-heading-3--line-height: 1.25;
+    --text-heading-4: 22px;
+    --text-heading-4--line-height: 1.30;
+    --text-heading-5: 18px;
+    --text-heading-5--line-height: 1.40;
+    --text-body-md: 16px;
+    --text-body-md--line-height: 1.50;
+    --text-body-sm: 14px;
+    --text-body-sm--line-height: 1.50;
+    --text-caption: 13px;
+    --text-caption--line-height: 1.40;
+    --text-micro: 12px;
+    --text-micro--line-height: 1.40;
 }

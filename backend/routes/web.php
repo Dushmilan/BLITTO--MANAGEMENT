@@ -4,6 +4,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LoginPageController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -25,6 +26,10 @@ Route::get('/health', function () {
         'service' => config('app.name'),
     ]);
 })->name('health');
+
+Route::get('/login', LoginPageController::class)
+    ->middleware('guest')
+    ->name('login');
 
 Route::post('/applications', [ApplicationController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])

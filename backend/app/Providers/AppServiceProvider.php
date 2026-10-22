@@ -12,8 +12,11 @@ use App\Domain\Vault\DocumentStore;
 use App\Domain\Vault\LocalDocumentStore;
 use App\Domain\Vault\UnsupportedDocumentStore;
 use App\Support\ProductionReadiness;
+use App\Support\Theme;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View as ViewInstance;
 use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
@@ -52,6 +55,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        View::composer('*', function (ViewInstance $view): void {
+            $view->with('theme', Theme::fromRequest(request()));
+        });
+
         // Fail closed: only trust BLITTODB_ENVIRONMENT as "local" when the app
         // itself is local/testing (APP_ENV). A production deploy with the
         // BLITTO var unset must not resolve to local and skip the readiness guard.
