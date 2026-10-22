@@ -42,11 +42,11 @@ final class ApplicationController extends Controller
         }
 
         return redirect()
-            ->route('admin.patents.index')
+            ->route('admin.patents.show', $application)
             ->with('status', 'Patent application created.');
     }
 
-    public function update(Request $request, string $applicationId): JsonResponse
+    public function update(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
@@ -57,13 +57,19 @@ final class ApplicationController extends Controller
             return response()->json(['message' => 'No editable fields provided'], 422);
         }
 
-        return response()->json($this->intake->updateFields(
+        $application = $this->intake->updateFields(
             $this->intake->findOrFail($applicationId),
             $validated['title'] ?? null,
             $validated['technology_area'] ?? null,
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($application);
+        }
+
+        return back()->with('status', 'Patent details updated.');
     }
 
     public function history(Request $request, string $applicationId): JsonResponse

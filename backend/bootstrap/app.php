@@ -57,6 +57,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => $exception->getMessage()] + $extra, $status);
             }
 
+            // A navigation (GET) has no form to return to: render the status as
+            // an error page. Only a submitted form gets the redirect-back.
+            if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+                abort($status, $exception->getMessage());
+            }
+
             return back()->withErrors(['form' => $exception->getMessage()])
                 ->withInput($request->except('password'));
         };

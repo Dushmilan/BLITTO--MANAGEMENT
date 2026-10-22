@@ -13,7 +13,7 @@ it('creates a patent from the form and returns to the list', function () {
                 ['inventor_name' => 'Ada Lovelace', 'inventor_email' => 'ada@pdn.ac.lk'],
             ],
         ])
-        ->assertRedirect(route('admin.patents.index'))
+        ->assertRedirectContains('/admin/patents/')
         ->assertSessionHas('status', 'Patent application created.');
 
     expect(Application::query()->where('title', 'Solar Desalination Membrane')->exists())->toBeTrue();
