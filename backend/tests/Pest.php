@@ -1,5 +1,9 @@
 <?php
 
+pest()->extend(Tests\DuskTestCase::class)
+//  ->use(Illuminate\Foundation\Testing\DatabaseMigrations::class)
+    ->in('Browser');
+
 use App\Domain\Lifecycle\ApplicationStatus;
 use App\Models\Application;
 use App\Models\AuditLog;
