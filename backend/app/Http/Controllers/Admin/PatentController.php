@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
+use App\Domain\Filing\FilingWorkflowService;
 use App\Domain\Lifecycle\ApplicationStatus;
 use App\Http\Controllers\Controller;
 use App\Support\PatentTable;
@@ -15,7 +16,10 @@ use Illuminate\View\View;
  */
 final class PatentController extends Controller
 {
-    public function __construct(private readonly ApplicationIntakeService $intake) {}
+    public function __construct(
+        private readonly ApplicationIntakeService $intake,
+        private readonly FilingWorkflowService $filing,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -43,15 +47,16 @@ final class PatentController extends Controller
     public function show(Request $request, string $applicationId): View
     {
         $application = $this->intake->findOrFail($applicationId);
+        $record = $this->filing->filingRecord($application);
 
         return view('admin.patents.show', [
             'viewer' => $request->user(),
             'application' => $application,
             'history' => $this->intake->history($application),
-            'filingRecord' => null,
-            'defectSheets' => collect(),
+            'filingRecord' => $record,
+            'defectSheets' => $this->filing->defectSheets($application),
             'documents' => collect(),
-            'warning' => null,
+            'warning' => $this->filing->grantWarning($application),
             'statuses' => ApplicationStatus::cases(),
         ]);
     }
