@@ -4,6 +4,7 @@ namespace App\Domain\Lifecycle;
 
 use App\Domain\Audit\AuditRecorder;
 use App\Domain\Notification\NotificationService;
+use App\Domain\Vault\GrantWarning;
 use App\Models\Application;
 use App\Models\User;
 
@@ -19,6 +20,7 @@ final class StatusChangeService
         private readonly LifecycleService $lifecycle,
         private readonly NotificationService $notifications,
         private readonly AuditRecorder $audit,
+        private readonly GrantWarning $grantWarning,
     ) {}
 
     public function change(
@@ -42,7 +44,15 @@ final class StatusChangeService
             ipAddress: $ipAddress,
         );
 
-        $this->notifications->notifyStatusChange($application, $newStatus);
+        $documentAvailable = $newStatus === ApplicationStatus::GRANTED
+            ? $this->grantWarning->hasDocument($application)
+            : true;
+
+        $this->notifications->notifyStatusChange($application, $newStatus, $documentAvailable);
+
+        if ($newStatus === ApplicationStatus::GRANTED) {
+            $this->grantWarning->announce($application, $actor, $ipAddress);
+        }
 
         return $application;
     }

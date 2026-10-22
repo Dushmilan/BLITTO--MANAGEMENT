@@ -2,6 +2,7 @@
 
 namespace App\Domain\Authorization;
 
+use App\Domain\Audit\AuditRecorder;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Hash;
@@ -16,8 +17,16 @@ final class UserDirectory
 {
     public const int MAX_PASSWORD_BYTES = 72;
 
-    public function register(string $email, Role $role, ?string $password = null, ?string $userCode = null): User
-    {
+    public function __construct(private readonly AuditRecorder $audit) {}
+
+    public function register(
+        string $email,
+        Role $role,
+        ?string $password = null,
+        ?string $userCode = null,
+        ?User $actor = null,
+        ?string $ipAddress = null,
+    ): User {
         $email = EmailPolicy::normalize($email);
 
         if (! EmailPolicy::isInstitution($email)) {
@@ -28,12 +37,17 @@ final class UserDirectory
             throw new DuplicateEmail("email already registered: {$email}");
         }
 
-        return User::query()->create([
+        $user = User::query()->create([
             'email' => $email,
             'role' => $role->value,
             'user_code' => $userCode,
             'password_hash' => $password === null ? null : $this->hash($password),
         ]);
+
+        // The single creation entry point: no caller can bypass this row.
+        $this->audit->record('create_user', actor: $actor, ipAddress: $ipAddress);
+
+        return $user;
     }
 
     public function findByEmail(string $email): ?User

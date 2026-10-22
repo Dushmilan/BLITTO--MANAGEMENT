@@ -4,6 +4,10 @@ namespace App\Providers;
 
 use App\Domain\Authorization\BootstrapAdmin;
 use App\Domain\Authorization\InvalidInstitutionEmail;
+use App\Domain\Notification\ArrayMailChannel;
+use App\Domain\Notification\LaravelMailChannel;
+use App\Domain\Notification\MailChannel;
+use App\Domain\Notification\UnsupportedMailChannel;
 use App\Domain\Vault\DocumentStore;
 use App\Domain\Vault\LocalDocumentStore;
 use App\Domain\Vault\UnsupportedDocumentStore;
@@ -26,6 +30,18 @@ class AppServiceProvider extends ServiceProvider
                 'local' => new LocalDocumentStore(Storage::disk('vault')),
                 default => throw new UnsupportedDocumentStore(
                     "Document store [{$configured}] is not available; only \"local\" is implemented.",
+                ),
+            };
+        });
+
+        $this->app->singleton(MailChannel::class, static function (): MailChannel {
+            $configured = (string) config('blitto.mail_channel');
+
+            return match ($configured) {
+                'laravel' => new LaravelMailChannel,
+                'array' => new ArrayMailChannel,
+                default => throw new UnsupportedMailChannel(
+                    "Mail channel [{$configured}] is not available; use \"laravel\" or \"array\".",
                 ),
             };
         });

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\Auth\LoginController;
@@ -68,6 +69,14 @@ Route::post('/applications/{applicationId}/deadlines', [DocketingController::cla
 Route::get('/deadlines', [DocketingController::class, 'index'])
     ->middleware(['auth', 'role:director,md'])
     ->name('deadlines.index');
+
+Route::get('/analytics/portfolio', [AnalyticsController::class, 'portfolio'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('analytics.portfolio');
+
+Route::get('/analytics/deadlines', [AnalyticsController::class, 'deadlines'])
+    ->middleware(['auth', 'role:director,md'])
+    ->name('analytics.deadlines');
 
 Route::post('/applications/{applicationId}/documents', [DocumentController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])

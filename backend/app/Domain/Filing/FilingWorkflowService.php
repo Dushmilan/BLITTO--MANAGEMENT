@@ -7,7 +7,7 @@ use App\Domain\Lifecycle\ApplicationStatus;
 use App\Domain\Lifecycle\IllegalTransition;
 use App\Domain\Lifecycle\LifecycleService;
 use App\Domain\Notification\NotificationService;
-use App\Domain\Vault\DocumentService;
+use App\Domain\Vault\GrantWarning;
 use App\Models\Application;
 use App\Models\DefectSheet;
 use App\Models\FilingRecord;
@@ -27,7 +27,7 @@ final class FilingWorkflowService
         private readonly LifecycleService $lifecycle,
         private readonly NotificationService $notifications,
         private readonly AuditRecorder $audit,
-        private readonly DocumentService $documents,
+        private readonly GrantWarning $grantWarning,
     ) {}
 
     public function filingRecord(Application $application): ?FilingRecord
@@ -35,7 +35,7 @@ final class FilingWorkflowService
         return FilingRecord::query()->where('application_id', $application->id)->first();
     }
 
-    public function markFiled(Application $application, User $actor): Application
+    public function markFiled(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         if ($application->status === ApplicationStatus::FILED->value) {
             return $application;
@@ -59,7 +59,7 @@ final class FilingWorkflowService
             "Your patent application {$application->title} ({$this->reference($application)}) has been filed with NIPO.",
         );
 
-        $this->audit->record('filing:mark_filed', actor: $actor, application: $application);
+        $this->audit->record('filing:mark_filed', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }
@@ -67,7 +67,7 @@ final class FilingWorkflowService
     /**
      * @throws AcknowledgementWithoutFiling when the application was never filed
      */
-    public function acknowledgeNipo(Application $application, User $actor): Application
+    public function acknowledgeNipo(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         $record = $this->filingRecord($application)
             ?? throw new AcknowledgementWithoutFiling($application->id);
@@ -93,12 +93,12 @@ final class FilingWorkflowService
             "NIPO has acknowledged receipt of your patent application {$application->title} ({$this->reference($application)}).",
         );
 
-        $this->audit->record('filing:acknowledge_nipo', actor: $actor, application: $application);
+        $this->audit->record('filing:acknowledge_nipo', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }
 
-    public function markGranted(Application $application, string $patentNumber, User $actor): Application
+    public function markGranted(Application $application, string $patentNumber, User $actor, ?string $ipAddress = null): Application
     {
         $this->lifecycle->changeStatus(
             $application,
@@ -122,9 +122,9 @@ final class FilingWorkflowService
             "Your patent {$application->title} has been granted with patent number {$patentNumber}.",
         );
 
-        $this->audit->record('filing:granted', actor: $actor, application: $application);
+        $this->audit->record('filing:granted', actor: $actor, application: $application, ipAddress: $ipAddress);
 
-        $this->warnWhenGrantedWithoutDocument($application);
+        $this->grantWarning->announce($application, $actor, $ipAddress);
 
         return $application;
     }
@@ -135,34 +135,10 @@ final class FilingWorkflowService
      */
     public function grantWarning(Application $application): ?string
     {
-        if (ApplicationStatus::from($application->status) !== ApplicationStatus::GRANTED) {
-            return null;
-        }
-
-        if ($this->documents->hasDocuments($application)) {
-            return null;
-        }
-
-        return "Patent {$application->id} was granted but has no document yet; the inventor cannot download it until one is uploaded.";
+        return $this->grantWarning->warning($application);
     }
 
-    private function warnWhenGrantedWithoutDocument(Application $application): void
-    {
-        $warning = $this->grantWarning($application);
-
-        if ($warning === null) {
-            return;
-        }
-
-        $this->notifications->send(
-            (string) (config('blitto.bootstrap_admin_email') ?: 'md@pdn.ac.lk'),
-            "Patent {$application->id} granted without a document",
-            $warning,
-            'grant_without_document',
-        );
-    }
-
-    public function markRejected(Application $application, User $actor): Application
+    public function markRejected(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         $this->lifecycle->changeStatus(
             $application,
@@ -185,7 +161,7 @@ final class FilingWorkflowService
             "Your patent application {$application->title} ({$this->reference($application)}) has been rejected.",
         );
 
-        $this->audit->record('filing:rejected', actor: $actor, application: $application);
+        $this->audit->record('filing:rejected', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
     }
@@ -210,7 +186,7 @@ final class FilingWorkflowService
      * @throws DefectSheetRejected
      * @throws IllegalTransition when the current status may not reach DEFECT_SHEET_{n}
      */
-    public function recordDefectSheet(Application $application, int $sheetNumber, string $description, User $actor): DefectSheet
+    public function recordDefectSheet(Application $application, int $sheetNumber, string $description, User $actor, ?string $ipAddress = null): DefectSheet
     {
         if (! in_array($sheetNumber, [1, 2, 3], true)) {
             throw new DefectSheetRejected("Invalid defect sheet number: {$sheetNumber} (must be 1-3)");
@@ -252,7 +228,7 @@ final class FilingWorkflowService
             "Defect sheet #{$sheetNumber} has been received for your patent application {$application->title} ({$this->reference($application)}): {$description}",
         );
 
-        $this->audit->record('filing:defect_sheet', actor: $actor, application: $application);
+        $this->audit->record('filing:defect_sheet', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $sheet;
     }
