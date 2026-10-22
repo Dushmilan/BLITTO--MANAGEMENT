@@ -7,6 +7,7 @@ use App\Domain\Vault\DocumentFilename;
 use App\Domain\Vault\DocumentService;
 use App\Domain\Vault\DocumentTooLarge;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,7 +22,7 @@ final class DocumentController extends Controller
         private readonly ApplicationIntakeService $intake,
     ) {}
 
-    public function store(Request $request, string $applicationId): JsonResponse
+    public function store(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
         // PHP rejects an upload over upload_max_filesize before Laravel sees
         // it; report the contract's 413 rather than a validation 422.
@@ -33,12 +34,18 @@ final class DocumentController extends Controller
             'file' => ['required', 'file'],
         ]);
 
-        return response()->json($this->documents->store(
+        $document = $this->documents->store(
             $this->intake->findOrFail($applicationId),
             $validated['file'],
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($document);
+        }
+
+        return back()->with('status', 'Document uploaded.');
     }
 
     public function index(string $applicationId): JsonResponse
@@ -72,6 +79,10 @@ final class DocumentController extends Controller
             $request->ip(),
         );
 
-        return response()->noContent();
+        if ($request->expectsJson()) {
+            return response()->noContent();
+        }
+
+        return back()->with('status', 'Document deleted.');
     }
 }

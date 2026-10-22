@@ -105,7 +105,7 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
 | L3 Core flows | [#67](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/67) | Applications CRUD, history, status changes, docketing, office actions, filing workflow | applications/docketing/prosecution/filing feature tests + RBAC matrix (document journeys J1/J2/J4 land in L4) |
 | L4 Document vault | [#71](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/71) | Plaintext document store seam (`DocumentStore`/`local`), upload rules, staff upload/list/download/delete, inventor granted download (file or ZIP) + request-document, missing-documents worklist, grant-without-document warning. Encryption and the vault unlock gate are deferred — ADR 0004. | document upload/download/request feature tests + journeys J1/J2/J4 |
 | L5 Cross-cutting | [#69](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/69) | Mail seam (`MailChannel` + Laravel-backed and in-memory adapters) with best-effort delivery, audit write gaps closed (filing IP, `create_user`, `auth:login|logout`), `GET /analytics/portfolio` + `/analytics/deadlines`, `nipo:follow-up` scheduled task, snapshot-driven idempotent demo seeder. `by_type` counts OPEN deadlines only and the reminder is deliberately not deduplicated — ADR 0005. | notification/analytics/seed |
-| L6 UI | [#70](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/70) | Blade/Livewire screens replacing all React pages | Pest feature + Dusk smoke |
+| L6 UI | [#70](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/70) | Blade screens (no Livewire — ADR 0006) replacing all React pages; server-rendered state, DESIGN.md tokens, dark mode; list-only notifications read API; Dusk smoke + Chrome in CI | Pest feature + Dusk smoke |
 | L7 Cutover | [#66](https://github.com/Dushmilan/BLITTO--MANAGEMENT/issues/66) | Delete `app/`, `frontend/`, Python tests, `pyproject.toml`; rename GitHub repo + folder; rewrite docs | full suite green |
 
 ## 7. Rules of engagement
@@ -174,4 +174,12 @@ What survives untouched: the domain (`CONTEXT.md`), design tokens
   snapshot-driven, idempotent demo seeder that bcrypts the reference plaintext
   passwords and writes document bytes through the store. Suite 399/399 green
   (1174 assertions). Decisions recorded in ADR 0005.
-- **Next: L6 (#70)** — Blade/Livewire screens replacing the React pages.
+- **L6 UI** ✅ — Blade screens replace the React pages: login, role-aware `/`
+  redirect, staff dashboard + patents (list, create, detail with status change,
+  filing chain and documents) and users, inventor overview, patents (download,
+  request) and notifications. JSON endpoints unchanged behind an
+  `expectsJson()` branch; `EnsureRole` and the exception renderer negotiate HTML.
+  `GET /notifications` read API added (list-only). DESIGN.md tokens + a dark
+  palette defined in the spec (§7.3); no Livewire (ADR 0006); Dusk smoke suite in
+  its own CI job. Suite 481/481 green (1452 assertions). Decisions: ADR 0006.
+- **Next: L7 (#66)** — cutover, repo rename, docs rewrite.

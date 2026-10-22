@@ -6,6 +6,7 @@ use App\Domain\Authorization\Role;
 use App\Domain\Authorization\UserDirectory;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,7 @@ final class RegisterController extends Controller
 {
     public function __construct(private readonly UserDirectory $directory) {}
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $request->validate(['role' => ['sometimes', Rule::enum(Role::class)]]);
 
@@ -22,12 +23,20 @@ final class RegisterController extends Controller
 
         // Only the MD may create director/MD roles; everyone may self-register as user.
         if ($role !== Role::USER && Role::from($actor->role) !== Role::MD) {
+            if (! $request->expectsJson()) {
+                abort(403, 'Forbidden.');
+            }
+
             return response()->json(['message' => 'Only MD may create director/MD roles'], 403);
         }
 
         // bcrypt truncates silently past 72 bytes — refuse rather than mis-hash.
         if ($request->filled('password')
             && strlen((string) $request->input('password')) > UserDirectory::MAX_PASSWORD_BYTES) {
+            if (! $request->expectsJson()) {
+                return back()->withErrors(['password' => 'Password exceeds the 72-byte limit.']);
+            }
+
             return response()->json(['message' => 'password exceeds 72 bytes (bcrypt limit)'], 422);
         }
 
@@ -40,6 +49,10 @@ final class RegisterController extends Controller
             ipAddress: $request->ip(),
         );
 
-        return response()->json($user, 200);
+        if ($request->expectsJson()) {
+            return response()->json($user, 200);
+        }
+
+        return back()->with('status', 'User created.');
     }
 }

@@ -38,6 +38,10 @@ final class FilingWorkflowService
     public function markFiled(Application $application, User $actor, ?string $ipAddress = null): Application
     {
         if ($application->status === ApplicationStatus::FILED->value) {
+            // Filed through the status route leaves no record; filing again from
+            // the panel backfills it so the rest of the chain stays reachable.
+            $this->touchFilingRecord($application, $actor);
+
             return $application;
         }
 
@@ -48,10 +52,7 @@ final class FilingWorkflowService
             reason: 'Application filed with NIPO',
         );
 
-        FilingRecord::query()->updateOrCreate(
-            ['application_id' => $application->id],
-            ['filed_date' => Carbon::now(), 'filed_by' => (string) $actor->email],
-        );
+        $this->touchFilingRecord($application, $actor);
 
         $this->notifications->notifyInventors(
             $application,
@@ -164,6 +165,14 @@ final class FilingWorkflowService
         $this->audit->record('filing:rejected', actor: $actor, application: $application, ipAddress: $ipAddress);
 
         return $application;
+    }
+
+    private function touchFilingRecord(Application $application, User $actor): void
+    {
+        FilingRecord::query()->updateOrCreate(
+            ['application_id' => $application->id],
+            ['filed_date' => Carbon::now(), 'filed_by' => (string) $actor->email],
+        );
     }
 
     private function reference(Application $application): string

@@ -66,3 +66,9 @@
 - **Latency** -- Dashboard loads < 2s
 - **Testability** -- Business logic tested through module interfaces, not through HTTP
 - **Deployability** -- Single `uvicorn` deployment (on-premise); no DB migrations (no database)
+
+
+- **UI (L6):** server-rendered Blade pages under `/login`, `/admin/*` and
+  `/user/*`, alongside the JSON API at the root paths. Mutations are real forms
+  posting to the existing JSON routes; those routes branch on `expectsJson()`
+  (JSON for API clients, redirect + flash for browsers).

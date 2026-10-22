@@ -119,7 +119,7 @@ final class GrantedPatentService
             throw new DocumentRequestRefused('Document already available');
         }
 
-        if ($this->alreadyRequested($application, $viewer)) {
+        if ($this->hasOpenRequest($application, $viewer)) {
             throw new DocumentAlreadyRequested('Document already requested');
         }
 
@@ -143,7 +143,12 @@ final class GrantedPatentService
         return $configured !== '' ? $configured : 'md@pdn.ac.lk';
     }
 
-    private function alreadyRequested(Application $application, User $viewer): bool
+    /**
+     * Read side of the one-open-request rule: true when this viewer already has
+     * an unreconciled request for this application. The write path uses the same
+     * check (L6 spec §9).
+     */
+    public function hasOpenRequest(Application $application, User $viewer): bool
     {
         return AuditLog::query()
             ->where('action', 'document_requested')

@@ -11,7 +11,7 @@ it('uploads a document as staff', function (string $state) {
     $staff = User::factory()->{$state}()->create();
     $application = Application::query()->create(['title' => 'Upload']);
 
-    $this->actingAs($staff)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($staff)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('specification.pdf', '%PDF-1.4'),
     ])->assertOk()
         ->assertJsonPath('filename', 'specification.pdf')
@@ -35,18 +35,18 @@ it('requires a file, resolves the application last and applies the upload rules'
         ->assertStatus(422)->assertJsonValidationErrors('file');
 
     // Valid file, unknown application → 404.
-    $this->actingAs($director)->post('/applications/unknown-app/documents', [
+    $this->actingAs($director)->postJson('/applications/unknown-app/documents', [
         'file' => UploadedFile::fake()->createWithContent('spec.pdf', 'bytes'),
     ])->assertNotFound();
 
     // Disallowed extension → 422 with the allow-list in the message.
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('evil.exe', 'bytes'),
     ])->assertStatus(422)
         ->assertJsonPath('message', "File type '.exe' not allowed. Accepted: .csv, .doc, .docx, .jpeg, .jpg, .pdf, .png, .txt, .xls, .xlsx");
 
     // Over the cap → 413.
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->create('huge.pdf', 10241, 'application/pdf'),
     ])->assertStatus(413)
         ->assertJsonPath('message', 'Document too large (max 10 MB)');
@@ -65,7 +65,7 @@ it('reports 413 when PHP rejected the upload for exceeding its ini limit', funct
     $rejectedByIni = new UploadedFile($path, 'huge.pdf', 'application/pdf', UPLOAD_ERR_INI_SIZE, true);
 
     $this->actingAs($director)
-        ->post("/applications/{$application->id}/documents", ['file' => $rejectedByIni])
+        ->postJson("/applications/{$application->id}/documents", ['file' => $rejectedByIni])
         ->assertStatus(413)
         ->assertJsonPath('message', 'Document too large (max 10 MB)');
 
@@ -80,7 +80,7 @@ it('lists the documents of one application for staff only', function () {
     $application = Application::query()->create(['title' => 'Listed']);
 
     foreach (['first.pdf', 'second.pdf'] as $name) {
-        $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+        $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
             'file' => UploadedFile::fake()->createWithContent($name, 'bytes'),
         ])->assertOk();
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\ApplicationIntake\ApplicationIntakeService;
 use App\Domain\Filing\FilingWorkflowService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 /**
@@ -18,38 +19,56 @@ final class FilingController extends Controller
         private readonly ApplicationIntakeService $intake,
     ) {}
 
-    public function file(Request $request, string $applicationId): JsonResponse
+    public function file(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
-        return response()->json($this->filing->markFiled(
+        $application = $this->filing->markFiled(
             $this->intake->findOrFail($applicationId),
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($application);
+        }
+
+        return back()->with('status', 'Filing recorded.');
     }
 
-    public function acknowledge(Request $request, string $applicationId): JsonResponse
+    public function acknowledge(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
-        return response()->json($this->filing->acknowledgeNipo(
+        $application = $this->filing->acknowledgeNipo(
             $this->intake->findOrFail($applicationId),
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($application);
+        }
+
+        return back()->with('status', 'NIPO acknowledgement recorded.');
     }
 
-    public function storeDefectSheet(Request $request, string $applicationId): JsonResponse
+    public function storeDefectSheet(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'sheet_number' => ['required', 'integer'],
             'description' => ['required', 'string'],
         ]);
 
-        return response()->json($this->filing->recordDefectSheet(
+        $sheet = $this->filing->recordDefectSheet(
             $this->intake->findOrFail($applicationId),
             (int) $validated['sheet_number'],
             (string) $validated['description'],
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($sheet);
+        }
+
+        return back()->with('status', 'Defect sheet recorded.');
     }
 
     public function defectSheets(string $applicationId): JsonResponse
@@ -57,7 +76,7 @@ final class FilingController extends Controller
         return response()->json($this->filing->defectSheets($this->intake->findOrFail($applicationId)));
     }
 
-    public function grant(Request $request, string $applicationId): JsonResponse
+    public function grant(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'patent_number' => ['required', 'string', 'max:255'],
@@ -70,22 +89,36 @@ final class FilingController extends Controller
             $request->ip(),
         );
 
-        $payload = $application->toArray();
+        $warning = $this->filing->grantWarning($application);
 
-        if (($warning = $this->filing->grantWarning($application)) !== null) {
-            $payload['warning'] = $warning;
+        if ($request->expectsJson()) {
+            $payload = $application->toArray();
+
+            if ($warning !== null) {
+                $payload['warning'] = $warning;
+            }
+
+            return response()->json($payload);
         }
 
-        return response()->json($payload);
+        return back()
+            ->with('status', 'Patent granted as '.$validated['patent_number'].'.')
+            ->with('warning', $warning);
     }
 
-    public function reject(Request $request, string $applicationId): JsonResponse
+    public function reject(Request $request, string $applicationId): JsonResponse|RedirectResponse
     {
-        return response()->json($this->filing->markRejected(
+        $application = $this->filing->markRejected(
             $this->intake->findOrFail($applicationId),
             $request->user(),
             $request->ip(),
-        ));
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json($application);
+        }
+
+        return back()->with('status', 'Patent rejected.');
     }
 
     public function status(string $applicationId): JsonResponse

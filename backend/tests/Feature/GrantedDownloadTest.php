@@ -17,7 +17,7 @@ function grantedApplication(array $attributes = []): Application
 
 function uploadAs(User $staff, Application $application, string $name, string $contents): Document
 {
-    test()->actingAs($staff)->post("/applications/{$application->id}/documents", [
+    test()->actingAs($staff)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent($name, $contents),
     ])->assertOk();
 
@@ -136,7 +136,7 @@ it('keeps both documents when their filenames collide', function () {
     $application = grantedApplication();
 
     foreach (['FIRST', 'SECOND'] as $contents) {
-        $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+        $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
             'file' => UploadedFile::fake()->createWithContent('patent.pdf', $contents),
         ])->assertOk();
     }

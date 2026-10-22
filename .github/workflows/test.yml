@@ -41,3 +41,47 @@ jobs:
         run: cp .env.example .env && php artisan key:generate
       - name: Run Pest suite
         run: vendor/bin/pest
+
+  backend-dusk:
+    name: backend-dusk (Dusk)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Same trap as #76: composer's post-autoload `artisan package:discover`
+      # boots the app before .env exists, so the environment is declared here.
+      # Deliberately no DB override: the runner and the app it serves must read
+      # the same .env (sqlite at database/database.sqlite).
+      APP_ENV: local
+      APP_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: sqlite3, mbstring, openssl, pdo_sqlite, curl, dom, fileinfo, tokenizer, xml
+          coverage: none
+          ini-values: post_max_size=12M, upload_max_filesize=12M
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Prepare environment
+        run: cp .env.example .env && php artisan key:generate
+      - name: Prepare database
+        run: touch database/database.sqlite && php artisan migrate:fresh --seed --force
+      - name: Build assets
+        run: npm install --no-audit --no-fund && npm run build
+      - name: Install Chrome driver
+        run: php artisan dusk:chrome-driver --detect
+      - name: Run Dusk
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/serve.log 2>&1 &
+          sleep 2
+          php artisan dusk
+      - name: Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dusk-screenshots
+          path: backend/tests/Browser/screenshots
+          if-no-files-found: ignore

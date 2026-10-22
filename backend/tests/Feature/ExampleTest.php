@@ -2,18 +2,15 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * `/` became a role-aware redirect in L6; the old 200 view is gone.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_the_root_redirects_a_guest_to_the_login_page(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->get('/')->assertRedirect(route('login'));
     }
 }

@@ -22,6 +22,8 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -40,113 +42,107 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
+        /*
+         * One failure, two representations (spec §6). JSON keeps the exact
+         * status and body it has always returned; an HTML request comes back
+         * with a form error instead of a JSON blob.
+         */
+        $domainError = function (
+            Throwable $exception,
+            Request $request,
+            int $status,
+            array $extra = [],
+        ): JsonResponse|RedirectResponse {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['message' => $exception->getMessage()] + $extra, $status);
+            }
+
+            // A navigation (GET) has no form to return to: render the status as
+            // an error page. Only a submitted form gets the redirect-back.
+            if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+                abort($status, $exception->getMessage());
+            }
+
+            return back()->withErrors(['form' => $exception->getMessage()])
+                ->withInput($request->except('password'));
+        };
+
         // Lifecycle violations are client errors, not server errors.
         $exceptions->render(
-            fn (IllegalTransition $e, Request $request) => response()->json([
-                'message' => $e->getMessage(),
-            ], 422),
+            fn (IllegalTransition $e, Request $request) => $domainError($e, $request, 422),
         );
 
         $exceptions->render(
-            fn (AuthenticationException $e, Request $request) => response()->json([
-                'message' => 'Unauthenticated.',
-            ], 401),
+            fn (InvalidInstitutionEmail $e, Request $request) => $domainError($e, $request, 422),
         );
 
         $exceptions->render(
-            fn (InvalidInstitutionEmail $e, Request $request) => response()->json([
-                'message' => $e->getMessage(),
-            ], 422),
+            fn (DuplicateEmail $e, Request $request) => $domainError($e, $request, 409),
         );
 
         $exceptions->render(
-            fn (DuplicateEmail $e, Request $request) => response()->json([
-                'message' => $e->getMessage(),
-            ], 409),
+            fn (ApplicationNotFound $e, Request $request) => $domainError($e, $request, 404),
         );
 
         $exceptions->render(
-            fn (ApplicationNotFound $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 404),
+            fn (DefectSheetRejected $e, Request $request) => $domainError($e, $request, 422),
         );
 
         $exceptions->render(
-            fn (DefectSheetRejected $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 422),
+            fn (AcknowledgementWithoutFiling $e, Request $request) => $domainError($e, $request, 404),
         );
 
         $exceptions->render(
-            fn (AcknowledgementWithoutFiling $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 404),
+            fn (UnsupportedFileType $e, Request $request) => $domainError($e, $request, 422),
         );
 
         $exceptions->render(
-            fn (UnsupportedFileType $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 422),
+            fn (InvalidDocumentFilename $e, Request $request) => $domainError($e, $request, 422),
         );
 
         $exceptions->render(
-            fn (InvalidDocumentFilename $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 422),
+            fn (DocumentTooLarge $e, Request $request) => $domainError($e, $request, 413),
         );
 
         $exceptions->render(
-            fn (DocumentTooLarge $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 413),
+            fn (DocumentContentMissing $e, Request $request) => $domainError($e, $request, 404),
         );
 
         $exceptions->render(
-            fn (DocumentContentMissing $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 404),
+            fn (DocumentNotFound $e, Request $request) => $domainError($e, $request, 404),
         );
 
         $exceptions->render(
-            fn (DocumentNotFound $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 404),
+            fn (DocumentIsImmutable $e, Request $request) => $domainError($e, $request, 409),
         );
 
         $exceptions->render(
-            fn (DocumentIsImmutable $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 409),
+            fn (NotYourPatent $e, Request $request) => $domainError($e, $request, 403),
         );
 
         $exceptions->render(
-            fn (NotYourPatent $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 403),
+            fn (PatentNotGranted $e, Request $request) => $domainError($e, $request, 403),
         );
 
         $exceptions->render(
-            fn (PatentNotGranted $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 403),
+            fn (DocumentPending $e, Request $request) => $domainError($e, $request, 409, ['code' => 'document_pending']),
         );
 
         $exceptions->render(
-            fn (DocumentPending $e) => response()->json([
-                'message' => $e->getMessage(),
-                'code' => 'document_pending',
-            ], 409),
+            fn (DocumentAlreadyRequested $e, Request $request) => $domainError($e, $request, 429),
         );
 
         $exceptions->render(
-            fn (DocumentAlreadyRequested $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 429),
+            fn (DocumentRequestRefused $e, Request $request) => $domainError($e, $request, 409),
         );
 
-        $exceptions->render(
-            fn (DocumentRequestRefused $e) => response()->json([
-                'message' => $e->getMessage(),
-            ], 409),
-        );
+        // JSON callers keep 401; browsers fall through to Laravel's
+        // redirect-to-login (which also records the intended URL).
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (! $request->expectsJson()) {
+                return null;
+            }
+
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        });
     })->create();

@@ -15,7 +15,7 @@ it('lists only granted applications that have no documents for staff', function 
     $grantedWithDoc = Application::query()->create(['title' => 'Granted with doc', 'status' => 'GRANTED']);
     Application::query()->create(['title' => 'Filed empty', 'status' => 'FILED']);
 
-    $this->actingAs($director)->post("/applications/{$grantedWithDoc->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$grantedWithDoc->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'bytes'),
     ])->assertOk();
 
@@ -37,7 +37,7 @@ it('downloads a single document with a sanitized disposition', function () {
     $director = User::factory()->director()->create();
     $application = Application::query()->create(['title' => 'Disposition']);
 
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('../../../evil.pdf', 'payload'),
     ])->assertOk();
 
@@ -61,7 +61,7 @@ it('returns 404 when a document has lost its stored bytes', function () {
     $director = User::factory()->director()->create();
     $application = Application::query()->create(['title' => 'Lost bytes']);
 
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('spec.pdf', 'payload'),
     ])->assertOk();
 
@@ -69,7 +69,7 @@ it('returns 404 when a document has lost its stored bytes', function () {
     Storage::disk('vault')->delete($document->content_ref);
 
     $this->actingAs($director)
-        ->get("/applications/{$application->id}/documents/{$document->id}/download")
+        ->getJson("/applications/{$application->id}/documents/{$document->id}/download")
         ->assertNotFound();
 });
 
@@ -79,14 +79,14 @@ it('returns 404 for a document scoped to another application', function () {
     $owner = Application::query()->create(['title' => 'Owner']);
     $other = Application::query()->create(['title' => 'Other']);
 
-    $this->actingAs($director)->post("/applications/{$owner->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$owner->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('spec.pdf', 'bytes'),
     ])->assertOk();
 
     $document = Document::query()->sole();
 
     $this->actingAs($director)
-        ->get("/applications/{$other->id}/documents/{$document->id}/download")
+        ->getJson("/applications/{$other->id}/documents/{$document->id}/download")
         ->assertNotFound();
 });
 
@@ -95,19 +95,19 @@ it('deletes an unfiled document as staff and refuses a filed one', function () {
     $director = User::factory()->director()->create();
     $application = Application::query()->create(['title' => 'Deletes']);
 
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('spec.pdf', 'bytes'),
     ])->assertOk();
 
     $unfiled = Document::query()->sole();
 
     $this->actingAs($director)
-        ->delete("/applications/{$application->id}/documents/{$unfiled->id}")
+        ->deleteJson("/applications/{$application->id}/documents/{$unfiled->id}")
         ->assertNoContent();
 
     expect(Document::query()->count())->toBe(0);
 
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('spec.pdf', 'bytes'),
     ])->assertOk();
 
@@ -120,14 +120,14 @@ it('deletes an unfiled document as staff and refuses a filed one', function () {
     $filed = Document::query()->sole();
 
     $this->actingAs($director)
-        ->delete("/applications/{$application->id}/documents/{$filed->id}")
+        ->deleteJson("/applications/{$application->id}/documents/{$filed->id}")
         ->assertStatus(409)
         ->assertJsonPath('message', "Document {$filed->id} is immutable: its application has been filed");
 
     expect(Document::query()->count())->toBe(1);
 
     $this->actingAs(User::factory()->create())
-        ->delete("/applications/{$application->id}/documents/{$filed->id}")
+        ->deleteJson("/applications/{$application->id}/documents/{$filed->id}")
         ->assertForbidden();
 });
 
@@ -136,7 +136,7 @@ it('gates the staff document routes', function () {
     $director = User::factory()->director()->create();
     $application = Application::query()->create(['title' => 'Gated']);
 
-    $this->actingAs($director)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($director)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('spec.pdf', 'bytes'),
     ])->assertOk();
 

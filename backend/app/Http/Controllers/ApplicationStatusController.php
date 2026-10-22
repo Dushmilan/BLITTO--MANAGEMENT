@@ -6,6 +6,7 @@ use App\Domain\Lifecycle\ApplicationStatus;
 use App\Domain\Lifecycle\StatusChangeService;
 use App\Models\Application;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -17,7 +18,7 @@ class ApplicationStatusController extends Controller
 {
     public function __construct(private readonly StatusChangeService $statusChange) {}
 
-    public function store(Request $request, Application $application): JsonResponse
+    public function store(Request $request, Application $application): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'new_status' => ['required', Rule::enum(ApplicationStatus::class)],
@@ -32,6 +33,10 @@ class ApplicationStatusController extends Controller
             ipAddress: $request->ip(),
         );
 
-        return response()->json(null, 204);
+        if ($request->expectsJson()) {
+            return response()->json(null, 204);
+        }
+
+        return back()->with('status', 'Status updated to '.$validated['new_status'].'.');
     }
 }

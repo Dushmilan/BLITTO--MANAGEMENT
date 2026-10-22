@@ -1,9 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PatentController;
+use App\Http\Controllers\Admin\UserListController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ApplicationStatusController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LoginPageController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -11,13 +15,26 @@ use App\Http\Controllers\DocketingController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FilingController;
 use App\Http\Controllers\GrantedPatentController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OfficeActionController;
+use App\Http\Controllers\Portal\NotificationController as PortalNotificationController;
+use App\Http\Controllers\Portal\OverviewController;
+use App\Http\Controllers\Portal\PatentController as PortalPatentController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
+use App\Support\HomeFor;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', function (Request $request) {
+    $user = $request->user();
+
+    return redirect($user === null ? route('login') : HomeFor::path($user));
+})->name('home');
+
+Route::get('/notifications', NotificationController::class)
+    ->middleware('auth')
+    ->name('notifications.index');
 
 Route::get('/health', function () {
     return response()->json([
@@ -25,6 +42,29 @@ Route::get('/health', function () {
         'service' => config('app.name'),
     ]);
 })->name('health');
+
+Route::get('/login', LoginPageController::class)
+    ->middleware('guest')
+    ->name('login');
+
+Route::post('/theme', ThemeController::class)
+    ->middleware('auth')
+    ->name('theme.update');
+
+Route::middleware(['auth', 'role:director,md'])->prefix('admin')->group(function () {
+    Route::get('/', DashboardController::class)->name('admin.dashboard');
+    Route::get('/patents', [PatentController::class, 'index'])->name('admin.patents.index');
+    Route::get('/patents/create', [PatentController::class, 'create'])->name('admin.patents.create');
+    Route::get('/users', UserListController::class)->middleware('role:md')->name('admin.users.index');
+    Route::get('/patents/{applicationId}', [PatentController::class, 'show'])->name('admin.patents.show');
+});
+
+Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
+    Route::get('/', OverviewController::class)->name('portal.overview');
+    Route::get('/patents', [PortalPatentController::class, 'index'])->name('portal.patents.index');
+    Route::get('/patents/{applicationId}', [PortalPatentController::class, 'show'])->name('portal.patents.show');
+    Route::get('/notifications', PortalNotificationController::class)->name('portal.notifications.index');
+});
 
 Route::post('/applications', [ApplicationController::class, 'store'])
     ->middleware(['auth', 'role:director,md'])

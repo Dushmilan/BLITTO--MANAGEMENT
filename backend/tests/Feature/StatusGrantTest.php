@@ -51,7 +51,7 @@ it('keeps the download-ready wording when the granted application already has a 
         'status' => 'ACKNOWLEDGED',
     ]);
 
-    $this->actingAs($md)->post("/applications/{$application->id}/documents", [
+    $this->actingAs($md)->postJson("/applications/{$application->id}/documents", [
         'file' => UploadedFile::fake()->createWithContent('patent.pdf', 'bytes'),
     ])->assertOk();
 
